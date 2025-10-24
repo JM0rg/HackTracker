@@ -46,6 +46,12 @@ def package_lambda(lambda_path):
     print('   📋 Copying handler...')
     shutil.copy(lambda_dir / 'handler.py', temp_dir / 'handler.py')
     
+    # Copy utils
+    utils_dir = ROOT_DIR / 'src' / 'utils'
+    if utils_dir.exists():
+        print('   📦 Copying utils...')
+        shutil.copytree(utils_dir, temp_dir / 'utils', dirs_exist_ok=True)
+    
     # Install dependencies if requirements.txt exists
     requirements_file = lambda_dir / 'requirements.txt'
     if requirements_file.exists():

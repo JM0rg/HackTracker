@@ -7,7 +7,8 @@ help:
 	@echo "  make install          Install dependencies with uv"
 	@echo ""
 	@echo "Development:"
-	@echo "  make test             Test create-user Lambda locally"
+	@echo "  make test             Run user Lambda tests (see: make test-help)"
+	@echo "  make test-cloud       Run tests against deployed API Gateway"
 	@echo "  make package          Package Lambda functions"
 	@echo ""
 	@echo "Database:"
@@ -32,7 +33,17 @@ package:
 	@uv run python scripts/package_lambdas.py
 
 test:
-	@uv run python scripts/test_create_user.py
+	@uv run python scripts/test_users.py $(filter-out $@,$(MAKECMDGOALS))
+
+test-cloud:
+	@uv run python scripts/test_users.py $(filter-out $@,$(MAKECMDGOALS)) --cloud
+
+test-help:
+	@uv run python scripts/test_users.py
+
+# Allow passing arguments to test commands
+%:
+	@:
 
 db-start:
 	@uv run python scripts/db.py start

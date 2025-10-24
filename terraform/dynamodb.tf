@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "hacktracker" {
-  name           = "HackTracker-${local.environment}"
+  name           = "hacktracker-${local.environment}"
   billing_mode   = "PAY_PER_REQUEST"
   
   hash_key       = "PK"
