@@ -1,0 +1,138 @@
+"""
+Create User Lambda Handler
+
+Cognito Post-Confirmation Trigger
+Creates a user record in DynamoDB after successful Cognito sign-up
+"""
+
+import json
+import os
+from datetime import datetime, timezone
+from uuid import uuid4
+
+import boto3
+from boto3.dynamodb.conditions import Attr
+
+
+# Initialize DynamoDB client
+def get_dynamodb_client():
+    """Get DynamoDB resource (works locally and in AWS)"""
+    if os.environ.get('DYNAMODB_LOCAL') or os.environ.get('AWS_SAM_LOCAL'):
+        return boto3.resource(
+            'dynamodb',
+            endpoint_url=os.environ.get('DYNAMODB_ENDPOINT', 'http://localhost:8000'),
+            region_name='us-east-1',
+            aws_access_key_id='dummy',
+            aws_secret_access_key='dummy'
+        )
+    return boto3.resource('dynamodb')
+
+
+def get_table():
+    """Get DynamoDB table reference"""
+    dynamodb = get_dynamodb_client()
+    table_name = os.environ.get('TABLE_NAME', 'HackTracker-dev')
+    return dynamodb.Table(table_name)
+
+
+def handler(event, context):
+    """
+    Lambda handler for Cognito post-confirmation trigger
+    
+    Args:
+        event: Cognito post-confirmation event
+        context: Lambda context
+        
+    Returns:
+        The original event (required for Cognito triggers)
+    """
+    print(json.dumps({
+        'level': 'INFO',
+        'message': 'Processing Cognito post-confirmation event',
+        'triggerSource': event.get('triggerSource'),
+        'userPoolId': event.get('userPoolId'),
+        'userName': event.get('userName')
+    }))
+    
+    try:
+        # Extract user attributes from Cognito event
+        user_attributes = event['request']['userAttributes']
+        sub = user_attributes['sub']
+        email = user_attributes['email']
+        given_name = user_attributes.get('given_name')
+        family_name = user_attributes.get('family_name')
+        phone_number = user_attributes.get('phone_number')
+        
+        # Validate required fields
+        if not sub or not email:
+            raise ValueError('Missing required user attributes: sub and email')
+        
+        if not given_name or not family_name:
+            raise ValueError('Missing required user attributes: given_name and family_name')
+        
+        # Generate unique user ID
+        user_id = str(uuid4())
+        timestamp = datetime.now(timezone.utc).isoformat()
+        
+        # Create user item for DynamoDB (ordered for readability)
+        user_item = {
+            # Primary Keys
+            'PK': f'USER#{user_id}',
+            'SK': 'METADATA',
+            
+            # User Data
+            'userId': user_id,
+            'cognitoSub': sub,
+            'email': email.lower(),
+            'firstName': given_name,
+            'lastName': family_name,
+            
+            # GSI1: Lookup by Cognito sub
+            'GSI1PK': f'COGNITO#{sub}',
+            'GSI1SK': 'USER',
+            
+            # GSI2: Lookup by email
+            'GSI2PK': f'EMAIL#{email.lower()}',
+            'GSI2SK': 'USER',
+            
+            # Timestamps
+            'createdAt': timestamp,
+            'updatedAt': timestamp
+        }
+        
+        # Add optional phone number
+        if phone_number:
+            user_item['phoneNumber'] = phone_number
+        
+        # Save to DynamoDB
+        table = get_table()
+        table.put_item(
+            Item=user_item,
+            ConditionExpression=Attr('PK').not_exists()  # Prevent overwriting
+        )
+        
+        print(json.dumps({
+            'level': 'INFO',
+            'message': 'User created successfully',
+            'userId': user_id,
+            'email': email.lower(),
+            'cognitoSub': sub
+        }))
+        
+        # Return the event (required for Cognito triggers)
+        return event
+        
+    except Exception as error:
+        print(json.dumps({
+            'level': 'ERROR',
+            'message': 'Failed to create user',
+            'error': str(error),
+            'userName': event.get('userName'),
+            'userPoolId': event.get('userPoolId')
+        }))
+        
+        # For Cognito triggers, we should still return the event
+        # The user account is already created in Cognito at this point
+        # We log the error but don't fail the sign-up process
+        return event
+

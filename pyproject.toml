@@ -1,0 +1,8 @@
+[project]
+name = "hacktracker"
+version = "0.1.0"
+description = "Slowpitch softball stat tracking application"
+requires-python = ">=3.13"
+dependencies = [
+    "boto3>=1.34.0",
+]
