@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import '../theme/app_colors.dart';
 
 /// Collapsible sidebar drawer with navigation and team management
 class AppDrawer extends StatelessWidget {
@@ -15,7 +16,7 @@ class AppDrawer extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error signing out: ${e.message}'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -25,7 +26,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: const Color(0xFF1E293B),
+      backgroundColor: AppColors.surface,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -35,7 +36,7 @@ class AppDrawer extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: Color(0xFF334155), width: 1),
+                  bottom: BorderSide(color: AppColors.border, width: 1),
                 ),
               ),
               child: Column(
@@ -46,7 +47,7 @@ class AppDrawer extends StatelessWidget {
                     style: GoogleFonts.tektur(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF10B981),
+                      color: AppColors.primary,
                       letterSpacing: 2,
                     ),
                   ),
@@ -55,7 +56,7 @@ class AppDrawer extends StatelessWidget {
                     'Slowpitch Stats Tracking',
                     style: GoogleFonts.tektur(
                       fontSize: 10,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textTertiary,
                       letterSpacing: 1,
                     ),
                   ),
@@ -154,7 +155,7 @@ class AppDrawer extends StatelessWidget {
             Container(
               decoration: const BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xFF334155), width: 1),
+                  top: BorderSide(color: AppColors.border, width: 1),
                 ),
               ),
               child: Column(
@@ -196,7 +197,7 @@ class _DrawerSectionHeader extends StatelessWidget {
         title,
         style: GoogleFonts.tektur(
           fontSize: 11,
-          color: const Color(0xFF64748B),
+          color: AppColors.textTertiary,
           letterSpacing: 1.5,
           fontWeight: FontWeight.bold,
         ),
@@ -222,11 +223,11 @@ class _DrawerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF10B981), size: 22),
+      leading: Icon(icon, color: AppColors.primary, size: 22),
       title: Text(
         title,
         style: GoogleFonts.tektur(
-          color: const Color(0xFFE2E8F0),
+          color: AppColors.textPrimary,
           fontSize: 14,
         ),
       ),
@@ -234,7 +235,7 @@ class _DrawerItem extends StatelessWidget {
           ? Text(
               subtitle!,
               style: GoogleFonts.tektur(
-                color: const Color(0xFF64748B),
+                color: AppColors.textTertiary,
                 fontSize: 11,
               ),
             )
@@ -262,12 +263,12 @@ class _DrawerSubItem extends StatelessWidget {
     return ListTile(
       leading: Padding(
         padding: const EdgeInsets.only(left: 16),
-        child: Icon(icon, color: const Color(0xFF34D399), size: 20),
+        child: Icon(icon, color: AppColors.secondary, size: 20),
       ),
       title: Text(
         title,
         style: GoogleFonts.tektur(
-          color: const Color(0xFFCBD5E1),
+          color: AppColors.textLight,
           fontSize: 13,
         ),
       ),

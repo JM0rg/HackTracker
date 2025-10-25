@@ -51,12 +51,12 @@ class AppConfig {
 class Environment {
   static const String _userPoolId = String.fromEnvironment(
     'COGNITO_USER_POOL_ID',
-    defaultValue: 'us-east-1_sRq7j3joI', // dev fallback
+    defaultValue: 'us-east-1_6oZj7BCGd', // Deployed Cognito User Pool
   );
 
   static const String _clientId = String.fromEnvironment(
     'COGNITO_CLIENT_ID',
-    defaultValue: '69mhi8sl4nsn8disakvjq8280t', // dev fallback
+    defaultValue: '6d5gg4nr09c33lji5rvmqiu3rf', // Deployed Cognito Client
   );
 
   static const String _region = String.fromEnvironment(

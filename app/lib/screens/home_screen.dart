@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/app_drawer.dart';
+import '../theme/app_colors.dart';
 import 'player_view_screen.dart';
 import 'team_view_screen.dart';
 import 'profile_screen.dart';
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         return const Center(
           child: Text(
             'RECORD AT-BAT',
-            style: TextStyle(fontSize: 24, color: Color(0xFF10B981)),
+            style: TextStyle(fontSize: 24, color: AppColors.primary),
           ),
         );
       case 2: // Profile
@@ -54,9 +55,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Container(
           padding: const EdgeInsets.all(12),
           decoration: const BoxDecoration(
-            color: Color(0xFF1E293B),
+            color: AppColors.surface,
             border: Border(
-              bottom: BorderSide(color: Color(0xFF334155), width: 1),
+              bottom: BorderSide(color: AppColors.border, width: 1),
             ),
           ),
           child: Row(
@@ -104,13 +105,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.surface,
         elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF10B981)),
+            icon: const Icon(Icons.menu, color: AppColors.primary),
             onPressed: () {
               Scaffold.of(context).openDrawer();
             },
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         title: Text(
           'HACKTRACKER',
           style: GoogleFonts.tektur(
-            color: const Color(0xFF10B981),
+            color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
             letterSpacing: 2,
@@ -127,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Color(0xFF10B981)),
+            icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
             onPressed: () {
               // TODO: Navigate to notifications
             },
@@ -139,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(
-            top: BorderSide(color: Color(0xFF334155), width: 1),
+            top: BorderSide(color: AppColors.border, width: 1),
           ),
         ),
         child: BottomNavigationBar(
@@ -149,9 +150,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               _bottomNavIndex = index;
             });
           },
-          backgroundColor: const Color(0xFF1E293B),
-          selectedItemColor: const Color(0xFF10B981),
-          unselectedItemColor: const Color(0xFF64748B),
+          backgroundColor: AppColors.surface,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textTertiary,
           selectedLabelStyle: GoogleFonts.tektur(fontSize: 11),
           unselectedLabelStyle: GoogleFonts.tektur(fontSize: 11),
           type: BottomNavigationBarType.fixed,
@@ -199,10 +200,10 @@ class _ToggleButton extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF10B981) : const Color(0xFF0F172A),
+          color: isSelected ? AppColors.primary : AppColors.background,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFF10B981) : const Color(0xFF334155),
+            color: isSelected ? AppColors.primary : AppColors.border,
             width: 2,
           ),
         ),
@@ -212,7 +213,7 @@ class _ToggleButton extends StatelessWidget {
             style: GoogleFonts.tektur(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.black : const Color(0xFF64748B),
+              color: isSelected ? Colors.black : AppColors.textTertiary,
               letterSpacing: 1.5,
             ),
           ),

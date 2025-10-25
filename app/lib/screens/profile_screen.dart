@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import '../theme/app_colors.dart';
 
 /// Profile screen showing user info and settings
 class ProfileScreen extends StatefulWidget {
@@ -22,7 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserInfo() async {
     try {
-      final user = await Amplify.Auth.getCurrentUser();
+      await Amplify.Auth.getCurrentUser();
       final attributes = await Amplify.Auth.fetchUserAttributes();
       
       setState(() {
@@ -43,7 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF10B981)),
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
@@ -57,9 +58,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF10B981), width: 2),
+                border: Border.all(color: AppColors.primary, width: 2),
               ),
               child: Column(
                 children: [
@@ -68,12 +69,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF10B981), width: 3),
+                      border: Border.all(color: AppColors.primary, width: 3),
                     ),
                     child: const Icon(
                       Icons.person,
                       size: 40,
-                      color: Color(0xFF10B981),
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -82,7 +83,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: GoogleFonts.tektur(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFFE2E8F0),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -90,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'PLAYER',
                     style: GoogleFonts.tektur(
                       fontSize: 11,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textTertiary,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -106,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: GoogleFonts.tektur(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF10B981),
+                color: AppColors.primary,
                 letterSpacing: 1.5,
               ),
             ),
@@ -157,7 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 'HackTracker v1.0.0',
                 style: GoogleFonts.tektur(
                   fontSize: 11,
-                  color: const Color(0xFF475569),
+                  color: AppColors.textTertiary,
                 ),
               ),
             ),
@@ -187,22 +188,22 @@ class _SettingsItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: AppColors.border),
       ),
       child: ListTile(
-        leading: Icon(icon, color: const Color(0xFF10B981), size: 22),
+        leading: Icon(icon, color: AppColors.primary, size: 22),
         title: Text(
           title,
           style: GoogleFonts.tektur(
             fontSize: 14,
-            color: const Color(0xFFE2E8F0),
+            color: AppColors.textPrimary,
           ),
         ),
         trailing: const Icon(
           Icons.chevron_right,
-          color: Color(0xFF64748B),
+          color: AppColors.textTertiary,
         ),
         onTap: onTap,
       ),

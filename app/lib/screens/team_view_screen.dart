@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktracker/services/api_service.dart';
-import 'package:hacktracker/config/app_config.dart';
+import '../theme/app_colors.dart';
 
 /// Team View - Shows team-specific stats and roster
 class TeamViewScreen extends StatefulWidget {
@@ -59,11 +59,11 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.surface,
         title: Text(
           'CREATE TEAM',
           style: GoogleFonts.tektur(
-            color: const Color(0xFF10B981),
+            color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.5,
@@ -132,7 +132,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF10B981)),
+        child: CircularProgressIndicator(color: AppColors.primary),
       ),
     );
 
@@ -149,7 +149,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Team "$name" created successfully!'),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: AppColors.primary,
         ),
       );
     } on ApiException catch (e) {
@@ -159,7 +159,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to create team: ${e.message}'),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppColors.error,
         ),
       );
     } catch (e) {
@@ -169,7 +169,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -189,11 +189,11 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.surface,
         title: Text(
           'EDIT TEAM',
           style: GoogleFonts.tektur(
-            color: const Color(0xFF10B981),
+            color: AppColors.primary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.5,
@@ -259,7 +259,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF10B981)),
+        child: CircularProgressIndicator(color: AppColors.primary),
       ),
     );
 
@@ -278,7 +278,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Team updated successfully!'),
-          backgroundColor: Color(0xFF10B981),
+          backgroundColor: AppColors.primary,
         ),
       );
     } on ApiException catch (e) {
@@ -288,7 +288,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to update team: ${e.message}'),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppColors.error,
         ),
       );
     } catch (e) {
@@ -298,7 +298,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -315,18 +315,18 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.surface,
         title: Text(
           'DELETE TEAM?',
           style: GoogleFonts.tektur(
-            color: const Color(0xFFEF4444),
+            color: AppColors.error,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           'Are you sure you want to delete "${team.name}"?\n\nThis action cannot be undone.',
-          style: GoogleFonts.tektur(color: const Color(0xFFE2E8F0)),
+          style: GoogleFonts.tektur(color: AppColors.textPrimary),
         ),
         actions: [
           TextButton(
@@ -336,7 +336,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
+              backgroundColor: AppColors.error,
             ),
             child: const Text('DELETE'),
           ),
@@ -355,7 +355,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF10B981)),
+        child: CircularProgressIndicator(color: AppColors.primary),
       ),
     );
 
@@ -370,7 +370,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Team "${team.name}" deleted'),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: AppColors.primary,
         ),
       );
     } on ApiException catch (e) {
@@ -380,7 +380,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.message),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -391,7 +391,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
     // Loading state
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF10B981)),
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
@@ -401,11 +401,11 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
+            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
-              style: GoogleFonts.tektur(color: const Color(0xFFE2E8F0)),
+              style: GoogleFonts.tektur(color: AppColors.textPrimary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -439,12 +439,12 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF10B981), width: 2),
+                border: Border.all(color: AppColors.primary, width: 2),
               ),
               child: const Icon(
                 Icons.groups_outlined,
                 size: 48,
-                color: Color(0xFF10B981),
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(height: 24),
@@ -453,7 +453,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
               style: GoogleFonts.tektur(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF10B981),
+                color: AppColors.primary,
                 letterSpacing: 2,
               ),
             ),
@@ -463,7 +463,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
               textAlign: TextAlign.center,
               style: GoogleFonts.tektur(
                 fontSize: 13,
-                color: const Color(0xFF94A3B8),
+                color: AppColors.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -473,7 +473,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
               child: ElevatedButton(
                 onPressed: _showCreateTeamDialog,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -496,8 +496,8 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                 // TODO: Navigate to invitations
               },
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF10B981),
-                side: const BorderSide(color: Color(0xFF10B981)),
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -521,7 +521,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -558,21 +558,21 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF10B981), width: 2),
+                  border: Border.all(color: AppColors.primary, width: 2),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.groups, color: Color(0xFF10B981)),
+                    const Icon(Icons.groups, color: AppColors.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButton<Team>(
                         value: _selectedTeam,
-                        dropdownColor: const Color(0xFF1E293B),
+                        dropdownColor: AppColors.surface,
                         underline: const SizedBox(),
                         isExpanded: true,
-                        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF64748B)),
+                        icon: const Icon(Icons.arrow_drop_down, color: AppColors.textTertiary),
                         items: _teams!.map((team) {
                           return DropdownMenuItem<Team>(
                             value: team,
@@ -580,7 +580,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                               team.name,
                               style: GoogleFonts.tektur(
                                 fontSize: 16,
-                                color: const Color(0xFFE2E8F0),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           );
@@ -596,8 +596,8 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: _selectedTeam!.isOwner
-                            ? const Color(0xFF10B981)
-                            : const Color(0xFF334155),
+                            ? AppColors.primary
+                            : AppColors.border,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -605,7 +605,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                         style: GoogleFonts.tektur(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: _selectedTeam!.isOwner ? Colors.black : const Color(0xFF94A3B8),
+                          color: _selectedTeam!.isOwner ? Colors.black : AppColors.textSecondary,
                           letterSpacing: 1,
                         ),
                       ),
@@ -629,8 +629,8 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                         style: GoogleFonts.tektur(fontSize: 12),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF10B981),
-                        side: const BorderSide(color: Color(0xFF10B981)),
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -645,8 +645,8 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                         style: GoogleFonts.tektur(fontSize: 12),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFEF4444),
-                        side: const BorderSide(color: Color(0xFFEF4444)),
+                        foregroundColor: AppColors.error,
+                        side: const BorderSide(color: AppColors.error),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -660,9 +660,9 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF10B981), width: 2),
+                border: Border.all(color: AppColors.primary, width: 2),
               ),
               child: Column(
                 children: [
@@ -670,7 +670,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                     'TEAM STATS - 2024',
                     style: GoogleFonts.tektur(
                       fontSize: 12,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textTertiary,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -699,7 +699,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                   style: GoogleFonts.tektur(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF10B981),
+                    color: AppColors.primary,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -711,7 +711,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                     style: GoogleFonts.tektur(fontSize: 12),
                   ),
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF34D399),
+                    foregroundColor: AppColors.secondary,
                   ),
                 ),
               ],
@@ -751,7 +751,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
               style: GoogleFonts.tektur(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF10B981),
+                color: AppColors.primary,
                 letterSpacing: 1.5,
               ),
             ),
@@ -771,8 +771,8 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                 // TODO: Navigate to full roster
               },
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF10B981),
-                side: const BorderSide(color: Color(0xFF10B981)),
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -811,7 +811,7 @@ class _StatColumn extends StatelessWidget {
           label,
           style: GoogleFonts.tektur(
             fontSize: 11,
-            color: const Color(0xFF64748B),
+            color: AppColors.textTertiary,
             letterSpacing: 1,
           ),
         ),
@@ -821,7 +821,7 @@ class _StatColumn extends StatelessWidget {
           style: GoogleFonts.tektur(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF10B981),
+            color: AppColors.primary,
           ),
         ),
       ],
@@ -849,20 +849,20 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF334155)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           children: [
-            Icon(icon, color: const Color(0xFF10B981), size: 32),
+            Icon(icon, color: AppColors.primary, size: 32),
             const SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.tektur(
                 fontSize: 11,
-                color: const Color(0xFFE2E8F0),
+                color: AppColors.textPrimary,
                 letterSpacing: 1,
               ),
             ),
@@ -885,9 +885,9 @@ class _PlayerCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -895,13 +895,13 @@ class _PlayerCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
+              color: AppColors.background,
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF10B981)),
+              border: Border.all(color: AppColors.primary),
             ),
             child: const Icon(
               Icons.person,
-              color: Color(0xFF10B981),
+              color: AppColors.primary,
               size: 20,
             ),
           ),
@@ -915,7 +915,7 @@ class _PlayerCard extends StatelessWidget {
                   style: GoogleFonts.tektur(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFFE2E8F0),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -923,7 +923,7 @@ class _PlayerCard extends StatelessWidget {
                   stats,
                   style: GoogleFonts.tektur(
                     fontSize: 12,
-                    color: const Color(0xFF64748B),
+                    color: AppColors.textTertiary,
                   ),
                 ),
               ],
@@ -931,7 +931,7 @@ class _PlayerCard extends StatelessWidget {
           ),
           const Icon(
             Icons.chevron_right,
-            color: Color(0xFF64748B),
+            color: AppColors.textTertiary,
           ),
         ],
       ),

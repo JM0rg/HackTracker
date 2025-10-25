@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../theme/app_colors.dart';
 
 /// Player View - Shows user's personal stats aggregated across all teams
 class PlayerViewScreen extends StatelessWidget {
@@ -22,16 +23,16 @@ class PlayerViewScreen extends StatelessWidget {
                   style: GoogleFonts.tektur(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF10B981),
+                    color: AppColors.primary,
                     letterSpacing: 2,
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF334155)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Row(
                     children: [
@@ -39,13 +40,13 @@ class PlayerViewScreen extends StatelessWidget {
                         '2024',
                         style: GoogleFonts.tektur(
                           fontSize: 13,
-                          color: const Color(0xFFE2E8F0),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(width: 4),
                       const Icon(
                         Icons.arrow_drop_down,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textTertiary,
                         size: 20,
                       ),
                     ],
@@ -60,9 +61,9 @@ class PlayerViewScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF10B981), width: 2),
+                border: Border.all(color: AppColors.primary, width: 2),
               ),
               child: Column(
                 children: [
@@ -70,7 +71,7 @@ class PlayerViewScreen extends StatelessWidget {
                     'SEASON STATS',
                     style: GoogleFonts.tektur(
                       fontSize: 12,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textTertiary,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -95,9 +96,9 @@ class PlayerViewScreen extends StatelessWidget {
               height: 200,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF334155)),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +107,7 @@ class PlayerViewScreen extends StatelessWidget {
                     'PERFORMANCE TREND',
                     style: GoogleFonts.tektur(
                       fontSize: 12,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textTertiary,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -117,7 +118,7 @@ class PlayerViewScreen extends StatelessWidget {
                         'Chart Coming Soon',
                         style: GoogleFonts.tektur(
                           fontSize: 14,
-                          color: const Color(0xFF475569),
+                          color: AppColors.textTertiary,
                         ),
                       ),
                     ),
@@ -134,7 +135,7 @@ class PlayerViewScreen extends StatelessWidget {
               style: GoogleFonts.tektur(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF10B981),
+                color: AppColors.primary,
                 letterSpacing: 1.5,
               ),
             ),
@@ -171,8 +172,8 @@ class PlayerViewScreen extends StatelessWidget {
                 // TODO: Navigate to full at-bat history
               },
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF10B981),
-                side: const BorderSide(color: Color(0xFF10B981)),
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -211,7 +212,7 @@ class _StatColumn extends StatelessWidget {
           label,
           style: GoogleFonts.tektur(
             fontSize: 11,
-            color: const Color(0xFF64748B),
+            color: AppColors.textTertiary,
             letterSpacing: 1,
           ),
         ),
@@ -221,7 +222,7 @@ class _StatColumn extends StatelessWidget {
           style: GoogleFonts.tektur(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF10B981),
+            color: AppColors.primary,
           ),
         ),
       ],
@@ -248,9 +249,9 @@ class _AtBatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -258,13 +259,13 @@ class _AtBatCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF10B981)),
+              border: Border.all(color: AppColors.primary),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF10B981),
+              color: AppColors.primary,
               size: 24,
             ),
           ),
@@ -280,7 +281,7 @@ class _AtBatCard extends StatelessWidget {
                       style: GoogleFonts.tektur(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF10B981),
+                        color: AppColors.primary,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -288,7 +289,7 @@ class _AtBatCard extends StatelessWidget {
                       game,
                       style: GoogleFonts.tektur(
                         fontSize: 14,
-                        color: const Color(0xFFE2E8F0),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ],
@@ -298,7 +299,7 @@ class _AtBatCard extends StatelessWidget {
                   date,
                   style: GoogleFonts.tektur(
                     fontSize: 12,
-                    color: const Color(0xFF64748B),
+                    color: AppColors.textTertiary,
                   ),
                 ),
               ],
@@ -306,7 +307,7 @@ class _AtBatCard extends StatelessWidget {
           ),
           const Icon(
             Icons.chevron_right,
-            color: Color(0xFF64748B),
+            color: AppColors.textTertiary,
           ),
         ],
       ),

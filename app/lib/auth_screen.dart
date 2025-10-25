@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'config/app_config.dart';
 import 'screens/home_screen.dart';
+import 'theme/app_theme.dart';
+import 'theme/app_colors.dart';
 
 class HackTrackerApp extends StatefulWidget {
   const HackTrackerApp({super.key});
@@ -39,78 +41,13 @@ class _HackTrackerAppState extends State<HackTrackerApp> {
     return MaterialApp(
       title: 'HackTracker',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF10B981),
-          secondary: Color(0xFF34D399),
-          surface: Color(0xFF1E293B),
-          background: Color(0xFF0F172A),
-          onPrimary: Colors.black,
-          onSecondary: Colors.black,
-          onSurface: Color(0xFFE2E8F0),
-          onBackground: Color(0xFFE2E8F0),
-        ),
-        textTheme: GoogleFonts.tekturTextTheme(ThemeData.dark().textTheme).apply(
-          bodyColor: const Color(0xFFE2E8F0),
-          displayColor: const Color(0xFF10B981),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF1E293B),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF334155)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF334155)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF10B981), width: 2),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red),
-          ),
-          labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
-          hintStyle: const TextStyle(color: Color(0xFF64748B)),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF10B981),
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            textStyle: GoogleFonts.tektur(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 0,
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF10B981),
-            textStyle: GoogleFonts.tektur(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
+      theme: AppTheme.darkTheme,
       home: _amplifyConfigured
           ? const AuthGate()
-          : const Scaffold(
+          : Scaffold(
               body: Center(
                 child: CircularProgressIndicator(
-                  color: Color(0xFF10B981),
+                  color: AppColors.primary,
                 ),
               ),
             ),
@@ -128,10 +65,10 @@ class AuthGate extends StatelessWidget {
       future: Amplify.Auth.fetchAuthSession(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
+          return Scaffold(
             body: Center(
               child: CircularProgressIndicator(
-                color: Color(0xFF10B981),
+                color: AppColors.primary,
               ),
             ),
           );
@@ -218,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF10B981), width: 2),
+                  border: Border.all(color: AppColors.primary, width: 2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -228,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: GoogleFonts.tektur(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF10B981),
+                        color: AppColors.primary,
                         letterSpacing: 2,
                       ),
                     ),
@@ -237,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Slowpitch Stats Tracking',
                       style: GoogleFonts.tektur(
                         fontSize: 11,
-                        color: const Color(0xFF64748B),
+                        color: AppColors.textTertiary,
                         letterSpacing: 1,
                       ),
                     ),
@@ -252,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -261,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'LOG IN',
                     style: GoogleFonts.tektur(
                       fontSize: 13,
-                      color: const Color(0xFF10B981),
+                      color: AppColors.primary,
                       letterSpacing: 2,
                     ),
                   ),
@@ -273,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _emailController,
                 decoration: const InputDecoration(
                   labelText: 'EMAIL',
-                  prefixIcon: Icon(Icons.person_outline, color: Color(0xFF10B981)),
+                  prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
@@ -286,11 +223,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _passwordController,
                 decoration: InputDecoration(
                   labelText: 'PASSWORD',
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF10B981)),
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textTertiary,
                     ),
                     onPressed: () {
                       setState(() {
@@ -369,18 +306,18 @@ class _LoginScreenState extends State<LoginScreen> {
               // Divider
               Row(
                 children: [
-                  Expanded(child: Divider(color: const Color(0xFF334155))),
+                  Expanded(child: Divider(color: AppColors.border)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       'OR',
                       style: GoogleFonts.tektur(
-                        color: const Color(0xFF64748B),
+                        color: AppColors.textTertiary,
                         fontSize: 12,
                       ),
                     ),
                   ),
-                  Expanded(child: Divider(color: const Color(0xFF334155))),
+                  Expanded(child: Divider(color: AppColors.border)),
                 ],
               ),
               const SizedBox(height: 24),
@@ -485,7 +422,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      final result = await Amplify.Auth.signUp(
+      await Amplify.Auth.signUp(
         username: _emailController.text.trim(),
         password: _passwordController.text,
         options: SignUpOptions(
@@ -519,10 +456,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: AppColors.surface,
         title: Text(
           'Success',
-          style: GoogleFonts.tektur(color: const Color(0xFF10B981)),
+          style: GoogleFonts.tektur(color: AppColors.primary),
         ),
         content: Text(
           message,
@@ -545,16 +482,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF10B981)),
+          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Sign Up',
           style: GoogleFonts.tektur(
-            color: const Color(0xFF10B981),
+            color: AppColors.primary,
             fontSize: 16,
           ),
         ),
@@ -572,7 +509,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -581,7 +518,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     'SIGN UP',
                     style: GoogleFonts.tektur(
                       fontSize: 13,
-                      color: const Color(0xFF10B981),
+                      color: AppColors.primary,
                       letterSpacing: 2,
                     ),
                   ),
@@ -593,7 +530,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _firstNameController,
                 decoration: const InputDecoration(
                   labelText: 'FIRST NAME',
-                  prefixIcon: Icon(Icons.person_outline, color: Color(0xFF10B981)),
+                  prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
                 ),
                 textCapitalization: TextCapitalization.words,
                 style: GoogleFonts.tektur(fontSize: 15),
@@ -604,7 +541,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _lastNameController,
                 decoration: const InputDecoration(
                   labelText: 'LAST NAME',
-                  prefixIcon: Icon(Icons.person_outline, color: Color(0xFF10B981)),
+                  prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
                 ),
                 textCapitalization: TextCapitalization.words,
                 style: GoogleFonts.tektur(fontSize: 15),
@@ -615,7 +552,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _emailController,
                 decoration: const InputDecoration(
                   labelText: 'EMAIL',
-                  prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF10B981)),
+                  prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
@@ -628,11 +565,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _passwordController,
                 decoration: InputDecoration(
                   labelText: 'PASSWORD',
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF10B981)),
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textTertiary,
                     ),
                     onPressed: () {
                       setState(() {
@@ -652,13 +589,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 controller: _confirmPasswordController,
                 decoration: InputDecoration(
                   labelText: 'CONFIRM PASSWORD',
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF10B981)),
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureConfirmPassword
                           ? Icons.visibility_off
                           : Icons.visibility,
-                      color: const Color(0xFF64748B),
+                      color: AppColors.textTertiary,
                     ),
                     onPressed: () {
                       setState(() {
@@ -677,9 +614,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF334155)),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -688,7 +625,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       'PASSWORD REQUIREMENTS:',
                       style: GoogleFonts.tektur(
                         fontSize: 11,
-                        color: const Color(0xFF64748B),
+                        color: AppColors.textTertiary,
                         letterSpacing: 1,
                       ),
                     ),
@@ -697,7 +634,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       '• Minimum 8 characters',
                       style: GoogleFonts.tektur(
                         fontSize: 12,
-                        color: const Color(0xFF94A3B8),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -853,10 +790,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
-            backgroundColor: const Color(0xFF1E293B),
+            backgroundColor: AppColors.surface,
             title: Text(
               'Success',
-              style: GoogleFonts.tektur(color: const Color(0xFF10B981)),
+              style: GoogleFonts.tektur(color: AppColors.primary),
             ),
             content: Text(
               'Password reset successfully!\n\nYou can now log in with your new password.',
@@ -886,16 +823,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF10B981)),
+          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Reset Password',
           style: GoogleFonts.tektur(
-            color: const Color(0xFF10B981),
+            color: AppColors.primary,
             fontSize: 16,
           ),
         ),
@@ -913,7 +850,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -922,7 +859,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     'RESET PASSWORD',
                     style: GoogleFonts.tektur(
                       fontSize: 13,
-                      color: const Color(0xFF10B981),
+                      color: AppColors.primary,
                       letterSpacing: 2,
                     ),
                   ),
@@ -935,7 +872,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: _emailController,
                   decoration: const InputDecoration(
                     labelText: 'EMAIL',
-                    prefixIcon: Icon(Icons.person_outline, color: Color(0xFF10B981)),
+                    prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
@@ -947,15 +884,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF334155)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
                     'Enter your email address and we\'ll send you a code to reset your password.',
                     style: GoogleFonts.tektur(
                       fontSize: 12,
-                      color: const Color(0xFF94A3B8),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -965,7 +902,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: _codeController,
                   decoration: const InputDecoration(
                     labelText: 'RESET CODE',
-                    prefixIcon: Icon(Icons.key_outlined, color: Color(0xFF10B981)),
+                    prefixIcon: Icon(Icons.key_outlined, color: AppColors.primary),
                   ),
                   keyboardType: TextInputType.number,
                   style: GoogleFonts.tektur(fontSize: 15),
@@ -976,11 +913,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: _newPasswordController,
                   decoration: InputDecoration(
                     labelText: 'NEW PASSWORD',
-                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF10B981)),
+                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: const Color(0xFF64748B),
+                        color: AppColors.textTertiary,
                       ),
                       onPressed: () {
                         setState(() {
@@ -1000,13 +937,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: _confirmPasswordController,
                   decoration: InputDecoration(
                     labelText: 'CONFIRM PASSWORD',
-                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF10B981)),
+                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: const Color(0xFF64748B),
+                        color: AppColors.textTertiary,
                       ),
                       onPressed: () {
                         setState(() {
@@ -1025,15 +962,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF334155)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
                     'Check your email for the reset code.',
                     style: GoogleFonts.tektur(
                       fontSize: 12,
-                      color: const Color(0xFF94A3B8),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
