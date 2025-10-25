@@ -1,4 +1,4 @@
-.PHONY: help install package test clean deploy db-start db-stop db-create db-delete db-clear db-reset db-status
+.PHONY: help install package test clean deploy db-start db-stop db-create db-delete db-clear db-reset db-status flutter-clean flutter-open flutter-run
 
 help:
 	@echo "🏗️  HackTracker - Python Lambda Development"
@@ -22,6 +22,11 @@ help:
 	@echo ""
 	@echo "Deployment:"
 	@echo "  make deploy           Package and deploy to AWS"
+	@echo ""
+	@echo "Flutter App:"
+	@echo "  make flutter-clean    Clean Flutter build artifacts"
+	@echo "  make flutter-run      Run Flutter app (opens in available device)"
+	@echo "  make flutter-open     Alias for flutter-run"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean            Remove build artifacts"
@@ -75,4 +80,13 @@ clean:
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@echo "✅ Cleaned build artifacts"
+
+flutter-clean:
+	@cd app && flutter clean
+	@echo "✅ Cleaned Flutter build artifacts"
+
+flutter-run:
+	@cd app && flutter run
+
+flutter-open: flutter-run
 
