@@ -21,7 +21,7 @@ from utils import get_table, create_response
 ALLOWED_FIELDS = {'firstName', 'lastName', 'phoneNumber'}
 
 # Fields that are read-only (cannot be updated)
-READONLY_FIELDS = {'userId', 'email', 'createdAt', 'updatedAt', 'PK', 'SK', 'GSI1PK', 'GSI1SK', 'GSI2PK', 'GSI2SK', 'GSI3PK', 'GSI3SK'}
+READONLY_FIELDS = {'userId', 'email', 'createdAt', 'updatedAt', 'PK', 'SK', 'GSI1PK', 'GSI1SK', 'GSI2PK', 'GSI2SK', 'GSI3PK', 'GSI3SK', 'GSI4PK', 'GSI4SK', 'GSI5PK', 'GSI5SK'}
 
 
 def handler(event, context):

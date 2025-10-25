@@ -53,6 +53,17 @@ module "create_user_lambda" {
   # CloudWatch Logs
   cloudwatch_logs_retention_in_days = 7
   
+  # Disable versioning to avoid $LATEST permission issues
+  create_current_version_allowed_triggers = false
+  
+  # Allow Cognito to invoke this Lambda
+  allowed_triggers = {
+    cognito = {
+      principal  = "cognito-idp.amazonaws.com"
+      source_arn = aws_cognito_user_pool.hacktracker.arn
+    }
+  }
+  
   # Tags
   tags = merge(local.common_tags, {
     Name     = "create-user"

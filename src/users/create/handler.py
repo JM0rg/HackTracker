@@ -59,16 +59,19 @@ def handler(event, context):
         user_attributes = event['request']['userAttributes']
         sub = user_attributes['sub']
         email = user_attributes['email']
-        given_name = user_attributes.get('given_name')
-        family_name = user_attributes.get('family_name')
+        given_name = user_attributes.get('given_name', '')
+        family_name = user_attributes.get('family_name', '')
         phone_number = user_attributes.get('phone_number')
         
         # Validate required fields
         if not sub or not email:
             raise ValueError('Missing required user attributes: sub and email')
         
-        if not given_name or not family_name:
-            raise ValueError('Missing required user attributes: given_name and family_name')
+        # If names not provided, use email prefix as fallback
+        if not given_name:
+            given_name = email.split('@')[0]
+        if not family_name:
+            family_name = 'User'
         
         # Use Cognito sub as userId (globally unique, no need for separate ID)
         user_id = sub
@@ -86,13 +89,13 @@ def handler(event, context):
             'firstName': given_name,
             'lastName': family_name,
             
-            # GSI1: Lookup by Cognito sub (same as userId, but kept for query flexibility)
+            # GSI1: Lookup by Cognito sub
             'GSI1PK': f'COGNITO#{sub}',
             'GSI1SK': 'USER',
             
-            # GSI2: Lookup by email
-            'GSI2PK': f'EMAIL#{email.lower()}',
-            'GSI2SK': 'USER',
+            # GSI2: Entity listing (list all users)
+            'GSI2PK': 'ENTITY#USER',
+            'GSI2SK': f'METADATA#{user_id}',
             
             # Timestamps
             'createdAt': timestamp,

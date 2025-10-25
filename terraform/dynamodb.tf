@@ -15,7 +15,7 @@ resource "aws_dynamodb_table" "hacktracker" {
     type = "S"
   }
 
-  # GSI1 attributes (for cognitoSub lookup)
+  # GSI1: Lookup user by Cognito sub
   attribute {
     name = "GSI1PK"
     type = "S"
@@ -26,7 +26,7 @@ resource "aws_dynamodb_table" "hacktracker" {
     type = "S"
   }
 
-  # GSI2 attributes (for email lookup and uniqueness)
+  # GSI2: Entity listing (generic queries for teams, leagues, games, etc.)
   attribute {
     name = "GSI2PK"
     type = "S"
@@ -37,7 +37,7 @@ resource "aws_dynamodb_table" "hacktracker" {
     type = "S"
   }
 
-  # GSI3 attributes (for user's team list)
+  # GSI3: Geographic search (free agents by region)
   attribute {
     name = "GSI3PK"
     type = "S"
@@ -45,6 +45,28 @@ resource "aws_dynamodb_table" "hacktracker" {
 
   attribute {
     name = "GSI3SK"
+    type = "S"
+  }
+
+  # GSI4: User's players (cross-team stats)
+  attribute {
+    name = "GSI4PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "GSI4SK"
+    type = "S"
+  }
+
+  # GSI5: Player's at-bats (stat aggregation)
+  attribute {
+    name = "GSI5PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "GSI5SK"
     type = "S"
   }
 
@@ -56,7 +78,7 @@ resource "aws_dynamodb_table" "hacktracker" {
     projection_type = "ALL"
   }
 
-  # GSI2: Lookup/enforce uniqueness by email
+  # GSI2: List entities by type (teams, leagues, games)
   global_secondary_index {
     name            = "GSI2"
     hash_key        = "GSI2PK"
@@ -64,11 +86,27 @@ resource "aws_dynamodb_table" "hacktracker" {
     projection_type = "ALL"
   }
 
-  # GSI3: Lookup user's teams
+  # GSI3: Find free agents/subs by region
   global_secondary_index {
     name            = "GSI3"
     hash_key        = "GSI3PK"
     range_key       = "GSI3SK"
+    projection_type = "ALL"
+  }
+
+  # GSI4: Find all players linked to a user
+  global_secondary_index {
+    name            = "GSI4"
+    hash_key        = "GSI4PK"
+    range_key       = "GSI4SK"
+    projection_type = "ALL"
+  }
+
+  # GSI5: Query all at-bats for a player
+  global_secondary_index {
+    name            = "GSI5"
+    hash_key        = "GSI5PK"
+    range_key       = "GSI5SK"
     projection_type = "ALL"
   }
   

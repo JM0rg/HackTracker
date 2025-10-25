@@ -2,6 +2,10 @@
 
 *(A multi-tenant stat-tracking platform for Players, Teams, and Leagues)*
 
+> **📖 Documentation Guide:**
+> - **This document (ARCHITECTURE.md):** Complete system design, current + future features, architectural rationale (WHAT + WHY)
+> - **[DATA_MODEL.md](./DATA_MODEL.md):** Current implementation snapshot, what exists right now (WHAT only)
+
 ---
 
 ## 🧭 1. System Overview
@@ -314,7 +318,6 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+15555551234",
-  "region": "seattle",
   "status": "active" | "deleted",
   "createdAt": "2025-10-24T00:00:00Z",
   "updatedAt": "2025-10-24T00:00:00Z",
@@ -322,6 +325,8 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
   "GSI1SK": "USER"
 }
 ```
+
+**Note:** Region and availability information is stored separately in the Free Agent profile (see below), not in the base user record.
 
 ### Free Agent Listing
 

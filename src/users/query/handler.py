@@ -3,10 +3,12 @@ Query Users Lambda Handler
 
 API Gateway handler to query/list users with various filters
 Supports:
-- GET /users - List all users (paginated)
-- GET /users?email=x - Query by email (GSI2)
+- GET /users - List all users (paginated, uses GSI2)
 - GET /users?cognitoSub=x - Query by Cognito sub (GSI1)
-- GET /users?teamId=x - Query by team (GSI3)
+
+Note: Email and team queries removed per architecture:
+- Email lookup: Use Cognito ListUsers API instead
+- Team lookup: GSI3 repurposed for geographic search
 """
 
 import json
@@ -39,15 +41,8 @@ def format_user(item):
     return user
 
 
-def query_by_email(table, email):
-    """Query user by email using GSI2"""
-    response = table.query(
-        IndexName='GSI2',
-        KeyConditionExpression=Key('GSI2PK').eq(f'EMAIL#{email.lower()}')
-    )
-    
-    items = response.get('Items', [])
-    return items[0] if items else None
+# Email query removed - GSI2 repurposed for entity listing
+# Use Cognito ListUsers API for email-based lookups instead
 
 
 def query_by_cognito_sub(table, cognito_sub):
@@ -61,11 +56,15 @@ def query_by_cognito_sub(table, cognito_sub):
     return items[0] if items else None
 
 
-def query_by_team(table, team_id, limit=50, next_token=None):
-    """Query users by team using GSI3"""
+# Team query removed - GSI3 repurposed for geographic search
+# Team membership queries will use USER#id → TEAM#* pattern instead
+
+
+def list_all_users(table, limit=50, next_token=None):
+    """List all users with pagination using GSI2 (entity listing)"""
     query_params = {
-        'IndexName': 'GSI3',
-        'KeyConditionExpression': Key('GSI3PK').eq(f'TEAM#{team_id}'),
+        'IndexName': 'GSI2',
+        'KeyConditionExpression': Key('GSI2PK').eq('ENTITY#USER'),
         'Limit': limit
     }
     
@@ -73,28 +72,6 @@ def query_by_team(table, team_id, limit=50, next_token=None):
         query_params['ExclusiveStartKey'] = json.loads(next_token)
     
     response = table.query(**query_params)
-    
-    return {
-        'items': response.get('Items', []),
-        'nextToken': json.dumps(response['LastEvaluatedKey']) if 'LastEvaluatedKey' in response else None
-    }
-
-
-def list_all_users(table, limit=50, next_token=None):
-    """List all users with pagination"""
-    scan_params = {
-        'FilterExpression': 'begins_with(PK, :pk) AND SK = :sk',
-        'ExpressionAttributeValues': {
-            ':pk': 'USER#',
-            ':sk': 'METADATA'
-        },
-        'Limit': limit
-    }
-    
-    if next_token:
-        scan_params['ExclusiveStartKey'] = json.loads(next_token)
-    
-    response = table.scan(**scan_params)
     
     return {
         'items': response.get('Items', []),
@@ -123,30 +100,11 @@ def handler(event, context):
     try:
         # Extract query parameters
         query_params = event.get('queryStringParameters') or {}
-        email = query_params.get('email')
         cognito_sub = query_params.get('cognitoSub')
-        team_id = query_params.get('teamId')
         limit = int(query_params.get('limit', 50))
         next_token = query_params.get('nextToken')
         
         table = get_table()
-        
-        # Query by email (single result)
-        if email:
-            print(json.dumps({
-                'level': 'INFO',
-                'message': 'Querying by email',
-                'email': email
-            }))
-            
-            user = query_by_email(table, email)
-            
-            if not user:
-                return create_response(404, {
-                    'error': 'User not found'
-                })
-            
-            return create_response(200, format_user(user))
         
         # Query by Cognito sub (single result)
         if cognito_sub:
@@ -164,26 +122,6 @@ def handler(event, context):
                 })
             
             return create_response(200, format_user(user))
-        
-        # Query by team (multiple results)
-        if team_id:
-            print(json.dumps({
-                'level': 'INFO',
-                'message': 'Querying by team',
-                'teamId': team_id
-            }))
-            
-            result = query_by_team(table, team_id, limit, next_token)
-            
-            response_body = {
-                'users': [format_user(item) for item in result['items']],
-                'count': len(result['items'])
-            }
-            
-            if result['nextToken']:
-                response_body['nextToken'] = result['nextToken']
-            
-            return create_response(200, response_body)
         
         # List all users (default)
         print(json.dumps({
