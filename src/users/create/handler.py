@@ -8,10 +8,10 @@ Creates a user record in DynamoDB after successful Cognito sign-up
 import json
 import os
 from datetime import datetime, timezone
-from uuid import uuid4
 
 import boto3
 from boto3.dynamodb.conditions import Attr
+from botocore.exceptions import ClientError
 
 
 # Initialize DynamoDB client
@@ -70,8 +70,8 @@ def handler(event, context):
         if not given_name or not family_name:
             raise ValueError('Missing required user attributes: given_name and family_name')
         
-        # Generate unique user ID
-        user_id = str(uuid4())
+        # Use Cognito sub as userId (globally unique, no need for separate ID)
+        user_id = sub
         timestamp = datetime.now(timezone.utc).isoformat()
         
         # Create user item for DynamoDB (ordered for readability)
@@ -82,12 +82,11 @@ def handler(event, context):
             
             # User Data
             'userId': user_id,
-            'cognitoSub': sub,
             'email': email.lower(),
             'firstName': given_name,
             'lastName': family_name,
             
-            # GSI1: Lookup by Cognito sub
+            # GSI1: Lookup by Cognito sub (same as userId, but kept for query flexibility)
             'GSI1PK': f'COGNITO#{sub}',
             'GSI1SK': 'USER',
             
@@ -106,18 +105,33 @@ def handler(event, context):
         
         # Save to DynamoDB
         table = get_table()
-        table.put_item(
-            Item=user_item,
-            ConditionExpression=Attr('PK').not_exists()  # Prevent overwriting
-        )
         
-        print(json.dumps({
-            'level': 'INFO',
-            'message': 'User created successfully',
-            'userId': user_id,
-            'email': email.lower(),
-            'cognitoSub': sub
-        }))
+        try:
+            table.put_item(
+                Item=user_item,
+                ConditionExpression=Attr('PK').not_exists()  # Prevent overwriting
+            )
+            
+            print(json.dumps({
+                'level': 'INFO',
+                'message': 'User created successfully',
+                'userId': user_id,  # userId is now the same as Cognito sub
+                'email': email.lower()
+            }))
+            
+        except ClientError as e:
+            # If user already exists (e.g., Cognito retry or duplicate trigger)
+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                print(json.dumps({
+                    'level': 'WARN',
+                    'message': 'User already exists (likely a retry)',
+                    'userId': user_id,
+                    'email': email.lower()
+                }))
+                # Not an error - just return the event
+            else:
+                # Re-raise other DynamoDB errors
+                raise
         
         # Return the event (required for Cognito triggers)
         return event

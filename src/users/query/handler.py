@@ -24,11 +24,10 @@ from utils import get_table, create_response
 def format_user(item):
     """Format user item for response (remove internal keys)"""
     user = {
-        'userId': item['userId'],
+        'userId': item['userId'],  # userId is the Cognito sub
         'email': item['email'],
         'firstName': item['firstName'],
         'lastName': item['lastName'],
-        'cognitoSub': item['cognitoSub'],
         'createdAt': item['createdAt'],
         'updatedAt': item['updatedAt']
     }

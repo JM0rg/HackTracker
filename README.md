@@ -33,16 +33,20 @@ make db-reset         # Reset table
 make db-status        # Show status
 
 # Development (Local Testing)
-make test create                      # Test create-user Lambda
-make test get <userId>                # Test get-user Lambda
-make test query list                  # Test query-users (list all)
-make test query email <email>         # Test query by email
-make test-help                        # Show all test options
+make test create                                        # Test create-user Lambda
+make test get <userId>                                  # Test get-user Lambda
+make test query list                                    # Test query-users (list all)
+make test query email <email>                           # Test query by email
+uv run python scripts/test_users.py update <userId> firstName=Jane  # Update user
+uv run python scripts/test_users.py delete <userId>    # Delete user
+make test-help                                          # Show all test options
 
 # Cloud Testing (Deployed API Gateway)
-make test-cloud get <userId>          # Test deployed get-user
-make test-cloud query list            # Test deployed query-users
-make test-cloud query email <email>   # Test query by email (cloud)
+make test-cloud get <userId>                                  # Test deployed get-user
+make test-cloud query list                                    # Test deployed query-users
+make test-cloud query email <email>                           # Test query by email (cloud)
+uv run python scripts/test_users.py update <userId> firstName=Jane --cloud  # Update user (cloud)
+uv run python scripts/test_users.py delete <userId> --cloud  # Delete user (cloud)
 
 # Build
 make package                          # Package Lambdas for deployment
@@ -61,6 +65,8 @@ make clean            # Remove build artifacts
 - **create** (`src/users/create/`) - Cognito post-confirmation trigger to create user in DynamoDB
 - **get** (`src/users/get/`) - GET /users/{userId} - Retrieve a single user by ID
 - **query** (`src/users/query/`) - GET /users - Query/list users with filters (email, cognitoSub, teamId)
+- **update** (`src/users/update/`) - PUT /users/{userId} - Update user information (firstName, lastName, phoneNumber)
+- **delete** (`src/users/delete/`) - DELETE /users/{userId} - Delete a user
 
 ## Quick Start
 

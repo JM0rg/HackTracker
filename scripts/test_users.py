@@ -331,6 +331,205 @@ def test_query_users(query_type='list', query_value=None):
         print(f'\n❌ Error: {body.get("error", "Unknown error")}')
 
 
+def test_update_user(user_id, update_data):
+    """Test update-user Lambda (API Gateway)"""
+    if not user_id:
+        print('❌ Error: userId is required')
+        print('Usage: python scripts/test_users.py update <userId> <field=value> [<field=value>...] [--cloud]')
+        sys.exit(1)
+    
+    if not update_data:
+        print('❌ Error: At least one field to update is required')
+        print('Example: python scripts/test_users.py update <userId> firstName=Jane lastName=Smith')
+        sys.exit(1)
+    
+    mode = '☁️  CLOUD' if IS_CLOUD else '💻 LOCAL'
+    print(f'🧪 Testing [{mode}]: PUT /users/{user_id}')
+    print(f'   Update data: {json.dumps(update_data, indent=2)}')
+    print('='*60)
+    
+    if IS_CLOUD:
+        # Test against deployed API Gateway
+        import urllib.request
+        import urllib.parse
+        
+        api_url = get_api_gateway_url()
+        url = f'{api_url}/users/{user_id}'
+        
+        print(f'🌐 Making request to: {url}')
+        
+        try:
+            data = json.dumps(update_data).encode('utf-8')
+            req = urllib.request.Request(url, data=data, method='PUT')
+            req.add_header('Content-Type', 'application/json')
+            
+            with urllib.request.urlopen(req, timeout=30) as response:
+                status_code = response.status
+                body = json.loads(response.read().decode('utf-8'))
+        
+        except urllib.error.HTTPError as e:
+            status_code = e.code
+            try:
+                body = json.loads(e.read().decode('utf-8'))
+            except:
+                body = {'error': str(e)}
+        
+        print(f'\n📤 Response (Status {status_code}):')
+        print(json.dumps(body, indent=2))
+        
+        if status_code == 200:
+            print('\n✅ User updated successfully in cloud!')
+        elif status_code == 404:
+            print('\n⚠️  User not found in cloud')
+        else:
+            print(f'\n❌ Error: {body.get("error", "Unknown error")}')
+        
+        return
+    
+    # Test local Lambda
+    sys.path.insert(0, str(Path(__file__).parent.parent / 'src' / 'users' / 'update'))
+    from handler import handler
+    
+    # Create API Gateway event (format version 2.0)
+    event = {
+        'version': '2.0',
+        'routeKey': f'PUT /users/{user_id}',
+        'rawPath': f'/users/{user_id}',
+        'requestContext': {
+            'http': {
+                'method': 'PUT',
+                'path': f'/users/{user_id}'
+            }
+        },
+        'pathParameters': {
+            'userId': user_id
+        },
+        'body': json.dumps(update_data),
+        'isBase64Encoded': False
+    }
+    
+    class MockContext:
+        function_name = 'test-update-user'
+        aws_request_id = 'test-request-id'
+        
+        @staticmethod
+        def get_remaining_time_in_millis():
+            return 10000
+    
+    result = handler(event, MockContext())
+    
+    print(f'\n📤 Response (Status {result["statusCode"]}):')
+    body = json.loads(result['body'])
+    print(json.dumps(body, indent=2))
+    
+    if result['statusCode'] == 200:
+        print('\n✅ User updated successfully!')
+    elif result['statusCode'] == 404:
+        print('\n⚠️  User not found')
+    elif result['statusCode'] == 400:
+        print(f'\n⚠️  Validation error: {body.get("error", "Unknown error")}')
+    else:
+        print(f'\n❌ Error: {body.get("error", "Unknown error")}')
+
+
+def test_delete_user(user_id):
+    """Test delete-user Lambda (API Gateway)"""
+    if not user_id:
+        print('❌ Error: userId is required')
+        print('Usage: python scripts/test_users.py delete <userId> [--cloud]')
+        sys.exit(1)
+    
+    mode = '☁️  CLOUD' if IS_CLOUD else '💻 LOCAL'
+    print(f'🧪 Testing [{mode}]: DELETE /users/{user_id}')
+    print('='*60)
+    
+    if IS_CLOUD:
+        # Test against deployed API Gateway
+        import urllib.request
+        
+        api_url = get_api_gateway_url()
+        url = f'{api_url}/users/{user_id}'
+        
+        print(f'🌐 Making request to: {url}')
+        
+        try:
+            req = urllib.request.Request(url, method='DELETE')
+            req.add_header('Content-Type', 'application/json')
+            
+            with urllib.request.urlopen(req, timeout=30) as response:
+                status_code = response.status
+                # 204 No Content has no body
+                body = {} if status_code == 204 else json.loads(response.read().decode('utf-8'))
+        
+        except urllib.error.HTTPError as e:
+            status_code = e.code
+            try:
+                body = json.loads(e.read().decode('utf-8'))
+            except:
+                body = {'error': str(e)}
+        
+        print(f'\n📤 Response (Status {status_code}):')
+        if body:
+            print(json.dumps(body, indent=2))
+        else:
+            print('   (No content)')
+        
+        if status_code == 204:
+            print('\n✅ User deleted successfully from cloud!')
+        elif status_code == 404:
+            print('\n⚠️  User not found in cloud')
+        else:
+            print(f'\n❌ Error: {body.get("error", "Unknown error")}')
+        
+        return
+    
+    # Test local Lambda
+    sys.path.insert(0, str(Path(__file__).parent.parent / 'src' / 'users' / 'delete'))
+    from handler import handler
+    
+    # Create API Gateway event (format version 2.0)
+    event = {
+        'version': '2.0',
+        'routeKey': f'DELETE /users/{user_id}',
+        'rawPath': f'/users/{user_id}',
+        'requestContext': {
+            'http': {
+                'method': 'DELETE',
+                'path': f'/users/{user_id}'
+            }
+        },
+        'pathParameters': {
+            'userId': user_id
+        },
+        'isBase64Encoded': False
+    }
+    
+    class MockContext:
+        function_name = 'test-delete-user'
+        aws_request_id = 'test-request-id'
+        
+        @staticmethod
+        def get_remaining_time_in_millis():
+            return 10000
+    
+    result = handler(event, MockContext())
+    
+    print(f'\n📤 Response (Status {result["statusCode"]}):')
+    if result.get('body'):
+        body = json.loads(result['body'])
+        print(json.dumps(body, indent=2))
+    else:
+        print('   (No content)')
+    
+    if result['statusCode'] == 204:
+        print('\n✅ User deleted successfully!')
+    elif result['statusCode'] == 404:
+        print('\n⚠️  User not found')
+    else:
+        body = json.loads(result.get('body', '{}'))
+        print(f'\n❌ Error: {body.get("error", "Unknown error")}')
+
+
 def show_usage():
     """Show usage information"""
     print("""
@@ -343,6 +542,8 @@ Commands:
     create                          Test create-user Lambda (Cognito trigger)
     get <userId>                    Test get-user Lambda
     query [type] [value]            Test query-users Lambda
+    update <userId> <field=value>   Test update-user Lambda
+    delete <userId>                 Test delete-user Lambda
 
 Options:
     --cloud                         Test against deployed API Gateway (default: local)
@@ -358,17 +559,23 @@ Examples (Local):
     python scripts/test_users.py get 12345678-1234-1234-1234-123456789012
     python scripts/test_users.py query list
     python scripts/test_users.py query email test@example.com
+    python scripts/test_users.py update 12345678-1234-1234-1234-123456789012 firstName=Jane lastName=Smith
+    python scripts/test_users.py delete 12345678-1234-1234-1234-123456789012
 
 Examples (Cloud):
     python scripts/test_users.py get 12345678-1234-1234-1234-123456789012 --cloud
     python scripts/test_users.py query list --cloud
-    python scripts/test_users.py query email test@example.com --cloud
+    python scripts/test_users.py update 12345678-1234-1234-1234-123456789012 firstName=Jane --cloud
+    python scripts/test_users.py delete 12345678-1234-1234-1234-123456789012 --cloud
 
 Workflow:
-    1. python scripts/test_users.py create           # Create a test user
+    1. python scripts/test_users.py create                                    # Create a test user
     2. Copy the userId from the output
-    3. python scripts/test_users.py get <userId>     # Get the user
-    4. python scripts/test_users.py query list       # List all users
+    3. python scripts/test_users.py get <userId>                              # Get the user
+    4. python scripts/test_users.py update <userId> firstName=Jane            # Update the user
+    5. python scripts/test_users.py get <userId>                              # Verify update
+    6. python scripts/test_users.py query list                                # List all users
+    7. python scripts/test_users.py delete <userId>                           # Delete the user
 """)
 
 
@@ -402,6 +609,22 @@ def main():
                 sys.exit(1)
             
             test_query_users(query_type, query_value)
+        
+        elif command == 'update':
+            user_id = sys.argv[2] if len(sys.argv) > 2 else None
+            
+            # Parse field=value pairs
+            update_data = {}
+            for arg in sys.argv[3:]:
+                if '=' in arg:
+                    key, value = arg.split('=', 1)
+                    update_data[key] = value
+            
+            test_update_user(user_id, update_data)
+        
+        elif command == 'delete':
+            user_id = sys.argv[2] if len(sys.argv) > 2 else None
+            test_delete_user(user_id)
         
         else:
             print(f'❌ Unknown command: {command}')

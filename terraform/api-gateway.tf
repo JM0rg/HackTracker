@@ -72,6 +72,24 @@ module "api_gateway" {
         timeout_milliseconds   = 30000
       }
     }
+
+    # Update User
+    "PUT /users/{userId}" = {
+      integration = {
+        uri                    = module.update_user_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Delete User
+    "DELETE /users/{userId}" = {
+      integration = {
+        uri                    = module.delete_user_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
   }
 
   tags = merge(local.common_tags, {
@@ -97,6 +115,24 @@ resource "aws_lambda_permission" "api_gateway_query_users" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = module.query_users_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Update User Lambda
+resource "aws_lambda_permission" "api_gateway_update_user" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.update_user_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Delete User Lambda
+resource "aws_lambda_permission" "api_gateway_delete_user" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.delete_user_lambda.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
 }

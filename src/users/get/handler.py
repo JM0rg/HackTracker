@@ -67,11 +67,10 @@ def handler(event, context):
         
         # Format response (remove internal keys)
         user_response = {
-            'userId': user['userId'],
+            'userId': user['userId'],  # userId is the Cognito sub
             'email': user['email'],
             'firstName': user['firstName'],
             'lastName': user['lastName'],
-            'cognitoSub': user['cognitoSub'],
             'createdAt': user['createdAt'],
             'updatedAt': user['updatedAt']
         }
