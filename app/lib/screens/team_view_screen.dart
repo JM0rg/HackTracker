@@ -1,58 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktracker/services/api_service.dart';
 import '../theme/app_colors.dart';
+import '../providers/team_providers.dart';
 
 /// Team View - Shows team-specific stats and roster
-class TeamViewScreen extends StatefulWidget {
+class TeamViewScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToRecruiter;
   
   const TeamViewScreen({super.key, this.onNavigateToRecruiter});
 
   @override
-  State<TeamViewScreen> createState() => _TeamViewScreenState();
+  ConsumerState<TeamViewScreen> createState() => _TeamViewScreenState();
 }
 
-class _TeamViewScreenState extends State<TeamViewScreen> {
-  List<Team>? _teams;
+class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
   Team? _selectedTeam;
-  bool _isLoading = true;
-  String? _errorMessage;
-  
-  late final ApiService _apiService;
-
-  @override
-  void initState() {
-    super.initState();
-    _apiService = ApiService(baseUrl: 'https://ugbhshzkh1.execute-api.us-east-1.amazonaws.com');
-    _loadTeams();
-  }
-
-  Future<void> _loadTeams() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final teams = await _apiService.listTeams();
-      setState(() {
-        _teams = teams;
-        _selectedTeam = teams.isNotEmpty ? teams.first : null;
-        _isLoading = false;
-      });
-    } on ApiException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load teams: $e';
-        _isLoading = false;
-      });
-    }
-  }
 
   Future<void> _showCreateTeamDialog() async {
     final nameController = TextEditingController();
@@ -139,13 +103,13 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
     );
 
     try {
-      await _apiService.createTeam(name: name, description: description);
+      await ref.read(teamsProvider.notifier).createTeam(
+        name: name,
+        description: description.isEmpty ? null : description,
+      );
       
       if (!mounted) return;
       Navigator.pop(context); // Close loading
-
-      // Reload teams
-      await _loadTeams();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -266,15 +230,14 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
     );
 
     try {
-      await _apiService.updateTeam(
+      await ref.read(teamsProvider.notifier).updateTeam(
         teamId: teamId,
         name: name,
-        description: description,
+        description: description.isEmpty ? null : description,
       );
       
       if (!mounted) return;
       Navigator.pop(context);
-      await _loadTeams();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -362,11 +325,10 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
     );
 
     try {
-      await _apiService.deleteTeam(team.teamId);
+      await ref.read(teamsProvider.notifier).deleteTeam(team.teamId);
       
       if (!mounted) return;
       Navigator.pop(context);
-      await _loadTeams();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -390,43 +352,59 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Loading state
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
+    final teamsAsync = ref.watch(teamsProvider);
 
-    // Error state
-    if (_errorMessage != null) {
-      return Center(
+    return teamsAsync.when(
+      // Loading state - only show spinner if no cached data
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+      
+      // Error state
+      error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             Text(
-              _errorMessage!,
+              error.toString(),
               style: GoogleFonts.tektur(color: AppColors.textPrimary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: _loadTeams,
+              onPressed: () => ref.refresh(teamsProvider),
               child: const Text('RETRY'),
             ),
           ],
         ),
-      );
-    }
+      ),
+      
+      // Data state
+      data: (teams) {
+        // Empty state - user not on any teams
+        if (teams.isEmpty) {
+          return _buildEmptyState();
+        }
 
-    // Empty state - user not on any teams
-    if (_teams == null || _teams!.isEmpty) {
-      return _buildEmptyState();
-    }
+        // Set selected team if not set yet
+        if (_selectedTeam == null || !teams.any((t) => t.teamId == _selectedTeam!.teamId)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              _selectedTeam = teams.first;
+            });
+          });
+        }
 
-    // User has teams - show team view
-    return _buildTeamView();
+        // User has teams - show team view with pull-to-refresh
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(teamsProvider.future),
+          color: AppColors.primary,
+          child: _buildTeamView(teams),
+        );
+      },
+    );
   }
 
   Widget _buildEmptyState() {
@@ -589,7 +567,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
     );
   }
 
-  Widget _buildTeamView() {
+  Widget _buildTeamView(List<Team> teams) {
     if (_selectedTeam == null) {
       return const Center(child: Text('No team selected'));
     }
@@ -601,7 +579,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Team Selector (if multiple teams)
-            if (_teams!.length > 1) ...[
+            if (teams.length > 1) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
@@ -620,7 +598,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                         underline: const SizedBox(),
                         isExpanded: true,
                         icon: const Icon(Icons.arrow_drop_down, color: AppColors.textTertiary),
-                        items: _teams!.map((team) {
+                        items: teams.map((team) {
                           return DropdownMenuItem<Team>(
                             value: team,
                             child: Text(

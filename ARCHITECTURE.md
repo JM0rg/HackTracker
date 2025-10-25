@@ -44,6 +44,29 @@ Provide a flexible ecosystem where:
 | Infrastructure | Terraform                         |
 | CI/CD          | GitLab CI                         |
 
+### Frontend State Management
+
+**Technology:** Riverpod 2.6+
+
+**Pattern:** Session-based caching with stale-while-revalidate
+
+**Implementation:**
+- All API data cached in-memory (session-only, cleared on app restart)
+- Cached data shown immediately on navigation (no loading screens)
+- Fresh data fetched in background automatically
+- Manual refresh via pull-to-refresh gesture
+- Cache invalidated on mutations (create/update/delete)
+- Cache cleared on logout
+
+**Benefits:**
+- Instant navigation between tabs
+- Reduced API calls and Lambda invocations
+- Better UX with no repeated loading screens
+- Consistent data across all screens
+- Easy to test with provider overrides
+
+See [FLUTTER_ARCHITECTURE.md](./FLUTTER_ARCHITECTURE.md) for detailed implementation guide.
+
 ---
 
 ## 🧠 3. Domain Model
@@ -1168,6 +1191,17 @@ def cleanup_expired_deletions():
 2. **Test cloud after deploy** - Validates full integration
 3. **Use realistic data** - Cognito subs, proper UUIDs
 4. **Clean up after tests** - `make db-clear` between test runs
+
+### Flutter Best Practices
+
+1. **Use ConsumerWidget** - All screens that need Riverpod access
+2. **Use ConsumerStatefulWidget** - For screens with local state + Riverpod
+3. **AsyncNotifier for API data** - Built-in caching and state management
+4. **Watch providers in build** - Use `ref.watch()` to listen for changes
+5. **Read providers for actions** - Use `ref.read()` in callbacks/methods
+6. **Invalidate on mutations** - Clear cache after create/update/delete
+7. **RefreshIndicator for manual refresh** - Allow users to force data refresh
+8. **Handle all AsyncValue states** - loading, error, and data cases
 
 ---
 

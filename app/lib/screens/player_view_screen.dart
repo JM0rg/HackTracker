@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 /// Player View - Shows user's personal stats aggregated across all teams
-class PlayerViewScreen extends StatelessWidget {
+class PlayerViewScreen extends ConsumerWidget {
   final VoidCallback? onNavigateToTeamView;
 
   const PlayerViewScreen({
@@ -12,7 +13,7 @@ class PlayerViewScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),

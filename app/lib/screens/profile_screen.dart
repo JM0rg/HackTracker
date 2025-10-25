@@ -1,54 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:amplify_flutter/amplify_flutter.dart';
 import '../theme/app_colors.dart';
+import '../providers/user_providers.dart';
 
 /// Profile screen showing user info and settings
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(currentUserProvider);
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  String? userEmail;
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserInfo();
-  }
-
-  Future<void> _loadUserInfo() async {
-    try {
-      await Amplify.Auth.getCurrentUser();
-      final attributes = await Amplify.Auth.fetchUserAttributes();
-      
-      setState(() {
-        userEmail = attributes
-            .firstWhere((attr) => attr.userAttributeKey == AuthUserAttributeKey.email)
-            .value;
-        isLoading = false;
-      });
-    } catch (e) {
-      safePrint('Error loading user info: $e');
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(
+    return userAsync.when(
+      loading: () => const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
-
-    return SingleChildScrollView(
+      ),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load user info',
+              style: GoogleFonts.tektur(color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => ref.refresh(currentUserProvider),
+              child: const Text('RETRY'),
+            ),
+          ],
+        ),
+      ),
+      data: (user) => SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -79,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    userEmail ?? 'User',
+                    user.email,
                     style: GoogleFonts.tektur(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -167,7 +153,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-    );
+    ),
+    ); // End of when()
   }
 }
 

@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import '../theme/app_colors.dart';
+import '../providers/team_providers.dart';
+import '../providers/user_providers.dart';
 
 /// Collapsible sidebar drawer with navigation and team management
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
-  Future<void> _signOut(BuildContext context) async {
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     try {
       await Amplify.Auth.signOut();
+      
+      // Clear all cached data on logout
+      ref.invalidate(teamsProvider);
+      ref.invalidate(currentUserProvider);
     } on AuthException catch (e) {
       safePrint('Error signing out: ${e.message}');
       if (context.mounted) {
@@ -24,7 +31,7 @@ class AppDrawer extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Drawer(
       backgroundColor: AppColors.surface,
       child: SafeArea(
@@ -171,7 +178,7 @@ class AppDrawer extends StatelessWidget {
                   _DrawerItem(
                     icon: Icons.logout,
                     title: 'Sign Out',
-                    onTap: () => _signOut(context),
+                    onTap: () => _signOut(context, ref),
                   ),
                 ],
               ),
