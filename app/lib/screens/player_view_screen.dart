@@ -4,7 +4,12 @@ import '../theme/app_colors.dart';
 
 /// Player View - Shows user's personal stats aggregated across all teams
 class PlayerViewScreen extends StatelessWidget {
-  const PlayerViewScreen({super.key});
+  final VoidCallback? onNavigateToTeamView;
+
+  const PlayerViewScreen({
+    super.key,
+    this.onNavigateToTeamView,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +96,43 @@ class PlayerViewScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Performance Chart Placeholder
+            // My Teams Section
+            Text(
+              'MY TEAMS',
+              style: GoogleFonts.tektur(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                letterSpacing: 1.5,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Team Cards (placeholder data)
+            _TeamCard(
+              teamName: 'Rockets',
+              role: 'OWNER',
+              onTap: () {
+                if (onNavigateToTeamView != null) {
+                  onNavigateToTeamView!();
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            _TeamCard(
+              teamName: 'Thunder',
+              role: 'MEMBER',
+              onTap: () {
+                if (onNavigateToTeamView != null) {
+                  onNavigateToTeamView!();
+                }
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // Spray Chart Placeholder
             Container(
               height: 200,
               padding: const EdgeInsets.all(20),
@@ -104,7 +145,7 @@ class PlayerViewScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'PERFORMANCE TREND',
+                    'SPRAY CHART',
                     style: GoogleFonts.tektur(
                       fontSize: 12,
                       color: AppColors.textTertiary,
@@ -114,12 +155,23 @@ class PlayerViewScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Expanded(
                     child: Center(
-                      child: Text(
-                        'Chart Coming Soon',
-                        style: GoogleFonts.tektur(
-                          fontSize: 14,
-                          color: AppColors.textTertiary,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.sports_baseball,
+                            size: 48,
+                            color: AppColors.border,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Hit location visualization coming soon',
+                            style: GoogleFonts.tektur(
+                              fontSize: 13,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -129,9 +181,9 @@ class PlayerViewScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Recent At-Bats
+            // Recent Games
             Text(
-              'RECENT AT-BATS',
+              'RECENT GAMES',
               style: GoogleFonts.tektur(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -142,26 +194,26 @@ class PlayerViewScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // At-Bat Cards (placeholder)
-            _AtBatCard(
-              result: '2B',
-              game: 'Rockets vs Tigers',
+            // Game Cards (placeholder)
+            _GameCard(
+              result: 'W',
+              opponent: 'vs Tigers',
+              personalStats: '3-4, 2 RBI, 1 HR',
               date: 'Oct 15, 2024',
-              icon: Icons.trending_up,
             ),
             const SizedBox(height: 8),
-            _AtBatCard(
-              result: '1B',
-              game: 'Solo Practice',
+            _GameCard(
+              result: 'L',
+              opponent: 'vs Panthers',
+              personalStats: '2-3, 1 RBI',
               date: 'Oct 12, 2024',
-              icon: Icons.sports_baseball,
             ),
             const SizedBox(height: 8),
-            _AtBatCard(
-              result: 'HR',
-              game: 'Rockets vs Panthers',
+            _GameCard(
+              result: 'W',
+              opponent: 'vs Eagles',
+              personalStats: '4-4, 3 RBI, 2 2B',
               date: 'Oct 10, 2024',
-              icon: Icons.rocket_launch,
             ),
 
             const SizedBox(height: 20),
@@ -169,7 +221,7 @@ class PlayerViewScreen extends StatelessWidget {
             // View All Button
             OutlinedButton(
               onPressed: () {
-                // TODO: Navigate to full at-bat history
+                // TODO: Navigate to full game history
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
@@ -180,7 +232,7 @@ class PlayerViewScreen extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'VIEW ALL AT-BATS',
+                'VIEW ALL GAMES',
                 style: GoogleFonts.tektur(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -230,22 +282,110 @@ class _StatColumn extends StatelessWidget {
   }
 }
 
-/// At-Bat card showing recent activity
-class _AtBatCard extends StatelessWidget {
-  final String result;
-  final String game;
-  final String date;
-  final IconData icon;
+/// Team card showing user's team membership
+class _TeamCard extends StatelessWidget {
+  final String teamName;
+  final String role;
+  final VoidCallback onTap;
 
-  const _AtBatCard({
-    required this.result,
-    required this.game,
-    required this.date,
-    required this.icon,
+  const _TeamCard({
+    required this.teamName,
+    required this.role,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isOwner = role == 'OWNER';
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.primary),
+              ),
+              child: const Icon(
+                Icons.groups,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    teamName,
+                    style: GoogleFonts.tektur(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isOwner ? AppColors.primary : AppColors.border,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      role,
+                      style: GoogleFonts.tektur(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isOwner ? Colors.black : AppColors.textSecondary,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Game card showing recent game performance
+class _GameCard extends StatelessWidget {
+  final String result;
+  final String opponent;
+  final String personalStats;
+  final String date;
+
+  const _GameCard({
+    required this.result,
+    required this.opponent,
+    required this.personalStats,
+    required this.date,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isWin = result == 'W';
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -261,12 +401,20 @@ class _AtBatCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.background,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primary),
+              border: Border.all(
+                color: isWin ? AppColors.primary : AppColors.error,
+                width: 2,
+              ),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 24,
+            child: Center(
+              child: Text(
+                result,
+                style: GoogleFonts.tektur(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isWin ? AppColors.primary : AppColors.error,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -274,31 +422,27 @@ class _AtBatCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      result,
-                      style: GoogleFonts.tektur(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      game,
-                      style: GoogleFonts.tektur(
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
+                Text(
+                  opponent,
+                  style: GoogleFonts.tektur(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
+                  personalStats,
+                  style: GoogleFonts.tektur(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
                   date,
                   style: GoogleFonts.tektur(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: AppColors.textTertiary,
                   ),
                 ),

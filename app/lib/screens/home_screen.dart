@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import 'player_view_screen.dart';
 import 'team_view_screen.dart';
 import 'profile_screen.dart';
+import 'recruiter_screen.dart';
 
 /// Main home screen with top tabs (Player/Team) and bottom navigation
 class HomeScreen extends StatefulWidget {
@@ -41,11 +42,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             style: TextStyle(fontSize: 24, color: AppColors.primary),
           ),
         );
-      case 2: // Profile
+      case 2: // Recruiter
+        return const RecruiterScreen();
+      case 3: // Profile
         return const ProfileScreen();
       default:
         return _buildTabView();
     }
+  }
+
+  void _navigateToTeamView() {
+    setState(() {
+      _topTabController.animateTo(1);
+    });
   }
 
   Widget _buildTabView() {
@@ -64,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               Expanded(
                 child: _ToggleButton(
-                  label: 'PLAYER',
+                  label: 'PLAYER VIEW',
                   isSelected: _topTabController.index == 0,
                   onTap: () {
                     setState(() {
@@ -76,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SizedBox(width: 8),
               Expanded(
                 child: _ToggleButton(
-                  label: 'TEAM',
+                  label: 'TEAM VIEW',
                   isSelected: _topTabController.index == 1,
                   onTap: () {
                     setState(() {
@@ -92,9 +101,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Expanded(
           child: TabBarView(
             controller: _topTabController,
-            children: const [
-              PlayerViewScreen(),
-              TeamViewScreen(),
+            children: [
+              PlayerViewScreen(
+                onNavigateToTeamView: _navigateToTeamView,
+              ),
+              const TeamViewScreen(),
             ],
           ),
         ),
@@ -166,6 +177,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               icon: Icon(Icons.sports_baseball_outlined),
               activeIcon: Icon(Icons.sports_baseball),
               label: 'RECORD',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_search_outlined),
+              activeIcon: Icon(Icons.person_search),
+              label: 'RECRUITER',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
