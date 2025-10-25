@@ -5,7 +5,9 @@ import '../theme/app_colors.dart';
 
 /// Team View - Shows team-specific stats and roster
 class TeamViewScreen extends StatefulWidget {
-  const TeamViewScreen({super.key});
+  final VoidCallback? onNavigateToRecruiter;
+  
+  const TeamViewScreen({super.key, this.onNavigateToRecruiter});
 
   @override
   State<TeamViewScreen> createState() => _TeamViewScreenState();
@@ -22,7 +24,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
   @override
   void initState() {
     super.initState();
-    _apiService = ApiService(baseUrl: 'https://cgz1guhkf1.execute-api.us-east-1.amazonaws.com');
+    _apiService = ApiService(baseUrl: 'https://ugbhshzkh1.execute-api.us-east-1.amazonaws.com');
     _loadTeams();
   }
 
@@ -536,6 +538,51 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+            // Divider
+            Container(
+              height: 1,
+              color: AppColors.border,
+              margin: const EdgeInsets.symmetric(horizontal: 40),
+            ),
+            const SizedBox(height: 24),
+            // Recruiter prompt
+            Text(
+              'LOOKING FOR A TEAM?',
+              style: GoogleFonts.tektur(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Browse available teams and players in the Recruiter tab',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.tektur(
+                fontSize: 12,
+                color: AppColors.textTertiary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: widget.onNavigateToRecruiter,
+              icon: const Icon(Icons.person_search, size: 20),
+              label: Text(
+                'OPEN RECRUITER',
+                style: GoogleFonts.tektur(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.secondary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
           ],
         ),
       ),
@@ -601,7 +648,7 @@ class _TeamViewScreenState extends State<TeamViewScreen> {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        _selectedTeam!.role.toUpperCase(),
+                        _selectedTeam!.role.toUpperCase().replaceAll('-', ' '),
                         style: GoogleFonts.tektur(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,

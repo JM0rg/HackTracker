@@ -53,10 +53,25 @@ module "api_gateway" {
     throttling_rate_limit    = 1000
   }
 
+  # JWT Authorizer
+  authorizers = {
+    "cognito" = {
+      authorizer_type  = "JWT"
+      identity_sources = ["$request.header.Authorization"]
+      name             = "cognito-authorizer"
+      jwt_configuration = {
+        audience = [aws_cognito_user_pool_client.hacktracker.id]
+        issuer   = "https://cognito-idp.${local.region}.amazonaws.com/${aws_cognito_user_pool.hacktracker.id}"
+      }
+    }
+  }
+
   # Routes and integrations
   routes = {
     # Get User by ID
     "GET /users/{userId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
       integration = {
         uri                    = module.get_user_lambda.lambda_function_invoke_arn
         payload_format_version = "2.0"
@@ -66,6 +81,8 @@ module "api_gateway" {
 
     # Query/List Users
     "GET /users" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
       integration = {
         uri                    = module.query_users_lambda.lambda_function_invoke_arn
         payload_format_version = "2.0"
@@ -75,6 +92,8 @@ module "api_gateway" {
 
     # Update User
     "PUT /users/{userId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
       integration = {
         uri                    = module.update_user_lambda.lambda_function_invoke_arn
         payload_format_version = "2.0"
@@ -84,8 +103,65 @@ module "api_gateway" {
 
     # Delete User
     "DELETE /users/{userId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
       integration = {
         uri                    = module.delete_user_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Create Team
+    "POST /teams" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.create_team_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Get Team by ID
+    "GET /teams/{teamId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.get_team_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Query/List Teams
+    "GET /teams" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.query_teams_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 30000
+      }
+    }
+
+    # Update Team
+    "PUT /teams/{teamId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.update_team_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Delete Team
+    "DELETE /teams/{teamId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.delete_team_lambda.lambda_function_invoke_arn
         payload_format_version = "2.0"
         timeout_milliseconds   = 10000
       }
@@ -133,6 +209,51 @@ resource "aws_lambda_permission" "api_gateway_delete_user" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = module.delete_user_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Create Team Lambda
+resource "aws_lambda_permission" "api_gateway_create_team" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.create_team_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Get Team Lambda
+resource "aws_lambda_permission" "api_gateway_get_team" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.get_team_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Query Teams Lambda
+resource "aws_lambda_permission" "api_gateway_query_teams" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.query_teams_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Update Team Lambda
+resource "aws_lambda_permission" "api_gateway_update_team" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.update_team_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Delete Team Lambda
+resource "aws_lambda_permission" "api_gateway_delete_team" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.delete_team_lambda.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
 }

@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Always reference the ARCHITECTURE.md file before implementing features or making new changes. 

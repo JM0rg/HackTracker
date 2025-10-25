@@ -83,9 +83,13 @@ class ApiService {
   /// 
   /// Returns: List of teams with role and member count
   Future<List<Team>> listTeams() async {
+    // Get current user's ID from Cognito
+    final user = await Amplify.Auth.getCurrentUser();
+    final userId = user.userId;
+    
     final response = await _authenticatedRequest(
       method: 'GET',
-      path: '/teams',
+      path: '/teams?userId=$userId',
     );
 
     final data = _handleResponse(response);
@@ -103,13 +107,15 @@ class ApiService {
     required String name,
     String? description,
   }) async {
+    final body = <String, dynamic>{'name': name};
+    if (description != null && description.isNotEmpty) {
+      body['description'] = description;
+    }
+    
     final response = await _authenticatedRequest(
       method: 'POST',
       path: '/teams',
-      body: {
-        'name': name,
-        'description': description ?? '',
-      },
+      body: body,
     );
 
     final data = _handleResponse(response);
@@ -183,9 +189,11 @@ class Team {
       teamId: json['teamId'] as String,
       name: json['name'] as String,
       description: json['description'] as String? ?? '',
-      role: json['role'] as String,
-      memberCount: json['memberCount'] as int? ?? 0,
-      joinedAt: DateTime.parse(json['joinedAt'] as String),
+      role: json['role'] as String? ?? 'team-player', // Can be null for listTeams()
+      memberCount: json['memberCount'] as int? ?? 1,
+      joinedAt: json['joinedAt'] != null 
+          ? DateTime.parse(json['joinedAt'] as String)
+          : DateTime.now(),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
@@ -202,9 +210,10 @@ class Team {
     };
   }
 
-  bool get isOwner => role == 'owner';
-  bool get isMember => role == 'member';
-  bool get isViewer => role == 'viewer';
+  bool get isOwner => role == 'team-owner';
+  bool get isCoach => role == 'team-coach';
+  bool get isPlayer => role == 'team-player';
+  bool get isMember => role == 'team-player'; // Keep for backwards compatibility
 }
 
 /// API Exception

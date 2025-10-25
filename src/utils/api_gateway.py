@@ -16,13 +16,14 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(obj)
 
 
-def create_response(status_code, body, additional_headers=None):
+def create_response(status_code, body=None, additional_headers=None):
     """
     Create API Gateway response
     
     Args:
         status_code (int): HTTP status code
-        body (dict): Response body (will be JSON encoded)
+        body (dict, optional): Response body (will be JSON encoded).
+                               Omitted for 204 No Content responses.
         additional_headers (dict, optional): Additional headers to include
     
     Returns:
@@ -39,9 +40,14 @@ def create_response(status_code, body, additional_headers=None):
     if additional_headers:
         headers.update(additional_headers)
     
-    return {
+    response = {
         'statusCode': status_code,
-        'headers': headers,
-        'body': json.dumps(body, cls=DecimalEncoder)
+        'headers': headers
     }
+    
+    # 204 No Content should not have a body per HTTP spec
+    if status_code != 204 and body is not None:
+        response['body'] = json.dumps(body, cls=DecimalEncoder)
+    
+    return response
 

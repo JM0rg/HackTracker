@@ -57,6 +57,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
   }
 
+  void _navigateToRecruiter() {
+    setState(() {
+      _bottomNavIndex = 2; // Recruiter tab index
+    });
+  }
+
   Widget _buildTabView() {
     return Column(
       children: [
@@ -105,7 +111,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               PlayerViewScreen(
                 onNavigateToTeamView: _navigateToTeamView,
               ),
-              const TeamViewScreen(),
+              TeamViewScreen(
+                onNavigateToRecruiter: _navigateToRecruiter,
+              ),
             ],
           ),
         ),

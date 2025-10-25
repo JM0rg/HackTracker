@@ -1,6 +1,6 @@
 # HackTracker Data Model
 
-**Current Implementation Status:** User Management (MVP)
+**Current Implementation Status:** User & Team Management (MVP Complete)
 
 This document describes the **actual implemented** data model for HackTracker. For the complete system design including future features and architectural rationale, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -43,6 +43,8 @@ This document describes the **actual implemented** data model for HackTracker. F
 | PK Pattern | SK Pattern | Entity Type |
 |------------|------------|-------------|
 | `USER#<userId>` | `METADATA` | User Profile |
+| `TEAM#<teamId>` | `METADATA` | Team Profile |
+| `USER#<userId>` | `TEAM#<teamId>` | Team Membership |
 
 ### Global Secondary Indexes (Active)
 
@@ -56,10 +58,10 @@ This document describes the **actual implemented** data model for HackTracker. F
 
 #### GSI2: Entity Listing
 - **Keys:**
-  - `GSI2PK`: `ENTITY#<type>` (currently only `ENTITY#USER`)
+  - `GSI2PK`: `ENTITY#<type>` (currently `ENTITY#USER` and `ENTITY#TEAM`)
   - `GSI2SK`: `METADATA#<id>`
 - **Purpose:** List all entities of a specific type
-- **Use Case:** List all users, admin dashboards, future entity listings
+- **Use Case:** List all users, list all teams, admin dashboards
 - **Why Essential:** More efficient than table scans, supports pagination
 
 ### Global Secondary Indexes (Reserved)
@@ -130,6 +132,102 @@ GSI2SK: METADATA#<userId>
 | `query-users` | GET | `/users` | ✅ Implemented |
 | `update-user` | PUT | `/users/{userId}` | ✅ Implemented |
 | `delete-user` | DELETE | `/users/{userId}` | ✅ Implemented |
+
+---
+
+### Team Profile
+
+**Status:** ✅ Fully Implemented
+
+**Primary Keys:**
+```
+PK: TEAM#<teamId>
+SK: METADATA
+```
+
+**GSI Keys:**
+```
+GSI2PK: ENTITY#TEAM
+GSI2SK: METADATA#<teamId>
+```
+
+**Attributes:**
+
+| Field | Type | Required | Editable | Description |
+|-------|------|----------|----------|-------------|
+| `teamId` | String (UUID) | ✅ | ❌ | Team's unique identifier |
+| `name` | String | ✅ | ✅ | Team name (3-50 chars, alphanumeric + spaces) |
+| `description` | String | ❌ | ✅ | Optional team description (max 500 chars) |
+| `ownerId` | String | ✅ | ❌ | User ID of team owner |
+| `status` | String | ✅ | ❌ | Team status: `active` or `deleted` |
+| `createdAt` | ISO 8601 | ✅ | ❌ | Team creation timestamp |
+| `updatedAt` | ISO 8601 | ✅ | ❌ | Last update timestamp (auto-updated) |
+| `deletedAt` | ISO 8601 | ❌ | ❌ | Soft delete timestamp (if deleted) |
+| `recoveryToken` | String (UUID) | ❌ | ❌ | Recovery token for 30-day recovery period |
+
+**Example Item:**
+```json
+{
+  "PK": "TEAM#a6f27724-7042-4816-94d3-a2183ef50a09",
+  "SK": "METADATA",
+  "teamId": "a6f27724-7042-4816-94d3-a2183ef50a09",
+  "name": "Seattle Sluggers",
+  "description": "Best team in Seattle",
+  "ownerId": "12345678-1234-1234-1234-123456789012",
+  "status": "active",
+  "createdAt": "2025-10-25T12:00:00.000Z",
+  "updatedAt": "2025-10-25T12:00:00.000Z",
+  "GSI2PK": "ENTITY#TEAM",
+  "GSI2SK": "METADATA#a6f27724-7042-4816-94d3-a2183ef50a09"
+}
+```
+
+**Lambda Functions:**
+
+| Function | Method | Endpoint | Status |
+|----------|--------|----------|--------|
+| `create-team` | POST | `/teams` | ✅ Implemented |
+| `get-team` | GET | `/teams/{teamId}` | ✅ Implemented |
+| `query-teams` | GET | `/teams` | ✅ Implemented |
+| `update-team` | PUT | `/teams/{teamId}` | ✅ Implemented |
+| `delete-team` | DELETE | `/teams/{teamId}` | ✅ Implemented |
+
+---
+
+### Team Membership
+
+**Status:** ✅ Fully Implemented
+
+**Primary Keys:**
+```
+PK: USER#<userId>
+SK: TEAM#<teamId>
+```
+
+**Attributes:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userId` | String | ✅ | User's unique identifier |
+| `teamId` | String (UUID) | ✅ | Team's unique identifier |
+| `role` | String | ✅ | User's role: `team-owner`, `team-coach`, `team-player` |
+| `status` | String | ✅ | Membership status: `active`, `inactive`, `invited` |
+| `joinedAt` | ISO 8601 | ✅ | When user joined/was added to team |
+| `invitedBy` | String | ❌ | User ID of inviter (null for team owner) |
+
+**Example Item:**
+```json
+{
+  "PK": "USER#12345678-1234-1234-1234-123456789012",
+  "SK": "TEAM#a6f27724-7042-4816-94d3-a2183ef50a09",
+  "userId": "12345678-1234-1234-1234-123456789012",
+  "teamId": "a6f27724-7042-4816-94d3-a2183ef50a09",
+  "role": "team-owner",
+  "status": "active",
+  "joinedAt": "2025-10-25T12:00:00.000Z",
+  "invitedBy": null
+}
+```
 
 ---
 
@@ -232,6 +330,110 @@ Key: PK=USER#<userId>, SK=METADATA
 
 ---
 
+#### 7. Create Team (Atomic Transaction)
+**Pattern:** Atomic write to team + membership
+```
+Operation: TransactWriteItems
+Items:
+  1. PutItem: PK=TEAM#<teamId>, SK=METADATA (team record)
+  2. PutItem: PK=USER#<userId>, SK=TEAM#<teamId> (owner membership)
+```
+
+**Lambda:** `create-team`
+**Endpoint:** `POST /teams`
+**Features:**
+- Atomic transaction ensures team + membership created together
+- Validates team name (3-50 chars, alphanumeric + spaces)
+- Cleans whitespace automatically
+- Optional description (max 500 chars)
+- Assigns creator as team-owner
+
+---
+
+#### 8. Get Team by ID
+**Pattern:** Direct primary key lookup
+```
+Operation: GetItem
+Key: PK=TEAM#<teamId>, SK=METADATA
+```
+
+**Lambda:** `get-team`
+**Endpoint:** `GET /teams/{teamId}`
+**Response:** Team profile object
+**Note:** Returns 404 for deleted teams
+
+---
+
+#### 9. List All Teams
+**Pattern:** GSI2 query
+```
+Operation: Query
+Index: GSI2
+KeyCondition: GSI2PK=ENTITY#TEAM
+Limit: 50 (paginated)
+```
+
+**Lambda:** `query-teams`
+**Endpoint:** `GET /teams`
+**Features:**
+- Pagination support via `nextToken`
+- Filters out deleted teams
+- Efficient GSI query
+
+---
+
+#### 10. List User's Teams
+**Pattern:** Query user's team memberships
+```
+Operation: Query
+KeyCondition: PK=USER#<userId> AND begins_with(SK, 'TEAM#')
+```
+
+**Lambda:** `query-teams`
+**Endpoint:** `GET /teams?userId={userId}`
+**Features:**
+- Returns user's teams with their role
+- Only active memberships
+- Fetches team details for each membership
+
+---
+
+#### 11. Update Team
+**Pattern:** Update with authorization
+```
+Operation: UpdateItem
+Key: PK=TEAM#<teamId>, SK=METADATA
+Authorization: Check USER#<userId> → TEAM#<teamId> membership
+Required Role: team-owner or team-coach
+Allowed Fields: name, description
+Auto-Updated: updatedAt
+```
+
+**Lambda:** `update-team`
+**Endpoint:** `PUT /teams/{teamId}`
+**Validation:** Same as create (team name, description)
+
+---
+
+#### 12. Delete Team (Soft Delete)
+**Pattern:** Update status to deleted
+```
+Operation: UpdateItem
+Key: PK=TEAM#<teamId>, SK=METADATA
+Set: status='deleted', deletedAt=timestamp, recoveryToken=uuid
+Authorization: team-owner only
+```
+
+**Lambda:** `delete-team`
+**Endpoint:** `DELETE /teams/{teamId}`
+**Response:** 204 No Content
+**Features:**
+- Soft delete preserves data
+- 30-day recovery period
+- Team hidden from queries
+
+---
+
 ## Design Principles
 
 ### 1. Single-Table Design
@@ -253,6 +455,8 @@ GSI3, GSI4, and GSI5 are defined but not yet populated, ready for future feature
 
 ## API Gateway Routes
 
+### User Routes
+
 | Method | Path | Lambda | Auth |
 |--------|------|--------|------|
 | GET | `/users/{userId}` | get-user | Not yet enforced |
@@ -260,7 +464,17 @@ GSI3, GSI4, and GSI5 are defined but not yet populated, ready for future feature
 | PUT | `/users/{userId}` | update-user | Not yet enforced |
 | DELETE | `/users/{userId}` | delete-user | Not yet enforced |
 
-**Note:** Cognito authentication will be enforced in a future update.
+### Team Routes
+
+| Method | Path | Lambda | Auth |
+|--------|------|--------|------|
+| POST | `/teams` | create-team | X-User-Id header |
+| GET | `/teams/{teamId}` | get-team | Not required |
+| GET | `/teams` | query-teams | Not required |
+| PUT | `/teams/{teamId}` | update-team | X-User-Id header |
+| DELETE | `/teams/{teamId}` | delete-team | X-User-Id header |
+
+**Note:** Currently using `X-User-Id` header for authorization. Cognito JWT authentication will be enforced in a future update.
 
 ---
 
@@ -270,7 +484,8 @@ GSI3, GSI4, and GSI5 are defined but not yet populated, ready for future feature
 
 - **DynamoDB Table:** `terraform/dynamodb.tf`
 - **Cognito User Pool:** `terraform/cognito.tf`
-- **Lambda Functions:** `terraform/lambda-users.tf`
+- **User Lambda Functions:** `terraform/lambda-users.tf`
+- **Team Lambda Functions:** `terraform/lambda-teams.tf`
 - **API Gateway:** `terraform/api-gateway.tf`
 
 ### Lambda Configuration
@@ -291,7 +506,9 @@ GSI3, GSI4, and GSI5 are defined but not yet populated, ready for future feature
 
 - **DynamoDB Local:** Docker container on port 8000
 - **Admin UI:** http://localhost:8001
-- **Test Scripts:** `scripts/test_users.py`
+- **Test Scripts:** 
+  - `scripts/test_users.py` - User CRUD operations
+  - `scripts/test_teams.py` - Team CRUD operations
 
 ### Test Commands
 
@@ -311,6 +528,29 @@ uv run python scripts/test_users.py update <userId> firstName=Jane
 
 # Delete user
 uv run python scripts/test_users.py delete <userId>
+```
+
+### Team Testing
+
+```bash
+# Full test suite
+uv run python scripts/test_teams.py full-test <userId>
+
+# Create team
+uv run python scripts/test_teams.py create <userId> "Team Name" "Description"
+
+# Get team
+uv run python scripts/test_teams.py get <teamId>
+
+# Query teams
+uv run python scripts/test_teams.py query list
+uv run python scripts/test_teams.py query user <userId>
+
+# Update team
+uv run python scripts/test_teams.py update <userId> <teamId> name="New Name"
+
+# Delete team
+uv run python scripts/test_teams.py delete <userId> <teamId>
 ```
 
 ### Cloud Testing

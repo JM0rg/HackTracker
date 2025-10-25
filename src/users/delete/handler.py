@@ -81,15 +81,7 @@ def handler(event, context):
         }))
         
         # Return 204 No Content (standard for successful DELETE)
-        return {
-            'statusCode': 204,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-                'Access-Control-Allow-Methods': 'DELETE,OPTIONS'
-            }
-        }
+        return create_response(204)
         
     except ClientError as e:
         print(json.dumps({

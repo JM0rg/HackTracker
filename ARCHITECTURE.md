@@ -389,7 +389,15 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 | Lambda               | Purpose                                | Trigger         | Notes |
 | -------------------- | -------------------------------------- | --------------- | ----- |
 | `post-confirmation`  | Create user profile in DynamoDB        | Cognito         | ✅ Implemented |
-| `create-team`        | Create team + owner record             | API             | 🔜 Planned |
+| `get-user`           | Retrieve user profile by ID            | API             | ✅ Implemented |
+| `query-users`        | List/search users                      | API             | ✅ Implemented |
+| `update-user`        | Update user profile                    | API             | ✅ Implemented |
+| `delete-user`        | Soft delete user                       | API             | ✅ Implemented |
+| `create-team`        | Create team + owner record atomically  | API             | ✅ Implemented |
+| `get-team`           | Retrieve team by ID                    | API             | ✅ Implemented |
+| `query-teams`        | List/search teams                      | API             | ✅ Implemented |
+| `update-team`        | Update team metadata                   | API             | ✅ Implemented |
+| `delete-team`        | Soft delete team                       | API             | ✅ Implemented |
 | `invite-player`      | Send invite link/email                 | API             | 🔜 Planned |
 | `join-team`          | Add player to roster                   | API             | 🔜 Planned |
 | `create-season`      | Create season (team or league context) | API             | 🔜 Planned |
@@ -1009,8 +1017,11 @@ def cleanup_expired_deletions():
 - [x] API Gateway integration
 - [x] Local development environment (DynamoDB Local)
 - [x] Test infrastructure (local + cloud)
-- [ ] Team CRUD operations
-- [ ] Player roster management
+- [x] Team CRUD operations (create, get, query, update, delete)
+- [x] Team ownership & atomic membership creation
+- [x] Role-based authorization (owner, coach, player)
+- [x] Soft delete with 30-day recovery
+- [ ] Player roster management (invite/add/remove members)
 - [ ] Season management
 - [ ] Game recording
 - [ ] At-bat tracking
