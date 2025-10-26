@@ -3,9 +3,11 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'config/app_config.dart';
+import 'main.dart';
 import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
+import 'utils/messenger.dart';
 
 class HackTrackerApp extends StatefulWidget {
   const HackTrackerApp({super.key});
@@ -42,8 +44,9 @@ class _HackTrackerAppState extends State<HackTrackerApp> {
       title: 'HackTracker',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
+      scaffoldMessengerKey: messengerKey,
       home: _amplifyConfigured
-          ? const AuthGate()
+          ? const AppLifecycleRefresher(child: AuthGate())
           : Scaffold(
               body: Center(
                 child: CircularProgressIndicator(

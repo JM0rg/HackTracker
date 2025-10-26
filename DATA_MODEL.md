@@ -1,6 +1,6 @@
 # HackTracker Data Model
 
-**Current Implementation Status:** User & Team Management (MVP Complete)
+**Current Implementation Status:** User, Team & Player Management (MVP Complete)
 
 This document describes the **actual implemented** data model for HackTracker. For the complete system design including future features and architectural rationale, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -45,6 +45,7 @@ This document describes the **actual implemented** data model for HackTracker. F
 | `USER#<userId>` | `METADATA` | User Profile |
 | `TEAM#<teamId>` | `METADATA` | Team Profile |
 | `USER#<userId>` | `TEAM#<teamId>` | Team Membership |
+| `TEAM#<teamId>` | `PLAYER#<playerId>` | Player Profile (Ghost) |
 
 ### Global Secondary Indexes (Active)
 
@@ -228,6 +229,66 @@ SK: TEAM#<teamId>
   "invitedBy": null
 }
 ```
+
+---
+
+### Player Profile (Ghost Players)
+
+**Status:** ✅ Fully Implemented
+
+**Primary Keys:**
+```
+PK: TEAM#<teamId>
+SK: PLAYER#<playerId>
+```
+
+**Attributes:**
+
+| Field | Type | Required | Editable | Description |
+|-------|------|----------|----------|-------------|
+| `playerId` | String (UUID) | ✅ | ❌ | Player's unique identifier |
+| `teamId` | String (UUID) | ✅ | ❌ | Team the player belongs to |
+| `firstName` | String | ✅ | ✅ | Player's first name (1-30 chars, letters/hyphens) |
+| `lastName` | String | ❌ | ✅ | Player's last name (1-30 chars, letters/hyphens) |
+| `playerNumber` | Integer | ❌ | ✅ | Jersey number (0-99) |
+| `status` | String | ✅ | ✅ | Player status: `active`, `inactive`, `sub` |
+| `isGhost` | Boolean | ✅ | ❌ | True if player not linked to a user account |
+| `userId` | String | ❌ | ❌ | User ID if linked (null for ghost players) |
+| `linkedAt` | ISO 8601 | ❌ | ❌ | When player was linked to user (null for ghost) |
+| `createdAt` | ISO 8601 | ✅ | ❌ | Player creation timestamp |
+| `updatedAt` | ISO 8601 | ✅ | ❌ | Last update timestamp (auto-updated) |
+
+**Example Item (Ghost Player):**
+```json
+{
+  "PK": "TEAM#a6f27724-7042-4816-94d3-a2183ef50a09",
+  "SK": "PLAYER#b7e38835-8153-5927-a5e4-b3294fg61b1a",
+  "playerId": "b7e38835-8153-5927-a5e4-b3294fg61b1a",
+  "teamId": "a6f27724-7042-4816-94d3-a2183ef50a09",
+  "firstName": "John",
+  "lastName": "Doe",
+  "playerNumber": 12,
+  "status": "active",
+  "isGhost": true,
+  "userId": null,
+  "linkedAt": null,
+  "createdAt": "2025-10-25T12:00:00.000Z",
+  "updatedAt": "2025-10-25T12:00:00.000Z"
+}
+```
+
+**Lambda Functions:**
+
+| Function | Method | Endpoint | Status |
+|----------|--------|----------|--------|
+| `add-player` | POST | `/teams/{teamId}/players` | ✅ Implemented |
+
+**Notes:**
+- Ghost players are unlinked roster slots created by coaches/owners before players join
+- `position` and `battingOrder` are NOT tracked on player record (hitting-focused MVP)
+- GSI4 fields NOT populated for ghost players (since `userId` is null)
+- Player numbers do not need to be unique within a team
+- When a user is linked to a ghost player, `userId` and `linkedAt` will be set
 
 ---
 
@@ -434,6 +495,103 @@ Authorization: team-owner only
 
 ---
 
+#### 13. Add Ghost Player to Roster
+**Pattern:** Create player record with authorization
+```
+Operation: PutItem
+Key: PK=TEAM#<teamId>, SK=PLAYER#<playerId>
+Authorization: Check USER#<userId> → TEAM#<teamId> membership
+Required Role: team-owner or team-coach
+Condition: PK and SK do not exist (prevent duplicates)
+```
+
+**Lambda:** `add-player`
+**Endpoint:** `POST /teams/{teamId}/players`
+**Required Fields:** `firstName`
+**Optional Fields:** `lastName`, `playerNumber` (0-99), `status` (default: active)
+**Validation:**
+- firstName/lastName: 1-30 chars, letters and hyphens only, single word
+- playerNumber: Integer 0-99
+- status: One of `active`, `inactive`, `sub`
+
+**Response:** `201 Created` with player data
+
+---
+
+#### 14. List Team Players
+**Pattern:** Query team's roster
+```
+Operation: Query
+KeyCondition: PK=TEAM#<teamId> AND begins_with(SK, 'PLAYER#')
+Authorization: All team members can view
+Sorting: By playerNumber (ascending, nulls last), then lastName, then firstName
+```
+
+**Lambda:** `list-players`
+**Endpoint:** `GET /teams/{teamId}/players`
+**Query Parameters:**
+- `status` - Filter by status (active/inactive/sub)
+- `isGhost` - Filter by ghost status (true/false)
+
+**Response:** `200 OK` with `{ players: [...], count: N }`
+
+---
+
+#### 15. Get Single Player
+**Pattern:** Direct lookup with authorization
+```
+Operation: GetItem
+Key: PK=TEAM#<teamId>, SK=PLAYER#<playerId>
+Authorization: All team members can view
+```
+
+**Lambda:** `get-player`
+**Endpoint:** `GET /teams/{teamId}/players/{playerId}`
+**Response:** `200 OK` with player object
+**Error:** `404 Not Found` if player doesn't exist
+
+---
+
+#### 16. Update Player
+**Pattern:** Update with authorization
+```
+Operation: UpdateItem
+Key: PK=TEAM#<teamId>, SK=PLAYER#<playerId>
+Authorization: Check USER#<userId> → TEAM#<teamId> membership
+Required Role: team-owner or team-coach
+Updatable Fields: firstName, lastName, playerNumber, status
+Read-Only Fields: playerId, teamId, isGhost, userId, linkedAt, createdAt
+Auto-Updated: updatedAt
+```
+
+**Lambda:** `update-player`
+**Endpoint:** `PUT /teams/{teamId}/players/{playerId}`
+**Validation:** Same as create (name, number, status validation)
+**Response:** `200 OK` with updated player data
+**Features:**
+- Can set lastName or playerNumber to null to remove
+- Rejects attempts to update read-only fields (400)
+
+---
+
+#### 17. Remove Player from Roster
+**Pattern:** Hard delete ghost players only
+```
+Operation: DeleteItem
+Key: PK=TEAM#<teamId>, SK=PLAYER#<playerId>
+Authorization: Check USER#<userId> → TEAM#<teamId> membership
+Required Role: team-owner or team-coach
+Condition: isGhost = true (prevent deletion of linked players)
+```
+
+**Lambda:** `remove-player`
+**Endpoint:** `DELETE /teams/{teamId}/players/{playerId}`
+**Response:** `204 No Content`
+**Restriction:** Cannot delete linked players (userId != null)
+**Error:** `400 Bad Request` if player is linked
+
+---
+
 ## Design Principles
 
 ### 1. Single-Table Design
@@ -468,13 +626,23 @@ GSI3, GSI4, and GSI5 are defined but not yet populated, ready for future feature
 
 | Method | Path | Lambda | Auth |
 |--------|------|--------|------|
-| POST | `/teams` | create-team | X-User-Id header |
-| GET | `/teams/{teamId}` | get-team | Not required |
-| GET | `/teams` | query-teams | Not required |
-| PUT | `/teams/{teamId}` | update-team | X-User-Id header |
-| DELETE | `/teams/{teamId}` | delete-team | X-User-Id header |
+| POST | `/teams` | create-team | JWT required |
+| GET | `/teams/{teamId}` | get-team | JWT required |
+| GET | `/teams` | query-teams | JWT required |
+| PUT | `/teams/{teamId}` | update-team | JWT required |
+| DELETE | `/teams/{teamId}` | delete-team | JWT required |
 
-**Note:** Currently using `X-User-Id` header for authorization. Cognito JWT authentication will be enforced in a future update.
+### Player Routes
+
+| Method | Path | Lambda | Auth |
+|--------|------|--------|------|
+| POST | `/teams/{teamId}/players` | add-player | JWT required |
+| GET | `/teams/{teamId}/players` | list-players | JWT required |
+| GET | `/teams/{teamId}/players/{playerId}` | get-player | JWT required |
+| PUT | `/teams/{teamId}/players/{playerId}` | update-player | JWT required |
+| DELETE | `/teams/{teamId}/players/{playerId}` | remove-player | JWT required |
+
+**Note:** All routes now use Cognito JWT authentication enforced at API Gateway level.
 
 ---
 
@@ -486,6 +654,7 @@ GSI3, GSI4, and GSI5 are defined but not yet populated, ready for future feature
 - **Cognito User Pool:** `terraform/cognito.tf`
 - **User Lambda Functions:** `terraform/lambda-users.tf`
 - **Team Lambda Functions:** `terraform/lambda-teams.tf`
+- **Player Lambda Functions:** `terraform/lambda-players.tf`
 - **API Gateway:** `terraform/api-gateway.tf`
 
 ### Lambda Configuration
@@ -502,6 +671,13 @@ GSI3, GSI4, and GSI5 are defined but not yet populated, ready for future feature
 
 ## Testing
 
+### Frontend Data Strategy
+
+- Persistent cache for Teams, Players (Roster), and Current User using Shared Preferences
+- On app launch and navigation: show cached data immediately; refresh in background (SWR)
+- Optimistic updates for team and player mutations (add/update/remove): UI updates instantly; rollback on error
+- Pull-to-refresh supported on data screens
+
 ### Local Testing Setup
 
 - **DynamoDB Local:** Docker container on port 8000
@@ -509,6 +685,7 @@ GSI3, GSI4, and GSI5 are defined but not yet populated, ready for future feature
 - **Test Scripts:** 
   - `scripts/test_users.py` - User CRUD operations
   - `scripts/test_teams.py` - Team CRUD operations
+  - `scripts/test_players.py` - Player roster operations
 
 ### Test Commands
 
@@ -551,6 +728,44 @@ uv run python scripts/test_teams.py update <userId> <teamId> name="New Name"
 
 # Delete team
 uv run python scripts/test_teams.py delete <userId> <teamId>
+```
+
+### Player Testing
+
+```bash
+# Full test suite (includes all CRUD operations)
+uv run python scripts/test_players.py full-test <userId>
+
+# Add player
+uv run python scripts/test_players.py add <userId> <teamId> "FirstName" "LastName" 12 active
+
+# Add minimal player (firstName only)
+uv run python scripts/test_players.py add <userId> <teamId> "FirstName"
+
+# List players
+uv run python scripts/test_players.py list <userId> <teamId>
+
+# List with filters
+uv run python scripts/test_players.py list <userId> <teamId> active      # Filter by status
+uv run python scripts/test_players.py list <userId> <teamId> "" true    # Filter ghost players
+
+# Get player
+uv run python scripts/test_players.py get <userId> <teamId> <playerId>
+
+# Update player
+uv run python scripts/test_players.py update <userId> <teamId> <playerId> firstName "NewName"
+uv run python scripts/test_players.py update <userId> <teamId> <playerId> playerNumber 99
+uv run python scripts/test_players.py update <userId> <teamId> <playerId> status inactive
+uv run python scripts/test_players.py update <userId> <teamId> <playerId> lastName null  # Remove field
+
+# Remove player
+uv run python scripts/test_players.py remove <userId> <teamId> <playerId>
+
+# Verify player exists in DB
+uv run python scripts/test_players.py verify <teamId> <playerId>
+
+# Create test team
+uv run python scripts/test_players.py create-team <userId> "Team Name"
 ```
 
 ### Cloud Testing

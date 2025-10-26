@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
+import '../config/app_config.dart';
+import '../utils/persistence.dart';
 
 /// Provider for the ApiService instance
 final apiServiceProvider = Provider<ApiService>((ref) {
   return ApiService(
-    baseUrl: 'https://ugbhshzkh1.execute-api.us-east-1.amazonaws.com',
+    baseUrl: Environment.apiBaseUrl,
   );
 });
 
@@ -22,9 +24,28 @@ final teamsProvider = AsyncNotifierProvider<TeamsNotifier, List<Team>>(
 class TeamsNotifier extends AsyncNotifier<List<Team>> {
   @override
   Future<List<Team>> build() async {
-    // This is called on first access and whenever invalidated
+    // Attempt to load cached teams first
+    final cached = await Persistence.getJson<List<Team>>(
+      'teams_cache',
+      (obj) => (obj as List).map((e) => Team.fromJson(e as Map<String, dynamic>)).toList(),
+    );
+    if (cached != null && cached.isNotEmpty) {
+      // Emit cached immediately, then refresh in background
+      Future.microtask(() async {
+        try {
+          final api = ref.read(apiServiceProvider);
+          final fresh = await api.listTeams();
+          state = AsyncValue.data(fresh);
+          await Persistence.setJson('teams_cache', fresh.map((t) => t.toJson()).toList());
+        } catch (_) {}
+      });
+      return cached;
+    }
+
     final apiService = ref.watch(apiServiceProvider);
-    return await apiService.listTeams();
+    final teams = await apiService.listTeams();
+    await Persistence.setJson('teams_cache', teams.map((t) => t.toJson()).toList());
+    return teams;
   }
 
   /// Refresh the teams list (for pull-to-refresh)
@@ -32,7 +53,9 @@ class TeamsNotifier extends AsyncNotifier<List<Team>> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final apiService = ref.read(apiServiceProvider);
-      return await apiService.listTeams();
+      final teams = await apiService.listTeams();
+      await Persistence.setJson('teams_cache', teams.map((t) => t.toJson()).toList());
+      return teams;
     });
   }
 
@@ -41,14 +64,31 @@ class TeamsNotifier extends AsyncNotifier<List<Team>> {
     required String name,
     String? description,
   }) async {
+    // Optimistic add
+    final current = (state.value ?? <Team>[]);
+    state = AsyncValue.data([
+      ...current,
+      Team(
+        teamId: 'temp-${DateTime.now().microsecondsSinceEpoch}',
+        name: name,
+        description: description ?? '',
+        role: 'team-owner',
+        memberCount: 1,
+        joinedAt: DateTime.now(),
+        createdAt: DateTime.now(),
+      ),
+    ]);
+
     final apiService = ref.read(apiServiceProvider);
     final newTeam = await apiService.createTeam(
       name: name,
       description: description,
     );
-    
-    // Refresh the teams list to include the new team
-    await refresh();
+    // Replace temp with real
+    final replaced = (state.value ?? <Team>[])..removeWhere((t) => t.teamId.startsWith('temp-'));
+    replaced.add(newTeam);
+    state = AsyncValue.data(replaced);
+    await Persistence.setJson('teams_cache', replaced.map((t) => t.toJson()).toList());
     
     return newTeam;
   }
@@ -59,26 +99,56 @@ class TeamsNotifier extends AsyncNotifier<List<Team>> {
     String? name,
     String? description,
   }) async {
+    // Optimistic update
+    final prev = List<Team>.from(state.value ?? <Team>[]);
+    final idx = prev.indexWhere((t) => t.teamId == teamId);
+    if (idx != -1) {
+      final t = prev[idx];
+      prev[idx] = Team(
+        teamId: t.teamId,
+        name: name ?? t.name,
+        description: description ?? t.description,
+        role: t.role,
+        memberCount: t.memberCount,
+        joinedAt: t.joinedAt,
+        createdAt: t.createdAt,
+      );
+      state = AsyncValue.data(prev);
+    }
+
     final apiService = ref.read(apiServiceProvider);
     final updatedTeam = await apiService.updateTeam(
       teamId: teamId,
       name: name,
       description: description,
     );
-    
-    // Refresh the teams list
-    await refresh();
+    // Ensure cache updated
+    final curr = List<Team>.from(state.value ?? <Team>[]);
+    final i = curr.indexWhere((t) => t.teamId == teamId);
+    if (i != -1) curr[i] = updatedTeam;
+    state = AsyncValue.data(curr);
+    await Persistence.setJson('teams_cache', curr.map((t) => t.toJson()).toList());
     
     return updatedTeam;
   }
 
   /// Delete a team and refresh the list
   Future<void> deleteTeam(String teamId) async {
+    // Optimistic remove
+    final prev = List<Team>.from(state.value ?? <Team>[]);
+    final next = prev..removeWhere((t) => t.teamId == teamId);
+    state = AsyncValue.data(next);
+    await Persistence.setJson('teams_cache', next.map((t) => t.toJson()).toList());
+
     final apiService = ref.read(apiServiceProvider);
-    await apiService.deleteTeam(teamId);
-    
-    // Refresh the teams list
-    await refresh();
+    try {
+      await apiService.deleteTeam(teamId);
+    } catch (e) {
+      // Rollback
+      state = AsyncValue.data(prev);
+      await Persistence.setJson('teams_cache', prev.map((t) => t.toJson()).toList());
+      rethrow;
+    }
   }
 }
 

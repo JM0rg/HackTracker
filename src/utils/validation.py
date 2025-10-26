@@ -86,3 +86,115 @@ def validate_team_description(description):
     
     return description
 
+
+def validate_player_name(name, field_name="name"):
+    """
+    Validate player name (first or last name)
+    
+    Rules:
+    - One word only (no spaces)
+    - Letters and hyphens only
+    - 1-30 characters
+    - Trims whitespace
+    
+    Args:
+        name (str): Player name to validate
+        field_name (str): Name of the field (for error messages)
+        
+    Returns:
+        str: Cleaned name
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if not name or not isinstance(name, str):
+        raise ValueError(f"{field_name} must be a non-empty string")
+    
+    # Trim whitespace
+    name = name.strip()
+    
+    # Check if empty after trimming
+    if not name:
+        raise ValueError(f"{field_name} must not be empty")
+    
+    # Check for spaces (must be one word)
+    if ' ' in name:
+        raise ValueError(f"{field_name} must be a single word (no spaces)")
+    
+    # Check length
+    if len(name) < 1:
+        raise ValueError(f"{field_name} must be at least 1 character")
+    
+    if len(name) > 30:
+        raise ValueError(f"{field_name} must not exceed 30 characters")
+    
+    # Check allowed characters (letters and hyphens only)
+    if not re.match(r'^[A-Za-z-]+$', name):
+        raise ValueError(f"{field_name} must contain only letters and hyphens")
+    
+    return name
+
+
+def validate_player_number(number):
+    """
+    Validate player number
+    
+    Rules:
+    - Must be integer between 0 and 99
+    
+    Args:
+        number (int or str): Player number to validate
+        
+    Returns:
+        int: Validated player number
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    # Try to convert to int if string
+    try:
+        number = int(number)
+    except (TypeError, ValueError):
+        raise ValueError("playerNumber must be a valid integer")
+    
+    # Check range
+    if number < 0 or number > 99:
+        raise ValueError("playerNumber must be between 0 and 99")
+    
+    return number
+
+
+def validate_player_status(status):
+    """
+    Validate player status
+    
+    Rules:
+    - Must be one of: active, inactive, sub
+    - Defaults to 'active' if None or empty
+    
+    Args:
+        status (str or None): Player status
+        
+    Returns:
+        str: Validated status (defaults to 'active')
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    # Default to 'active' if not provided
+    if status is None or status == '':
+        return 'active'
+    
+    if not isinstance(status, str):
+        raise ValueError("status must be a string")
+    
+    # Normalize to lowercase
+    status = status.strip().lower()
+    
+    # Check valid values
+    valid_statuses = ['active', 'inactive', 'sub']
+    if status not in valid_statuses:
+        raise ValueError(f"status must be one of: {', '.join(valid_statuses)}")
+    
+    return status
+

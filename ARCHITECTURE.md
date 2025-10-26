@@ -48,24 +48,46 @@ Provide a flexible ecosystem where:
 
 **Technology:** Riverpod 2.6+
 
-**Pattern:** Session-based caching with stale-while-revalidate
+**Pattern:** Persistent caching with stale-while-revalidate (SWR) + Race-Condition-Safe Optimistic UI
 
 **Implementation:**
-- All API data cached in-memory (session-only, cleared on app restart)
-- Cached data shown immediately on navigation (no loading screens)
-- Fresh data fetched in background automatically
-- Manual refresh via pull-to-refresh gesture
-- Cache invalidated on mutations (create/update/delete)
-- Cache cleared on logout
+- **Persistent cache** via Shared Preferences for key providers (teams, roster, current user)
+- **Cache versioning** - auto-clear on schema changes (increment `Persistence.cacheVersion`)
+- Cached data shown instantly on cold start and navigation (no loading screens)
+- Fresh data fetched in background automatically (SWR)
+- Pull-to-refresh for manual refresh
+- **Optimistic updates** for CRUD: mutate UI immediately, run Lambda in background, rollback on failure
+- **Safe rollback pattern** - uses rollback functions instead of snapshots to prevent race conditions
+- Cache updated on successful mutations; cleared on logout
+
+**Optimistic UI Pattern:**
+```dart
+// All mutations use the safe mutate() extension
+await notifier.mutate(
+  optimisticUpdate: (current) => /* add/update/remove from current state */,
+  apiCall: () => api.doSomething(),
+  applyResult: (current, result) => /* apply real result to current state */,
+  rollback: (current) => /* undo from current state (not snapshot!) */,
+  successMessage: 'Success!',
+  errorMessage: (e) => 'Failed: $e',
+);
+```
+
+**Key Safety Feature:**
+- Rollback functions operate on **current state**, not previous snapshots
+- Prevents race conditions when multiple operations happen concurrently
+- Example: If User adds Player A (succeeds) then Player B (fails), rollback removes only Player B without losing Player A
 
 **Benefits:**
-- Instant navigation between tabs
-- Reduced API calls and Lambda invocations
-- Better UX with no repeated loading screens
-- Consistent data across all screens
-- Easy to test with provider overrides
+- ✅ Instant cold-start UX (teams/roster/current user available offline)
+- ✅ Perceived performance: UI reacts immediately to user actions
+- ✅ Race-condition safe: handles concurrent mutations correctly
+- ✅ Automatic rollback: errors handled gracefully with toast notifications
+- ✅ Reduced API calls and Lambda invocations
+- ✅ Consistent, resilient UX across screens
+- ✅ Easy to test with provider overrides
 
-See [FLUTTER_ARCHITECTURE.md](./FLUTTER_ARCHITECTURE.md) for detailed implementation guide.
+**See Also:** `OPTIMISTIC_UI_GUIDE.md` for complete implementation guide
 
 ---
 
@@ -297,21 +319,23 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
   "playerId": "uuid",
   "teamId": "uuid",
   "userId": "uuid (optional - null for ghost players)",
-  "playerNumber": 12,
-  "position": "SS",
-  "battingOrder": 3,
-  "status": "active" | "inactive" | "sub",
-  "isGhost": true | false,
   "firstName": "John",
   "lastName": "Doe",
+  "playerNumber": 12,
+  "status": "active" | "inactive" | "sub",
+  "isGhost": true | false,
   "createdAt": "2025-10-24T00:00:00Z",
-  "linkedAt": "2025-10-24T00:00:00Z (when user linked)",
+  "updatedAt": "2025-10-24T00:00:00Z",
+  "linkedAt": "2025-10-24T00:00:00Z (when user linked, null for ghost players)",
   "GSI4PK": "USER#<userId>",
   "GSI4SK": "PLAYER#<playerId>"
 }
 ```
 
-**Note:** GSI4 fields only populated when `userId` is not null (i.e., not a ghost player).
+**Note:** 
+- GSI4 fields only populated when `userId` is not null (i.e., not a ghost player).
+- `position` and `battingOrder` are not tracked on player record - hitting-focused stats only (MVP).
+- `battingOrder` will be tracked per-game in lineup, not as a player attribute.
 
 ### Team Structure
 
@@ -421,6 +445,11 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 | `query-teams`        | List/search teams                      | API             | ✅ Implemented |
 | `update-team`        | Update team metadata                   | API             | ✅ Implemented |
 | `delete-team`        | Soft delete team                       | API             | ✅ Implemented |
+| `add-player`         | Add ghost player to roster             | API             | ✅ Implemented |
+| `list-players`       | List team roster                       | API             | ✅ Implemented |
+| `get-player`         | Retrieve player by ID                  | API             | ✅ Implemented |
+| `update-player`      | Update player details                  | API             | ✅ Implemented |
+| `remove-player`      | Remove ghost player from roster        | API             | ✅ Implemented |
 | `invite-player`      | Send invite link/email                 | API             | 🔜 Planned |
 | `join-team`          | Add player to roster                   | API             | 🔜 Planned |
 | `create-season`      | Create season (team or league context) | API             | 🔜 Planned |
@@ -1044,7 +1073,8 @@ def cleanup_expired_deletions():
 - [x] Team ownership & atomic membership creation
 - [x] Role-based authorization (owner, coach, player)
 - [x] Soft delete with 30-day recovery
-- [ ] Player roster management (invite/add/remove members)
+- [x] Player roster management (full CRUD: add, list, get, update, remove)
+- [ ] Player invitations and linking
 - [ ] Season management
 - [ ] Game recording
 - [ ] At-bat tracking
@@ -1199,18 +1229,30 @@ def cleanup_expired_deletions():
 3. **AsyncNotifier for API data** - Built-in caching and state management
 4. **Watch providers in build** - Use `ref.watch()` to listen for changes
 5. **Read providers for actions** - Use `ref.read()` in callbacks/methods
-6. **Invalidate on mutations** - Clear cache after create/update/delete
-7. **RefreshIndicator for manual refresh** - Allow users to force data refresh
-8. **Handle all AsyncValue states** - loading, error, and data cases
+6. **Use optimistic mutations** - All CRUD operations use `notifier.mutate()` pattern
+7. **Temp IDs for adds** - Use `temp-${timestamp}` prefix for optimistic adds
+8. **Capture originals for rollback** - Save original item before update/delete
+9. **Rollback from current state** - Never revert to snapshots (race condition risk)
+10. **RefreshIndicator for manual refresh** - Allow users to force data refresh
+11. **Handle all AsyncValue states** - loading, error, and data cases
+12. **Show loading for temp items** - Check `id.startsWith('temp-')` in UI
+
+**See `OPTIMISTIC_UI_GUIDE.md` for complete implementation checklist**
 
 ---
 
 ## 📚 18. Reference Documentation
 
+### External Resources
 - [DynamoDB Single-Table Design](https://www.alexdebrie.com/posts/dynamodb-single-table/)
 - [API Gateway Payload Format 2.0](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html)
 - [Cognito Triggers](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html)
 - [Terraform AWS Lambda Module](https://registry.terraform.io/modules/terraform-aws-modules/lambda/aws/latest)
+
+### Internal Guides
+- **[OPTIMISTIC_UI_GUIDE.md](./OPTIMISTIC_UI_GUIDE.md)** - Complete guide for implementing race-condition-safe optimistic mutations
+- **[DATA_MODEL.md](./DATA_MODEL.md)** - Current implementation snapshot (what exists now)
+- **[TESTING.md](./TESTING.md)** - Local and cloud testing workflows
 
 ---
 

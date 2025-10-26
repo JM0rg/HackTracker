@@ -4,6 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktracker/services/api_service.dart';
 import '../theme/app_colors.dart';
 import '../providers/team_providers.dart';
+import '../providers/player_providers.dart';
+import '../widgets/player_form_dialog.dart';
+import '../widgets/confirm_dialog.dart';
+import '../widgets/ui_helpers.dart';
 
 /// Team View - Shows team-specific stats and roster
 class TeamViewScreen extends ConsumerStatefulWidget {
@@ -770,48 +774,145 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
 
             const SizedBox(height: 20),
 
-            // Roster Preview
-            Text(
-              'ROSTER',
-              style: GoogleFonts.tektur(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                letterSpacing: 1.5,
-              ),
+            // Roster Preview header with Add button (owners/coaches only)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'ROSTER',
+                  style: GoogleFonts.tektur(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                if (_selectedTeam!.canManageRoster)
+                  SizedBox(
+                    height: 32,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final teamId = _selectedTeam!.teamId;
+                        await showDialog<bool>(
+                          context: context,
+                          builder: (_) => PlayerFormDialog(
+                            teamId: teamId,
+                            // No onSaved callback - provider handles optimistic updates
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('ADD'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                      ),
+                    ),
+                  ),
+              ],
             ),
 
             const SizedBox(height: 12),
 
-            _PlayerCard(name: 'Jack Morgan', stats: '.342 AVG • 12 HR'),
-            const SizedBox(height: 8),
-            _PlayerCard(name: 'Mike Smith', stats: '.315 AVG • 8 HR'),
-            const SizedBox(height: 8),
-            _PlayerCard(name: 'Sarah Johnson', stats: '.298 AVG • 5 HR'),
-
-            const SizedBox(height: 12),
-
-            OutlinedButton(
-              onPressed: () {
-                // TODO: Navigate to full roster
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            // Roster list (Riverpod)
+            Consumer(builder: (context, ref, _) {
+              final teamId = _selectedTeam!.teamId;
+              final rosterAsync = ref.watch(rosterProvider(teamId));
+              return rosterAsync.when(
+                loading: () => Column(
+                  children: List.generate(3, (i) => const _SkeletonPlayerCard()).expand((w) => [w, const SizedBox(height: 8)]).toList(),
                 ),
-              ),
-              child: Text(
-                'VIEW FULL ROSTER',
-                style: GoogleFonts.tektur(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
+                error: (e, st) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(e.toString(), style: GoogleFonts.tektur(color: AppColors.error)),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () => ref.invalidate(rosterProvider(teamId)),
+                      style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.primary)),
+                      child: const Text('RETRY'),
+                    )
+                  ],
                 ),
-              ),
-            ),
+                data: (players) {
+                  if (players.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: AppColors.textTertiary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedTeam!.canManageRoster
+                                  ? 'No players yet. Tap + to add your first player.'
+                                  : 'No players on the roster yet.',
+                              style: GoogleFonts.tektur(color: AppColors.textSecondary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      for (final p in players) ...[
+                        _RosterPlayerCard(
+                          player: p,
+                          canManage: _selectedTeam!.canManageRoster,
+                          onEdit: () async {
+                            try {
+                              await showDialog<bool>(
+                                context: context,
+                                builder: (_) => PlayerFormDialog(
+                                  teamId: teamId,
+                                  player: p,
+                                  // No onSaved callback - provider handles optimistic updates
+                                ),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              showError(context, 'Failed to update player: $e');
+                            }
+                          },
+                          onRemove: () async {
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (_) => ConfirmDialog(
+                                title: 'REMOVE PLAYER?',
+                                message: 'Remove ${p.fullName} from roster? This cannot be undone.',
+                                confirmLabel: 'REMOVE',
+                                confirmColor: AppColors.error,
+                              ),
+                            );
+                            if (confirmed == true) {
+                              final actions = ref.read(rosterActionsProvider(teamId));
+                              try {
+                                await actions.removePlayer(p.playerId);
+                                if (!mounted) return;
+                                showSuccess(context, 'Removed ${p.fullName}');
+                              } catch (e) {
+                                if (!mounted) return;
+                                showError(context, 'Failed to remove player: $e');
+                              }
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ],
+                  );
+                },
+              );
+            }),
 
             const SizedBox(height: 20),
           ],
@@ -963,4 +1064,178 @@ class _PlayerCard extends StatelessWidget {
     );
   }
 }
+
+/// Skeleton placeholder while loading roster
+class _SkeletonPlayerCard extends StatelessWidget {
+  const _SkeletonPlayerCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(height: 12, width: 140, color: AppColors.border),
+                const SizedBox(height: 6),
+                Container(height: 10, width: 90, color: AppColors.border),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+/// Real roster player card bound to Player model
+class _RosterPlayerCard extends StatelessWidget {
+  final Player player;
+  final bool canManage;
+  final VoidCallback? onEdit;
+  final VoidCallback? onRemove;
+
+  const _RosterPlayerCard({
+    required this.player,
+    required this.canManage,
+    this.onEdit,
+    this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Check if this is a temp player being synced
+    final isSyncing = player.playerId.startsWith('temp-');
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              player.displayNumber,
+              style: GoogleFonts.tektur(
+                fontSize: 12,
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        player.fullName,
+                        style: GoogleFonts.tektur(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: player.status == 'active'
+                            ? AppColors.primary
+                            : AppColors.border,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        player.status.toUpperCase(),
+                        style: GoogleFonts.tektur(
+                          fontSize: 10,
+                          color: player.status == 'active' ? Colors.black : AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                if (player.isGhost)
+                  Text(
+                    'Guest Player',
+                    style: GoogleFonts.tektur(fontSize: 12, color: AppColors.textTertiary),
+                  ),
+              ],
+            ),
+          ),
+          if (isSyncing)
+            const Padding(
+              padding: EdgeInsets.only(left: 8),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                ),
+              ),
+            )
+          else if (canManage)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: AppColors.textTertiary),
+              color: AppColors.surface,
+              onSelected: (value) {
+                if (value == 'edit') {
+                  onEdit?.call();
+                } else if (value == 'remove') {
+                  onRemove?.call();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Text('Edit Player'),
+                ),
+                const PopupMenuItem(
+                  value: 'remove',
+                  child: Text('Remove from Roster'),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 

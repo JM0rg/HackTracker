@@ -64,6 +64,11 @@ class Environment {
     defaultValue: 'us-east-1',
   );
 
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://ugbhshzkh1.execute-api.us-east-1.amazonaws.com',
+  );
+
   static AppConfig get config => AppConfig(
         cognitoUserPoolId: _userPoolId,
         cognitoClientId: _clientId,

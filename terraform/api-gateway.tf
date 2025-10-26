@@ -166,6 +166,61 @@ module "api_gateway" {
         timeout_milliseconds   = 10000
       }
     }
+
+    # Add Player to Team
+    "POST /teams/{teamId}/players" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.add_player_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # List Players on Team
+    "GET /teams/{teamId}/players" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.list_players_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 30000
+      }
+    }
+
+    # Get Single Player
+    "GET /teams/{teamId}/players/{playerId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.get_player_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Update Player
+    "PUT /teams/{teamId}/players/{playerId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.update_player_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Remove Player from Team
+    "DELETE /teams/{teamId}/players/{playerId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.remove_player_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
   }
 
   tags = merge(local.common_tags, {
@@ -254,6 +309,51 @@ resource "aws_lambda_permission" "api_gateway_delete_team" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = module.delete_team_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Add Player Lambda
+resource "aws_lambda_permission" "api_gateway_add_player" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.add_player_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke List Players Lambda
+resource "aws_lambda_permission" "api_gateway_list_players" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.list_players_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Get Player Lambda
+resource "aws_lambda_permission" "api_gateway_get_player" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.get_player_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Update Player Lambda
+resource "aws_lambda_permission" "api_gateway_update_player" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.update_player_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Remove Player Lambda
+resource "aws_lambda_permission" "api_gateway_remove_player" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.remove_player_lambda.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
 }

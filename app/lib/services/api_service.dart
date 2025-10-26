@@ -162,6 +162,108 @@ class ApiService {
 
     _handleResponse(response);
   }
+
+  // ========== PLAYERS ENDPOINTS ==========
+
+  /// List players for a team
+  Future<List<Player>> listPlayers(
+    String teamId, {
+    String? status,
+    bool? isGhost,
+  }) async {
+    final query = <String, String>{};
+    if (status != null && status.isNotEmpty) {
+      query['status'] = status;
+    }
+    if (isGhost != null) {
+      query['isGhost'] = isGhost.toString();
+    }
+
+    final queryString = query.isEmpty
+        ? ''
+        : ('?' + query.entries.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&'));
+
+    final response = await _authenticatedRequest(
+      method: 'GET',
+      path: '/teams/${Uri.encodeComponent(teamId)}/players$queryString',
+    );
+
+    final data = _handleResponse(response);
+    final players = (data['players'] as List)
+        .map((json) => Player.fromJson(json as Map<String, dynamic>))
+        .toList();
+
+    return players;
+  }
+
+  /// Get a single player
+  Future<Player> getPlayer(String teamId, String playerId) async {
+    final response = await _authenticatedRequest(
+      method: 'GET',
+      path: '/teams/${Uri.encodeComponent(teamId)}/players/${Uri.encodeComponent(playerId)}',
+    );
+
+    final data = _handleResponse(response);
+    return Player.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Add a new player to the roster
+  Future<Player> addPlayer({
+    required String teamId,
+    required String firstName,
+    String? lastName,
+    int? playerNumber,
+    String? status,
+  }) async {
+    final body = <String, dynamic>{'firstName': firstName};
+    if (lastName != null && lastName.isNotEmpty) body['lastName'] = lastName;
+    if (playerNumber != null) body['playerNumber'] = playerNumber;
+    if (status != null && status.isNotEmpty) body['status'] = status;
+
+    final response = await _authenticatedRequest(
+      method: 'POST',
+      path: '/teams/${Uri.encodeComponent(teamId)}/players',
+      body: body,
+    );
+
+    final data = _handleResponse(response);
+    return Player.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Update an existing player
+  Future<Player> updatePlayer({
+    required String teamId,
+    required String playerId,
+    String? firstName,
+    String? lastName,
+    int? playerNumber,
+    String? status,
+  }) async {
+    final body = <String, dynamic>{};
+    if (firstName != null) body['firstName'] = firstName;
+    if (lastName != null) body['lastName'] = lastName; // may be null to remove via backend behavior
+    if (playerNumber != null) body['playerNumber'] = playerNumber; // may be null to remove
+    if (status != null) body['status'] = status;
+
+    final response = await _authenticatedRequest(
+      method: 'PUT',
+      path: '/teams/${Uri.encodeComponent(teamId)}/players/${Uri.encodeComponent(playerId)}',
+      body: body,
+    );
+
+    final data = _handleResponse(response);
+    return Player.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Remove a player (ghost players only)
+  Future<void> removePlayer(String teamId, String playerId) async {
+    final response = await _authenticatedRequest(
+      method: 'DELETE',
+      path: '/teams/${Uri.encodeComponent(teamId)}/players/${Uri.encodeComponent(playerId)}',
+    );
+
+    _handleResponse(response);
+  }
 }
 
 /// Team model
@@ -214,6 +316,72 @@ class Team {
   bool get isCoach => role == 'team-coach';
   bool get isPlayer => role == 'team-player';
   bool get isMember => role == 'team-player'; // Keep for backwards compatibility
+  bool get canManageRoster => isOwner || isCoach;
+}
+
+/// Player model
+class Player {
+  final String playerId;
+  final String teamId;
+  final String firstName;
+  final String? lastName;
+  final int? playerNumber;
+  final String status;
+  final bool isGhost;
+  final String? userId;
+  final String? linkedAt;
+  final String createdAt;
+  final String updatedAt;
+
+  Player({
+    required this.playerId,
+    required this.teamId,
+    required this.firstName,
+    required this.lastName,
+    required this.playerNumber,
+    required this.status,
+    required this.isGhost,
+    required this.userId,
+    required this.linkedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory Player.fromJson(Map<String, dynamic> json) {
+    return Player(
+      playerId: json['playerId'] as String,
+      teamId: json['teamId'] as String,
+      firstName: json['firstName'] as String,
+      lastName: json['lastName'] as String?,
+      playerNumber: json['playerNumber'] == null ? null : (json['playerNumber'] as num).toInt(),
+      status: json['status'] as String,
+      isGhost: (json['isGhost'] as bool?) ?? false,
+      userId: json['userId'] as String?,
+      linkedAt: json['linkedAt'] as String?,
+      createdAt: json['createdAt'] as String,
+      updatedAt: json['updatedAt'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'playerId': playerId,
+      'teamId': teamId,
+      'firstName': firstName,
+      'lastName': lastName,
+      'playerNumber': playerNumber,
+      'status': status,
+      'isGhost': isGhost,
+      'userId': userId,
+      'linkedAt': linkedAt,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
+  }
+
+  String get fullName => (lastName != null && lastName!.isNotEmpty) ? '$firstName $lastName' : firstName;
+  String get displayNumber => playerNumber?.toString() ?? '--';
+  bool get isActive => status == 'active';
 }
 
 /// API Exception
