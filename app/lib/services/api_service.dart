@@ -81,7 +81,7 @@ class ApiService {
 
   /// List all teams for the authenticated user
   /// 
-  /// Returns: List of teams with role and member count
+  /// Returns: List of teams with role and member count (excludes personal teams)
   Future<List<Team>> listTeams() async {
     // Get current user's ID from Cognito
     final user = await Amplify.Auth.getCurrentUser();
@@ -95,9 +95,32 @@ class ApiService {
     final data = _handleResponse(response);
     final teams = (data['teams'] as List)
         .map((json) => Team.fromJson(json))
+        .where((team) => !team.isPersonal) // Filter out personal teams
         .toList();
     
     return teams;
+  }
+
+  /// Get the user's personal stats team
+  /// 
+  /// Returns: The personal team (used for Player View)
+  Future<Team?> getPersonalTeam() async {
+    // Get current user's ID from Cognito
+    final user = await Amplify.Auth.getCurrentUser();
+    final userId = user.userId;
+    
+    final response = await _authenticatedRequest(
+      method: 'GET',
+      path: '/teams?userId=$userId',
+    );
+
+    final data = _handleResponse(response);
+    final teams = (data['teams'] as List)
+        .map((json) => Team.fromJson(json))
+        .where((team) => team.isPersonal) // Only get personal team
+        .toList();
+    
+    return teams.isNotEmpty ? teams.first : null;
   }
 
   /// Create a new team
@@ -275,6 +298,7 @@ class Team {
   final int memberCount;
   final DateTime joinedAt;
   final DateTime createdAt;
+  final bool isPersonal;
 
   Team({
     required this.teamId,
@@ -284,6 +308,7 @@ class Team {
     required this.memberCount,
     required this.joinedAt,
     required this.createdAt,
+    this.isPersonal = false,
   });
 
   factory Team.fromJson(Map<String, dynamic> json) {
@@ -297,6 +322,7 @@ class Team {
           ? DateTime.parse(json['joinedAt'] as String)
           : DateTime.now(),
       createdAt: DateTime.parse(json['createdAt'] as String),
+      isPersonal: json['isPersonal'] as bool? ?? false,
     );
   }
 
@@ -309,6 +335,7 @@ class Team {
       'memberCount': memberCount,
       'joinedAt': joinedAt.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
+      'isPersonal': isPersonal,
     };
   }
 
