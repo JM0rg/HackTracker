@@ -126,7 +126,8 @@ def query_teams(user_id=None, owner_id=None):
         print(f"   ✅ Found {data['count']} team(s)")
         for team in data['teams']:
             role = team.get('role', 'N/A')
-            print(f"   - {team['name']} ({team['teamId'][:8]}...) [Role: {role}]")
+            is_personal = " [PERSONAL]" if team.get('isPersonal') else ""
+            print(f"   - {team['name']} ({team['teamId'][:8]}...) [Role: {role}]{is_personal}")
         return data['teams']
     else:
         print(f"   ❌ Failed: {response['statusCode']}")
@@ -394,6 +395,40 @@ def run_full_test(user_id):
     if team4_id:
         team4 = get_team(team4_id)
         print(f"   Cleaned name: '{team4['name']}'")
+    
+    # Test 9: Personal Team Restrictions
+    print("\n" + "=" * 60)
+    print("TEST 9: Personal Team Restrictions")
+    print("=" * 60)
+    
+    # Find user's personal team
+    print("🔍 Finding user's personal team...")
+    all_user_teams = query_teams(user_id=user_id)
+    personal_teams = [t for t in all_user_teams if t.get('isPersonal')]
+    
+    if personal_teams:
+        personal_team_id = personal_teams[0]['teamId']
+        print(f"✅ Found personal team: {personal_team_id}")
+        
+        # Try to delete personal team (should fail)
+        print("\n🧪 Test: Try to delete personal team (should fail)")
+        delete_team(user_id, personal_team_id)
+        
+        # Try to update personal team (should fail)
+        print("\n🧪 Test: Try to update personal team (should fail)")
+        update_team(user_id, personal_team_id, name="New Name")
+        
+        # Verify personal team is not in public list
+        print("\n🧪 Test: Verify personal team not in public list")
+        all_teams = query_teams()
+        personal_in_public = [t for t in all_teams if t.get('isPersonal')]
+        if not personal_in_public:
+            print("   ✅ Personal team correctly filtered from public list")
+        else:
+            print("   ❌ Personal team should not appear in public list")
+    else:
+        print("⚠️  No personal team found for user")
+        print("   (Personal teams are auto-created on user signup)")
     
     # Summary
     print("\n" + "=" * 60)

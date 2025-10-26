@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
-from utils.authorization import get_user_id_from_event, authorize, PermissionError
+from utils.authorization import get_user_id_from_event, authorize, check_personal_team_operation, PermissionError
 
 
 def handler(event, context):
@@ -56,6 +56,12 @@ def handler(event, context):
     table = get_table()
     
     try:
+        # Check if this is a personal team (can't delete personal teams)
+        try:
+            check_personal_team_operation(table, team_id, 'delete_team')
+        except PermissionError as e:
+            return create_response(403, {'error': str(e)})
+        
         # Check authorization: can user delete this team?
         try:
             authorize(table, user_id, team_id, action='delete_team')

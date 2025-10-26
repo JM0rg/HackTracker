@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
 from utils.validation import validate_player_name, validate_player_number, validate_player_status
-from utils.authorization import get_user_id_from_event, authorize, PermissionError
+from utils.authorization import get_user_id_from_event, authorize, check_personal_team_operation, PermissionError
 
 
 def handler(event, context):
@@ -93,8 +93,14 @@ def handler(event, context):
         except ValueError as e:
             return create_response(400, {'error': str(e)})
         
-        # Authorize: check if user can manage roster
+        # Check if this is a personal team (can't add players to personal teams)
         table = get_table()
+        try:
+            check_personal_team_operation(table, team_id, 'manage_roster')
+        except PermissionError as e:
+            return create_response(403, {'error': str(e)})
+        
+        # Authorize: check if user can manage roster
         try:
             authorize(table, user_id, team_id, action='manage_roster')
         except PermissionError as e:

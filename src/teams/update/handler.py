@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
 from utils.validation import validate_team_name, validate_team_description
-from utils.authorization import get_user_id_from_event, authorize, PermissionError
+from utils.authorization import get_user_id_from_event, authorize, check_personal_team_operation, PermissionError
 
 # Fields that are allowed to be updated
 ALLOWED_FIELDS = {'name', 'description'}
@@ -91,8 +91,14 @@ def handler(event, context):
         return create_response(400, {'error': 'No valid fields to update'})
     
     table = get_table()
-    
+
     try:
+        # Check if this is a personal team (can't edit personal teams)
+        try:
+            check_personal_team_operation(table, team_id, 'manage_team')
+        except PermissionError as e:
+            return create_response(403, {'error': str(e)})
+        
         # Check authorization: can user manage this team?
         try:
             authorize(table, user_id, team_id, action='manage_team')

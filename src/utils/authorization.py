@@ -270,3 +270,63 @@ def get_user_id_from_event(event):
     }))
     raise ValueError("User ID not found. Authentication required.")
 
+
+def check_personal_team_operation(table, team_id, operation):
+    """
+    Block certain operations on personal stats teams
+    
+    Personal teams are invisible containers for at-bats not linked to real teams.
+    Users should not be able to manage them like regular teams.
+    
+    Allowed operations: create games, record at-bats
+    Blocked operations: add players, delete team, manage roster, create seasons
+    
+    Args:
+        table: DynamoDB table resource
+        team_id (str): Team ID to check
+        operation (str): Operation to validate (e.g., 'manage_roster', 'delete_team')
+    
+    Returns:
+        None if operation is allowed
+    
+    Raises:
+        PermissionError: If operation is not allowed on personal team
+    """
+    # Get team record
+    response = table.get_item(
+        Key={
+            'PK': f'TEAM#{team_id}',
+            'SK': 'METADATA'
+        }
+    )
+    
+    if 'Item' not in response:
+        print(json.dumps({
+            'level': 'WARN',
+            'message': 'Team not found for personal team check',
+            'teamId': team_id
+        }))
+        raise PermissionError("Team not found")
+    
+    team = response['Item']
+    
+    # If not a personal team, allow all operations
+    if not team.get('isPersonal', False):
+        return
+    
+    # Define blocked operations for personal teams
+    blocked_operations = [
+        'manage_roster',  # Can't add/remove players
+        'delete_team',    # Can't delete personal team
+        'manage_team'     # Can't rename/edit team
+    ]
+    
+    if operation in blocked_operations:
+        print(json.dumps({
+            'level': 'WARN',
+            'message': 'Operation not allowed on personal stats team',
+            'teamId': team_id,
+            'operation': operation
+        }))
+        raise PermissionError(f"Cannot {operation.replace('_', ' ')} on personal stats team")
+

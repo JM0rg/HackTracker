@@ -165,12 +165,15 @@ GSI2SK: METADATA#<teamId>
 | `description` | String | ❌ | ✅ | Optional team description (max 500 chars) |
 | `ownerId` | String | ✅ | ❌ | User ID of team owner |
 | `status` | String | ✅ | ❌ | Team status: `active` or `deleted` |
+| `isPersonal` | Boolean | ❌ | ❌ | True if this is a user's personal stats container (auto-created) |
 | `createdAt` | ISO 8601 | ✅ | ❌ | Team creation timestamp |
 | `updatedAt` | ISO 8601 | ✅ | ❌ | Last update timestamp (auto-updated) |
 | `deletedAt` | ISO 8601 | ❌ | ❌ | Soft delete timestamp (if deleted) |
 | `recoveryToken` | String (UUID) | ❌ | ❌ | Recovery token for 30-day recovery period |
 
-**Example Item:**
+**Note:** Personal teams are automatically created for each user on signup. They serve as invisible containers for at-bats not linked to any real team. Personal teams are filtered from public team listings but appear in the user's own team list for stat aggregation.
+
+**Example Item (Regular Team):**
 ```json
 {
   "PK": "TEAM#a6f27724-7042-4816-94d3-a2183ef50a09",
@@ -184,6 +187,23 @@ GSI2SK: METADATA#<teamId>
   "updatedAt": "2025-10-25T12:00:00.000Z",
   "GSI2PK": "ENTITY#TEAM",
   "GSI2SK": "METADATA#a6f27724-7042-4816-94d3-a2183ef50a09"
+}
+```
+
+**Example Item (Personal Team):**
+```json
+{
+  "PK": "TEAM#b7e38835-8153-5927-a5e4-b3294fg61b1a",
+  "SK": "METADATA",
+  "teamId": "b7e38835-8153-5927-a5e4-b3294fg61b1a",
+  "name": "Personal Stats",
+  "ownerId": "12345678-1234-1234-1234-123456789012",
+  "status": "active",
+  "isPersonal": true,
+  "createdAt": "2025-10-25T12:00:00.000Z",
+  "updatedAt": "2025-10-25T12:00:00.000Z",
+  "GSI2PK": "ENTITY#TEAM",
+  "GSI2SK": "METADATA#b7e38835-8153-5927-a5e4-b3294fg61b1a"
 }
 ```
 

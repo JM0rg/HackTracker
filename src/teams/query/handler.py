@@ -37,6 +37,10 @@ def format_team(item):
     if 'updatedAt' in item:
         team['updatedAt'] = item['updatedAt']
     
+    # Include isPersonal flag if present (for UI filtering)
+    if 'isPersonal' in item:
+        team['isPersonal'] = item['isPersonal']
+    
     return team
 
 
@@ -53,8 +57,11 @@ def list_all_teams(table, limit=50, next_token=None):
     
     response = table.query(**query_params)
     
-    # Filter out deleted teams
-    items = [item for item in response.get('Items', []) if item.get('status') != 'deleted']
+    # Filter out deleted teams and personal teams (personal teams should not appear in public lists)
+    items = [
+        item for item in response.get('Items', [])
+        if item.get('status') != 'deleted' and not item.get('isPersonal', False)
+    ]
     
     return {
         'items': items,
@@ -73,10 +80,12 @@ def list_teams_by_owner(table, owner_id, limit=50):
     
     response = table.query(**query_params)
     
-    # Filter by owner and status
+    # Filter by owner and status (exclude personal teams from owner listings)
     items = [
         item for item in response.get('Items', [])
-        if item.get('ownerId') == owner_id and item.get('status') != 'deleted'
+        if item.get('ownerId') == owner_id 
+        and item.get('status') != 'deleted'
+        and not item.get('isPersonal', False)
     ]
     
     # Apply limit after filtering
