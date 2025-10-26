@@ -20,6 +20,7 @@
 - **[DATA_MODEL.md](../DATA_MODEL.md)** - Current entities, Lambda functions, API routes
 - **[TESTING.md](../TESTING.md)** - Local and cloud testing workflows
 - **[OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md)** - Detailed optimistic UI patterns
+- **[RIVERPOD_V3_MIGRATION.md](./RIVERPOD_V3_MIGRATION.md)** - Riverpod v2 to v3 migration guide
 
 ---
 

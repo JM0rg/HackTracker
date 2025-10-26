@@ -6,7 +6,7 @@ HackTracker uses a sophisticated caching strategy to provide instant UX while ma
 
 ## Technology Stack
 
-**State Management:** Riverpod 2.6+
+**State Management:** Riverpod 3.0+
 
 **Persistence:** Shared Preferences (simple key-value storage)
 
@@ -69,9 +69,10 @@ static const int cacheVersion = 3; // ← Bump this
 
 ### Pattern
 
-All mutations use the safe `mutate()` extension:
+All mutations use the safe `mutate()` method (defined within the notifier class):
 
 ```dart
+// Inside the notifier class
 await notifier.mutate(
   optimisticUpdate: (current) => /* add/update/remove from current state */,
   apiCall: () => api.doSomething(),
@@ -81,6 +82,8 @@ await notifier.mutate(
   errorMessage: (e) => 'Failed: $e',
 );
 ```
+
+**Note (Riverpod v3):** The `mutate()` method is defined directly in the notifier class (not as an extension) because the `state` property is now protected and can only be accessed from within the notifier.
 
 ### Key Safety Feature
 

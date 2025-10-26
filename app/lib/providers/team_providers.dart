@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import '../services/api_service.dart';
 import '../config/app_config.dart';
 import '../utils/persistence.dart';
@@ -162,8 +163,18 @@ final selectedTeamProvider = StateProvider<Team?>((ref) => null);
 /// 
 /// This is a family provider that caches individual team lookups.
 /// Each teamId gets its own cached entry.
-final teamByIdProvider = FutureProvider.family<Team, String>((ref, teamId) async {
-  final apiService = ref.watch(apiServiceProvider);
-  return await apiService.getTeam(teamId);
-});
+final teamByIdProvider = AsyncNotifierProvider.family<TeamByIdNotifier, Team, String>(
+  (teamId) => TeamByIdNotifier(teamId),
+);
+
+class TeamByIdNotifier extends AsyncNotifier<Team> {
+  TeamByIdNotifier(this._teamId);
+  final String _teamId;
+  
+  @override
+  Future<Team> build() async {
+    final apiService = ref.watch(apiServiceProvider);
+    return await apiService.getTeam(_teamId);
+  }
+}
 

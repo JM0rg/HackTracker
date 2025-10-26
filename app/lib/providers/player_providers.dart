@@ -2,20 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
 import 'team_providers.dart';
 import '../utils/persistence.dart';
-import 'optimistic_extensions.dart';
+import '../utils/messenger.dart';
 
 /// Roster provider (family) that fetches players for a given teamId
 final rosterProvider = AsyncNotifierProvider.family<RosterNotifier, List<Player>, String>(
-  () => RosterNotifier(),
+  (teamId) => RosterNotifier(teamId),
 );
 
 /// Actions helper for roster mutations (add/update/remove)
-class RosterNotifier extends FamilyAsyncNotifier<List<Player>, String> {
-  late String _teamId;
+class RosterNotifier extends AsyncNotifier<List<Player>> {
+  RosterNotifier(this._teamId);
+  final String _teamId;
 
   @override
-  Future<List<Player>> build(String teamId) async {
-    _teamId = teamId;
+  Future<List<Player>> build() async {
     final cacheKey = 'roster_cache_$_teamId';
     final cached = await Persistence.getJson<List<Player>>(
       cacheKey,
@@ -40,6 +40,52 @@ class RosterNotifier extends FamilyAsyncNotifier<List<Player>, String> {
   }
 
   RosterActions actions() => RosterActions(ref, _teamId, this);
+
+  /// Expose the current state for RosterActions
+  AsyncValue<List<Player>> get currentState => state;
+
+  /// Perform an optimistic mutation with automatic rollback on error
+  Future<R?> mutate<R>({
+    required List<Player> Function(List<Player> current) optimisticUpdate,
+    required Future<R> Function() apiCall,
+    required List<Player> Function(List<Player> current, R result) applyResult,
+    required List<Player> Function(List<Player> current) rollback,
+    String? successMessage,
+    String Function(dynamic error)? errorMessage,
+  }) async {
+    // Guard clause: Only mutate if state is data (not loading/error)
+    if (state is! AsyncData<List<Player>>) {
+      return null;
+    }
+
+    // 1. Apply optimistic update to current state
+    state = AsyncValue.data(optimisticUpdate(state.requireValue));
+
+    try {
+      // 2. Execute API call
+      final result = await apiCall();
+      
+      // 3. Apply real result to current state (may have changed since step 1)
+      state = AsyncValue.data(applyResult(state.requireValue, result));
+      
+      // 4. Show success message
+      if (successMessage != null) {
+        showSuccessToast(successMessage);
+      }
+      
+      return result;
+    } catch (e) {
+      // 5. Rollback from current state (not previous snapshot)
+      state = AsyncValue.data(rollback(state.requireValue));
+      
+      // 6. Show error message
+      final errorMsg = errorMessage?.call(e) ?? 'Operation failed';
+      showErrorToast(errorMsg);
+      
+      // Don't rethrow - error is handled via toast
+      return null;
+    }
+  }
 }
 
 class RosterActions {
@@ -110,7 +156,7 @@ class RosterActions {
     String? status,
   }) async {
     // Find the original player for rollback
-    final original = notifier.state.value?.firstWhere(
+    final original = notifier.currentState.value?.firstWhere(
       (p) => p.playerId == playerId,
       orElse: () => throw StateError('Player not found'),
     );
@@ -172,7 +218,7 @@ class RosterActions {
 
   Future<void> removePlayer(String playerId) async {
     // Find the player being removed for rollback
-    final removed = notifier.state.value?.firstWhere(
+    final removed = notifier.currentState.value?.firstWhere(
       (p) => p.playerId == playerId,
       orElse: () => throw StateError('Player not found'),
     );
