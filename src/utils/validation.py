@@ -93,9 +93,15 @@ def validate_player_name(name, field_name="name"):
     
     Rules:
     - One word only (no spaces)
-    - Letters and hyphens only
+    - Letters, hyphens, apostrophes, periods, and accented characters allowed
     - 1-30 characters
     - Trims whitespace
+    
+    Examples of valid names:
+    - "Smith-Jones" (hyphenated)
+    - "O'Malley" (apostrophe)
+    - "J.R." (periods)
+    - "José" (accented characters)
     
     Args:
         name (str): Player name to validate
@@ -128,9 +134,13 @@ def validate_player_name(name, field_name="name"):
     if len(name) > 30:
         raise ValueError(f"{field_name} must not exceed 30 characters")
     
-    # Check allowed characters (letters and hyphens only)
-    if not re.match(r'^[A-Za-z-]+$', name):
-        raise ValueError(f"{field_name} must contain only letters and hyphens")
+    # Check allowed characters
+    # Allow: letters (including Unicode), hyphens, apostrophes, and periods
+    # \p{L} matches any Unicode letter (including accented characters)
+    # However, Python's re module doesn't support \p{L}, so we use a more permissive pattern
+    # that allows letters, hyphens, apostrophes, periods, and common accented characters
+    if not re.match(r"^[A-Za-zÀ-ÿ'\.\-]+$", name):
+        raise ValueError(f"{field_name} must contain only letters, hyphens, apostrophes, or periods")
     
     return name
 
