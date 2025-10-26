@@ -124,7 +124,8 @@ def list_user_teams(table, user_id):
         
         if 'Item' in team_response:
             team = team_response['Item']
-            if team.get('status') != 'deleted':
+            # Filter out deleted teams and personal teams
+            if team.get('status') != 'deleted' and not team.get('isPersonal', False):
                 team_data = format_team(team)
                 # Add user's role in this team
                 team_data['role'] = membership.get('role')

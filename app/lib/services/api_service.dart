@@ -81,7 +81,7 @@ class ApiService {
 
   /// List all teams for the authenticated user
   /// 
-  /// Returns: List of teams with role and member count (excludes personal teams)
+  /// Returns: List of teams with role and member count (personal teams filtered by backend)
   Future<List<Team>> listTeams() async {
     // Get current user's ID from Cognito
     final user = await Amplify.Auth.getCurrentUser();
@@ -95,7 +95,6 @@ class ApiService {
     final data = _handleResponse(response);
     final teams = (data['teams'] as List)
         .map((json) => Team.fromJson(json))
-        .where((team) => !team.isPersonal) // Filter out personal teams
         .toList();
     
     return teams;
