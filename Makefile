@@ -10,6 +10,7 @@ help:
 	@echo "  make test             Run user Lambda tests (see: make test-help)"
 	@echo "  make test-teams       Run team Lambda tests (full suite)"
 	@echo "  make test-players     Run player Lambda tests (full suite)"
+	@echo "  make test-e2e         Run full end-to-end test suite (all features)"
 	@echo "  make test-cloud       Run tests against deployed API Gateway"
 	@echo "  make package          Package Lambda functions"
 	@echo ""
@@ -49,6 +50,10 @@ test-teams:
 test-players:
 	@echo "🧪 Running full player test suite..."
 	@uv run python scripts/test_players.py full-test $(filter-out $@,$(MAKECMDGOALS))
+
+test-e2e:
+	@echo "🧪 Running full end-to-end test suite..."
+	@uv run python scripts/full_e2e_test.py
 
 test-cloud:
 	@uv run python scripts/test_users.py $(filter-out $@,$(MAKECMDGOALS)) --cloud
