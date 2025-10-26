@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:http/http.dart' as http;
+import 'auth_service.dart';
 
 /// API Service for HackTracker backend
 /// 
@@ -14,9 +15,41 @@ class ApiService {
 
   /// Get the current user's Cognito ID token
   Future<String> _getIdToken() async {
-    final session = await Amplify.Auth.fetchAuthSession();
-    final cognitoSession = session as CognitoAuthSession;
-    return cognitoSession.userPoolTokensResult.value.idToken.raw;
+    try {
+      // Validate authentication first
+      final authStatus = await AuthService.validateAuth();
+      if (!authStatus.isValid) {
+        throw ApiException(
+          statusCode: 401,
+          message: 'Authentication required: ${authStatus.message}',
+          errorType: 'Unauthorized',
+        );
+      }
+
+      final session = await Amplify.Auth.fetchAuthSession();
+      final cognitoSession = session as CognitoAuthSession;
+      final tokens = cognitoSession.userPoolTokensResult.value;
+      
+      if (tokens.idToken == null) {
+        throw ApiException(
+          statusCode: 401,
+          message: 'No authentication token available',
+          errorType: 'Unauthorized',
+        );
+      }
+
+      return tokens.idToken.raw;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      
+      // If it's an auth error, sign out and throw proper exception
+      await AuthService.signOut();
+      throw ApiException(
+        statusCode: 401,
+        message: 'Authentication failed: $e',
+        errorType: 'Unauthorized',
+      );
+    }
   }
 
   /// Make an authenticated HTTP request
@@ -67,6 +100,17 @@ class ApiService {
         errorBody = jsonDecode(response.body);
       } catch (e) {
         errorBody = {'error': response.body};
+      }
+
+      // Handle authentication errors specially
+      if (response.statusCode == 401) {
+        // Sign out user on authentication failure
+        AuthService.signOut();
+        throw ApiException(
+          statusCode: response.statusCode,
+          message: 'Session expired. Please sign in again.',
+          errorType: 'Unauthorized',
+        );
       }
 
       throw ApiException(

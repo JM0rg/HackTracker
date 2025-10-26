@@ -7,6 +7,8 @@ import '../providers/team_providers.dart';
 import '../providers/player_providers.dart';
 import '../widgets/player_form_dialog.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/form_dialog.dart';
+import '../widgets/app_input_fields.dart';
 import '../widgets/ui_helpers.dart';
 
 /// Team View - Shows team-specific stats and roster
@@ -28,59 +30,37 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text(
-          'CREATE TEAM',
-          style: GoogleFonts.tektur(
-            color: AppColors.primary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
-        ),
+      builder: (context) => FormDialog(
+        title: 'CREATE TEAM',
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            AppTextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'TEAM NAME',
-                hintText: 'Enter team name',
-              ),
-              style: GoogleFonts.tektur(),
+              labelText: 'TEAM NAME',
+              hintText: 'Enter team name',
               autofocus: true,
             ),
             const SizedBox(height: 16),
-            TextField(
+            AppTextField(
               controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'DESCRIPTION (Optional)',
-                hintText: 'Enter team description',
-              ),
-              style: GoogleFonts.tektur(),
+              labelText: 'DESCRIPTION (Optional)',
+              hintText: 'Enter team description',
               maxLines: 3,
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCEL'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Team name is required')),
-                );
-                return;
-              }
-              Navigator.pop(context, true);
-            },
-            child: const Text('CREATE'),
-          ),
-        ],
+        cancelLabel: 'CANCEL',
+        confirmLabel: 'CREATE',
+        onConfirm: () async {
+          if (nameController.text.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Team name is required')),
+            );
+            return;
+          }
+          Navigator.pop(context, true);
+        },
       ),
     );
 

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import '../utils/persistence.dart';
+import '../services/auth_service.dart';
 
 /// User model for the current authenticated user
 class User {
@@ -55,6 +56,12 @@ class CurrentUserNotifier extends AsyncNotifier<User> {
   }
 
   Future<User> _fetch() async {
+    // Validate authentication first
+    final authStatus = await AuthService.validateAuth();
+    if (!authStatus.isValid) {
+      throw Exception('Authentication required: ${authStatus.message}');
+    }
+
     final authUser = await Amplify.Auth.getCurrentUser();
     final attributes = await Amplify.Auth.fetchUserAttributes();
 

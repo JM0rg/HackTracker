@@ -8,6 +8,8 @@ import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
 import 'utils/messenger.dart';
+import 'widgets/app_input_fields.dart';
+import 'services/auth_service.dart';
 
 class HackTrackerApp extends StatefulWidget {
   const HackTrackerApp({super.key});
@@ -64,8 +66,8 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<AuthSession>(
-      future: Amplify.Auth.fetchAuthSession(),
+    return FutureBuilder<AuthStatus>(
+      future: AuthService.validateAuth(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
@@ -77,12 +79,44 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // Check if user is signed in
-        if (snapshot.hasData && snapshot.data!.isSignedIn) {
+        final authStatus = snapshot.data ?? AuthStatus.error;
+
+        // Handle authentication errors
+        if (authStatus == AuthStatus.error) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Authentication Error',
+                    style: GoogleFonts.tektur(
+                      fontSize: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please restart the app',
+                    style: GoogleFonts.tektur(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Check if user has valid authentication
+        if (authStatus.isValid) {
           return const HomeScreen();
         }
 
-        // Not signed in, show login
+        // User needs to sign in (expired token, invalid token, or not signed in)
         return const LoginScreen();
       },
     );
@@ -99,7 +133,6 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
-  bool _obscurePassword = true;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _errorMessage;
@@ -209,40 +242,19 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 24),
               // Email Field
-              TextField(
+              AppEmailField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'EMAIL',
-                  prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
-                ),
-                keyboardType: TextInputType.emailAddress,
+                labelText: 'EMAIL',
+                prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
                 autocorrect: false,
-                textCapitalization: TextCapitalization.none,
-                style: GoogleFonts.tektur(fontSize: 15),
               ),
               const SizedBox(height: 16),
               // Password Field
-              TextField(
+              AppPasswordField(
                 controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'PASSWORD',
-                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: AppColors.textTertiary,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: _obscurePassword,
+                labelText: 'PASSWORD',
+                prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                 autocorrect: false,
-                textCapitalization: TextCapitalization.none,
-                style: GoogleFonts.tektur(fontSize: 15),
               ),
               const SizedBox(height: 12),
               // Forgot Password
@@ -356,8 +368,6 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -551,66 +561,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 16),
               // Email Field
-              TextField(
+              AppEmailField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'EMAIL',
-                  prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
-                ),
-                keyboardType: TextInputType.emailAddress,
+                labelText: 'EMAIL',
+                prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
                 autocorrect: false,
-                textCapitalization: TextCapitalization.none,
-                style: GoogleFonts.tektur(fontSize: 15),
               ),
               const SizedBox(height: 16),
               // Password Field
-              TextField(
+              AppPasswordField(
                 controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'PASSWORD',
-                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: AppColors.textTertiary,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: _obscurePassword,
+                labelText: 'PASSWORD',
+                prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                 autocorrect: false,
-                textCapitalization: TextCapitalization.none,
-                style: GoogleFonts.tektur(fontSize: 15),
               ),
               const SizedBox(height: 16),
               // Confirm Password Field
-              TextField(
+              AppPasswordField(
                 controller: _confirmPasswordController,
-                decoration: InputDecoration(
-                  labelText: 'CONFIRM PASSWORD',
-                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: AppColors.textTertiary,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
-                    },
-                  ),
-                ),
-                obscureText: _obscureConfirmPassword,
+                labelText: 'CONFIRM PASSWORD',
+                prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                 autocorrect: false,
-                textCapitalization: TextCapitalization.none,
-                style: GoogleFonts.tektur(fontSize: 15),
               ),
               const SizedBox(height: 12),
               // Password Requirements
@@ -707,8 +678,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _isLoading = false;
   bool _codeSent = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
   final _newPasswordController = TextEditingController();
@@ -871,16 +840,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               const SizedBox(height: 24),
               if (!_codeSent) ...[
                 // Email Field
-                TextField(
+                AppEmailField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'EMAIL',
-                    prefixIcon: Icon(Icons.person_outline, color: AppColors.primary),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
+                  labelText: 'EMAIL',
+                  prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
                   autocorrect: false,
-                  textCapitalization: TextCapitalization.none,
-                  style: GoogleFonts.tektur(fontSize: 15),
                 ),
                 const SizedBox(height: 12),
                 // Info Box
@@ -901,64 +865,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
               ] else ...[
                 // Code Field
-                TextField(
+                AppTextField(
                   controller: _codeController,
-                  decoration: const InputDecoration(
-                    labelText: 'RESET CODE',
-                    prefixIcon: Icon(Icons.key_outlined, color: AppColors.primary),
-                  ),
+                  labelText: 'RESET CODE',
+                  prefixIcon: const Icon(Icons.key_outlined, color: AppColors.primary),
                   keyboardType: TextInputType.number,
-                  style: GoogleFonts.tektur(fontSize: 15),
                 ),
                 const SizedBox(height: 16),
                 // New Password Field
-                TextField(
+                AppPasswordField(
                   controller: _newPasswordController,
-                  decoration: InputDecoration(
-                    labelText: 'NEW PASSWORD',
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.textTertiary,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                  ),
-                  obscureText: _obscurePassword,
+                  labelText: 'NEW PASSWORD',
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                   autocorrect: false,
-                  textCapitalization: TextCapitalization.none,
-                  style: GoogleFonts.tektur(fontSize: 15),
                 ),
                 const SizedBox(height: 16),
                 // Confirm Password Field
-                TextField(
+                AppPasswordField(
                   controller: _confirmPasswordController,
-                  decoration: InputDecoration(
-                    labelText: 'CONFIRM PASSWORD',
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: AppColors.textTertiary,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      },
-                    ),
-                  ),
-                  obscureText: _obscureConfirmPassword,
+                  labelText: 'CONFIRM PASSWORD',
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                   autocorrect: false,
-                  textCapitalization: TextCapitalization.none,
-                  style: GoogleFonts.tektur(fontSize: 15),
                 ),
                 const SizedBox(height: 12),
                 // Info Box

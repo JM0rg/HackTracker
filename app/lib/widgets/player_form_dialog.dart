@@ -5,6 +5,8 @@ import '../theme/app_colors.dart';
 import '../providers/player_providers.dart';
 import '../services/api_service.dart';
 import '../utils/messenger.dart';
+import 'form_dialog.dart';
+import 'app_input_fields.dart';
 
 class PlayerFormDialog extends ConsumerStatefulWidget {
   final String teamId;
@@ -108,27 +110,17 @@ class _PlayerFormDialogState extends ConsumerState<PlayerFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.player != null;
-    return AlertDialog(
-      backgroundColor: AppColors.surface,
-      title: Text(
-        isEdit ? 'EDIT PLAYER' : 'ADD PLAYER',
-        style: GoogleFonts.tektur(
-          color: AppColors.primary,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
-        ),
-      ),
+    return FormDialog(
+      title: isEdit ? 'EDIT PLAYER' : 'ADD PLAYER',
       content: AutofillGroup(
         child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            TextFormField(
+            AppTextFormField(
               controller: _firstName,
-              decoration: const InputDecoration(labelText: 'FIRST NAME'),
-              style: GoogleFonts.tektur(),
+              labelText: 'FIRST NAME',
               validator: (v) => _validateName(v, field: 'firstName'),
               autofocus: true,
               autocorrect: false,
@@ -136,28 +128,26 @@ class _PlayerFormDialogState extends ConsumerState<PlayerFormDialog> {
               autofillHints: const [], // Disable autofill
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            AppTextFormField(
               controller: _lastName,
-              decoration: const InputDecoration(labelText: 'LAST NAME (Optional)'),
-              style: GoogleFonts.tektur(),
+              labelText: 'LAST NAME (Optional)',
               validator: (v) => _validateName(v, field: 'lastName'),
               autocorrect: false,
               enableSuggestions: false,
               autofillHints: const [], // Disable autofill
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            AppTextFormField(
               controller: _number,
-              decoration: const InputDecoration(labelText: 'PLAYER NUMBER (0-99, Optional)'),
+              labelText: 'PLAYER NUMBER (0-99, Optional)',
               keyboardType: TextInputType.number,
-              style: GoogleFonts.tektur(),
               validator: _validateNumber,
               autocorrect: false,
               enableSuggestions: false,
               autofillHints: const [], // Disable autofill
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            AppDropdownFormField<String>(
               value: _status,
               items: const [
                 DropdownMenuItem(value: 'active', child: Text('ACTIVE')),
@@ -165,34 +155,16 @@ class _PlayerFormDialogState extends ConsumerState<PlayerFormDialog> {
                 DropdownMenuItem(value: 'sub', child: Text('SUB')),
               ],
               onChanged: (v) => setState(() => _status = v ?? 'active'),
-              decoration: const InputDecoration(labelText: 'STATUS'),
-              style: GoogleFonts.tektur(color: AppColors.textPrimary),
-              dropdownColor: AppColors.surface,
+              labelText: 'STATUS',
             ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.pop(context, false),
-          child: const Text('CANCEL'),
-        ),
-        ElevatedButton(
-          onPressed: _saving ? null : _submit,
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            textStyle: GoogleFonts.tektur(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-          child: _saving
-              ? const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                )
-              : const Text('SAVE'),
-        ),
-      ],
+      cancelLabel: 'CANCEL',
+      confirmLabel: 'SAVE',
+      isLoading: _saving,
+      onConfirm: _submit,
     );
   }
 }
