@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
-from utils.authorization import get_user_id_from_event, check_team_role, PermissionError
+from utils.authorization import get_user_id_from_event, authorize, PermissionError
 
 
 def handler(event, context):
@@ -57,10 +57,10 @@ def handler(event, context):
         if not player_id:
             return create_response(400, {'error': 'playerId is required in path'})
         
-        # Authorize: only owner or coach can remove players
+        # Authorize: check if user can manage roster
         table = get_table()
         try:
-            check_team_role(table, user_id, team_id, ['team-owner', 'team-coach'])
+            authorize(table, user_id, team_id, action='manage_roster')
         except PermissionError as e:
             return create_response(403, {'error': str(e)})
         except ClientError as e:

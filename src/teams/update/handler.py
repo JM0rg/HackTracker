@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
 from utils.validation import validate_team_name, validate_team_description
-from utils.authorization import get_user_id_from_event, check_team_role, PermissionError
+from utils.authorization import get_user_id_from_event, authorize, PermissionError
 
 # Fields that are allowed to be updated
 ALLOWED_FIELDS = {'name', 'description'}
@@ -93,9 +93,9 @@ def handler(event, context):
     table = get_table()
     
     try:
-        # Check authorization (team-owner or team-coach can update)
+        # Check authorization: can user manage this team?
         try:
-            check_team_role(table, user_id, team_id, ['team-owner', 'team-coach'])
+            authorize(table, user_id, team_id, action='manage_team')
         except PermissionError as e:
             return create_response(403, {'error': str(e)})
         

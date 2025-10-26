@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
 from utils.validation import validate_player_name, validate_player_number, validate_player_status
-from utils.authorization import get_user_id_from_event, check_team_role, PermissionError
+from utils.authorization import get_user_id_from_event, authorize, PermissionError
 
 
 def handler(event, context):
@@ -76,10 +76,10 @@ def handler(event, context):
                 'error': f'Cannot update read-only fields: {", ".join(invalid_fields)}'
             })
         
-        # Authorize: only owner or coach can update players
+        # Authorize: check if user can manage roster
         table = get_table()
         try:
-            check_team_role(table, user_id, team_id, ['team-owner', 'team-coach'])
+            authorize(table, user_id, team_id, action='manage_roster')
         except PermissionError as e:
             return create_response(403, {'error': str(e)})
         except ClientError as e:
@@ -202,9 +202,30 @@ def handler(event, context):
         
         updated_player = response['Attributes']
         
-        # Convert Decimal to int for JSON serialization
-        if 'playerNumber' in updated_player and isinstance(updated_player['playerNumber'], Decimal):
-            updated_player['playerNumber'] = int(updated_player['playerNumber'])
+        # Build clean response (exclude internal DynamoDB keys)
+        response_data = {
+            'playerId': updated_player['playerId'],
+            'teamId': updated_player['teamId'],
+            'firstName': updated_player['firstName'],
+            'status': updated_player['status'],
+            'isGhost': updated_player.get('isGhost', False),
+            'createdAt': updated_player['createdAt'],
+            'updatedAt': updated_player['updatedAt']
+        }
+        
+        # Add optional fields
+        if 'lastName' in updated_player and updated_player['lastName']:
+            response_data['lastName'] = updated_player['lastName']
+        
+        if 'playerNumber' in updated_player and updated_player['playerNumber'] is not None:
+            # Convert Decimal to int for JSON serialization
+            response_data['playerNumber'] = int(updated_player['playerNumber']) if isinstance(updated_player['playerNumber'], Decimal) else updated_player['playerNumber']
+        
+        if 'userId' in updated_player and updated_player['userId']:
+            response_data['userId'] = updated_player['userId']
+        
+        if 'linkedAt' in updated_player and updated_player['linkedAt']:
+            response_data['linkedAt'] = updated_player['linkedAt']
         
         print(json.dumps({
             'level': 'INFO',
@@ -213,7 +234,7 @@ def handler(event, context):
             'teamId': team_id
         }))
         
-        return create_response(200, updated_player)
+        return create_response(200, response_data)
         
     except ClientError as e:
         print(json.dumps({

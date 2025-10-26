@@ -2,4 +2,4 @@
 alwaysApply: true
 ---
 
-Always reference the ARCHITECTURE.md file before implementing features or making new changes. 
+Always reference the ARCHITECTURE.md file before implementing features or making new changes. Always follow up any code changes by seeing if anything needs to be updated in the ARCHITECTURE or DATA_MODEL.md files.

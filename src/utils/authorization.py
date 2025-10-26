@@ -12,7 +12,57 @@ class PermissionError(Exception):
     pass
 
 
-def check_team_role(table, user_id, team_id, required_roles):
+# Permission constants for common operations
+MANAGE_ROSTER_ROLES = ['team-owner', 'team-coach']
+MANAGE_TEAM_ROLES = ['team-owner', 'team-coach']
+DELETE_TEAM_ROLES = ['team-owner']
+
+# Central policy map: action → required roles
+POLICY_MAP = {
+    'manage_roster': MANAGE_ROSTER_ROLES,
+    'manage_team': MANAGE_TEAM_ROLES,
+    'delete_team': DELETE_TEAM_ROLES,
+}
+
+
+def authorize(table, user_id, team_id, action):
+    """
+    Check if user can perform a specific action on a team (v2 Policy Engine)
+    
+    This is the primary authorization function. Handlers should use this
+    instead of directly calling check_team_role().
+    
+    Args:
+        table: DynamoDB table resource
+        user_id (str): User ID to check
+        team_id (str): Team ID to check
+        action (str): Action to authorize (e.g., 'manage_roster', 'manage_team', 'delete_team')
+        
+    Returns:
+        dict: Membership record if authorized
+        
+    Raises:
+        PermissionError: If user is not authorized or action is invalid
+        
+    Example:
+        >>> authorize(table, user_id, team_id, action='manage_roster')
+    """
+    # Get required roles from central policy map
+    required_roles = POLICY_MAP.get(action)
+    if not required_roles:
+        print(json.dumps({
+            'level': 'ERROR',
+            'message': 'Invalid action requested',
+            'action': action,
+            'validActions': list(POLICY_MAP.keys())
+        }))
+        raise PermissionError(f"Invalid action: {action}")
+    
+    # Use existing role check logic
+    return _check_team_role(table, user_id, team_id, required_roles)
+
+
+def _check_team_role(table, user_id, team_id, required_roles):
     """
     Check if user has required role on team
     
@@ -78,6 +128,88 @@ def check_team_role(table, user_id, team_id, required_roles):
         'userId': user_id,
         'teamId': team_id,
         'role': user_role
+    }))
+    
+    return membership
+
+
+def check_team_role(table, user_id, team_id, required_roles):
+    """
+    Check if user has required role on team (backward compatibility wrapper)
+    
+    Note: Prefer using authorize(table, user_id, team_id, action='...')
+    for better maintainability.
+    
+    Args:
+        table: DynamoDB table resource
+        user_id (str): User ID to check
+        team_id (str): Team ID to check
+        required_roles (list): List of acceptable roles
+        
+    Returns:
+        dict: Membership record if authorized
+        
+    Raises:
+        PermissionError: If user is not authorized
+    """
+    return _check_team_role(table, user_id, team_id, required_roles)
+
+
+def check_team_membership(table, user_id, team_id):
+    """
+    Check if user is an active member of the team (any role)
+    
+    More future-proof than role-based checks for simple read operations.
+    Use this for "view" operations where any team member should have access.
+    
+    Args:
+        table: DynamoDB table resource
+        user_id (str): User ID to check
+        team_id (str): Team ID to check
+        
+    Returns:
+        dict: Membership record if user is an active member
+        
+    Raises:
+        PermissionError: If user is not an active member
+    """
+    # Query user's membership for this team
+    response = table.get_item(
+        Key={
+            'PK': f'USER#{user_id}',
+            'SK': f'TEAM#{team_id}'
+        }
+    )
+    
+    # Check if membership exists
+    if 'Item' not in response:
+        print(json.dumps({
+            'level': 'WARN',
+            'message': 'User is not a member of this team',
+            'userId': user_id,
+            'teamId': team_id
+        }))
+        raise PermissionError("User is not a member of this team")
+    
+    membership = response['Item']
+    
+    # Check if membership is active
+    if membership.get('status') != 'active':
+        print(json.dumps({
+            'level': 'WARN',
+            'message': 'Team membership is not active',
+            'userId': user_id,
+            'teamId': team_id,
+            'status': membership.get('status')
+        }))
+        raise PermissionError("Team membership is not active")
+    
+    print(json.dumps({
+        'level': 'INFO',
+        'message': 'Team membership verified',
+        'userId': user_id,
+        'teamId': team_id,
+        'role': membership.get('role')
     }))
     
     return membership

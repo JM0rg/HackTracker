@@ -2,7 +2,11 @@
 
 **Current Implementation Status:** User, Team & Player Management (MVP Complete)
 
-This document describes the **actual implemented** data model for HackTracker. For the complete system design including future features and architectural rationale, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+This document describes the **actual implemented** data model for HackTracker. For the complete system design including future features and architectural rationale, see [architecture-docs/ARCHITECTURE.md](./architecture-docs/ARCHITECTURE.md).
+
+> **📖 Documentation Guide:**
+> - **This document (DATA_MODEL.md):** Current implementation snapshot (WHAT exists now)
+> - **[architecture-docs/](./architecture-docs/):** Complete system design, patterns, and rationale (WHAT + WHY + HOW)
 
 ---
 
@@ -780,7 +784,10 @@ make test-cloud query list
 
 ## See Also
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system design, future roadmap, and architectural rationale
+- **[architecture-docs/ARCHITECTURE.md](./architecture-docs/ARCHITECTURE.md)** - Complete system design and roadmap
+- **[architecture-docs/dynamodb-design.md](./architecture-docs/dynamodb-design.md)** - DynamoDB schema details
+- **[architecture-docs/authorization.md](./architecture-docs/authorization.md)** - Authorization system (v2 Policy Engine)
+- **[architecture-docs/caching.md](./architecture-docs/caching.md)** - Frontend caching and optimistic UI
 - **[Makefile](./Makefile)** - Development commands and workflows
 - **[terraform/](./terraform/)** - Infrastructure as code definitions
 

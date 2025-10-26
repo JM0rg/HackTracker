@@ -1,4 +1,4 @@
-.PHONY: help install package test clean deploy db-start db-stop db-create db-delete db-clear db-reset db-status flutter-clean flutter-open flutter-run
+.PHONY: help install package test test-players test-teams clean deploy db-start db-stop db-create db-delete db-clear db-reset db-status flutter-clean flutter-open flutter-run
 
 help:
 	@echo "🏗️  HackTracker - Python Lambda Development"
@@ -8,6 +8,8 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  make test             Run user Lambda tests (see: make test-help)"
+	@echo "  make test-teams       Run team Lambda tests (full suite)"
+	@echo "  make test-players     Run player Lambda tests (full suite)"
 	@echo "  make test-cloud       Run tests against deployed API Gateway"
 	@echo "  make package          Package Lambda functions"
 	@echo ""
@@ -39,6 +41,14 @@ package:
 
 test:
 	@uv run python scripts/test_users.py $(filter-out $@,$(MAKECMDGOALS))
+
+test-teams:
+	@echo "🧪 Running full team test suite..."
+	@uv run python scripts/test_teams.py full-test $(filter-out $@,$(MAKECMDGOALS))
+
+test-players:
+	@echo "🧪 Running full player test suite..."
+	@uv run python scripts/test_players.py full-test $(filter-out $@,$(MAKECMDGOALS))
 
 test-cloud:
 	@uv run python scripts/test_users.py $(filter-out $@,$(MAKECMDGOALS)) --cloud

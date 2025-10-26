@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
-from utils.authorization import get_user_id_from_event, check_team_role, PermissionError
+from utils.authorization import get_user_id_from_event, check_team_membership, PermissionError
 
 
 def handler(event, context):
@@ -58,15 +58,10 @@ def handler(event, context):
         status_filter = query_params.get('status')  # active, inactive, sub
         ghost_filter = query_params.get('isGhost')  # true, false
         
-        # Authorize: all team members can view roster
+        # Authorize: any active team member can view roster
         table = get_table()
         try:
-            check_team_role(
-                table, 
-                user_id, 
-                team_id, 
-                ['team-owner', 'team-coach', 'team-player', 'team-assistant', 'team-scorekeeper', 'team-viewer']
-            )
+            check_team_membership(table, user_id, team_id)
         except PermissionError as e:
             return create_response(403, {'error': str(e)})
         except ClientError as e:
@@ -117,15 +112,39 @@ def handler(event, context):
         
         players.sort(key=sort_key)
         
-        # Convert Decimal types to int for JSON serialization
+        # Build clean response (exclude internal DynamoDB keys)
+        clean_players = []
         for player in players:
-            if 'playerNumber' in player and isinstance(player['playerNumber'], Decimal):
-                player['playerNumber'] = int(player['playerNumber'])
+            clean_player = {
+                'playerId': player['playerId'],
+                'teamId': player['teamId'],
+                'firstName': player['firstName'],
+                'status': player['status'],
+                'isGhost': player.get('isGhost', False),
+                'createdAt': player['createdAt'],
+                'updatedAt': player['updatedAt']
+            }
+            
+            # Add optional fields
+            if 'lastName' in player and player['lastName']:
+                clean_player['lastName'] = player['lastName']
+            
+            if 'playerNumber' in player and player['playerNumber'] is not None:
+                # Convert Decimal to int for JSON serialization
+                clean_player['playerNumber'] = int(player['playerNumber']) if isinstance(player['playerNumber'], Decimal) else player['playerNumber']
+            
+            if 'userId' in player and player['userId']:
+                clean_player['userId'] = player['userId']
+            
+            if 'linkedAt' in player and player['linkedAt']:
+                clean_player['linkedAt'] = player['linkedAt']
+            
+            clean_players.append(clean_player)
         
         # Build response
         response_data = {
-            'players': players,
-            'count': len(players)
+            'players': clean_players,
+            'count': len(clean_players)
         }
         
         print(json.dumps({

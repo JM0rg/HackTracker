@@ -2,13 +2,20 @@
 
 Slowpitch softball stat tracking application.
 
+> **📖 Documentation:**
+> - **[architecture-docs/](./architecture-docs/)** - Complete system architecture, design patterns, and guides
+> - **[DATA_MODEL.md](./DATA_MODEL.md)** - Current implementation snapshot
+> - **[TESTING.md](./TESTING.md)** - Testing workflows
+
 ## Tech Stack
 
-- **Language**: Python 3.13
-- **Package Manager**: uv
+- **Frontend**: Flutter (iOS + Android + Web)
+- **Backend**: Python 3.13 + AWS Lambda
+- **Database**: DynamoDB (single-table design)
+- **Auth**: Amazon Cognito
+- **API**: API Gateway (HTTP API with JWT authorizer)
 - **Infrastructure**: Terraform
-- **Database**: DynamoDB
-- **Compute**: AWS Lambda
+- **Package Manager**: uv
 
 ## Setup
 
