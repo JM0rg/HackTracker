@@ -187,7 +187,7 @@ All entities stored in one DynamoDB table for optimal performance and cost effic
 
 ### State Management
 
-**Technology:** Riverpod 2.6+
+**Technology:** Riverpod 3.0+
 
 **Pattern:** Persistent caching with stale-while-revalidate (SWR) + Race-Condition-Safe Optimistic UI
 
@@ -385,6 +385,11 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 - [x] Player roster management (full CRUD)
 - [x] Frontend persistent caching
 - [x] Optimistic UI updates
+- [x] JWT authentication with API Gateway authorizer
+- [x] Personal stats teams (auto-created for each user)
+- [x] Player name validation (supports apostrophes, periods, accented chars)
+- [x] Lambda warm-start optimization (global DynamoDB client)
+- [x] Centralized styling system (Material 3 theme + custom extensions)
 - [ ] Player invitations and linking
 - [ ] Season management
 - [ ] Game recording
@@ -493,12 +498,14 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 4. **Proper error handling** - Distinguish between retries and real errors
 5. **API Gateway v2.0** - All API Lambdas use payload format 2.0
 6. **Use authorize()** - v2 Policy Engine for all authorization checks
+7. **Global DynamoDB client** - Instantiate client and table in global scope for warm-start reuse
+8. **Performance optimization** - Reuse connections across Lambda invocations
 
 ### Flutter Best Practices
 
 1. **Use ConsumerWidget** - All screens that need Riverpod access
 2. **Use ConsumerStatefulWidget** - For screens with local state + Riverpod
-3. **AsyncNotifier for API data** - Built-in caching and state management
+3. **AsyncNotifier for API data** - Built-in caching and state management (Riverpod v3)
 4. **Watch providers in build** - Use `ref.watch()` to listen for changes
 5. **Read providers for actions** - Use `ref.read()` in callbacks/methods
 6. **Use optimistic mutations** - All CRUD operations use `notifier.mutate()` pattern
@@ -508,6 +515,11 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 10. **RefreshIndicator for manual refresh** - Allow users to force data refresh
 11. **Handle all AsyncValue states** - loading, error, and data cases
 12. **Show loading for temp items** - Check `id.startsWith('temp-')` in UI
+13. **Centralized styling** - Use `Theme.of(context).textTheme` and `CustomTextStyles` extension
+14. **Persistent caching** - Data survives app restarts using Shared Preferences
+15. **Material 3 theme** - Comprehensive text styles with Tektur font configuration
+16. **Custom extensions** - `CustomTextStyles` for unique app-specific styles
+17. **Decoration utilities** - `DecorationStyles` class for common BoxDecoration patterns
 
 ---
 

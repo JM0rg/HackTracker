@@ -2,4 +2,6 @@
 alwaysApply: true
 ---
 
-Always reference the ARCHITECTURE.md file before implementing features or making new changes. Always follow up any code changes by seeing if anything needs to be updated in the ARCHITECTURE or DATA_MODEL.md files.
+Always reference the ARCHITECTURE.md and UI_ARCHITECTURE.md files before implementing features or making new changes. Always follow up any code changes by seeing if anything needs to be updated in the ARCHITECTURE, UI_ARCHITECTURE, or DATA_MODEL.md files.
+
+For new AI sessions with zero context, start with QUICK_START.md for essential context and documentation map.

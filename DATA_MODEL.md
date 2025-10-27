@@ -171,7 +171,7 @@ GSI2SK: METADATA#<teamId>
 | `deletedAt` | ISO 8601 | ❌ | ❌ | Soft delete timestamp (if deleted) |
 | `recoveryToken` | String (UUID) | ❌ | ❌ | Recovery token for 30-day recovery period |
 
-**Note:** Personal teams are automatically created for each user on signup. They serve as invisible containers for at-bats not linked to any real team. Personal teams are filtered from public team listings but appear in the user's own team list for stat aggregation.
+**Note:** Personal teams are automatically created for each user on signup via the `create-user` Cognito trigger. They serve as invisible containers for at-bats not linked to any real team. Personal teams are filtered from public team listings but appear in the user's own team list for stat aggregation. Users cannot perform roster management operations on personal teams.
 
 **Example Item (Regular Team):**
 ```json
@@ -272,8 +272,8 @@ SK: PLAYER#<playerId>
 |-------|------|----------|----------|-------------|
 | `playerId` | String (UUID) | ✅ | ❌ | Player's unique identifier |
 | `teamId` | String (UUID) | ✅ | ❌ | Team the player belongs to |
-| `firstName` | String | ✅ | ✅ | Player's first name (1-30 chars, letters/hyphens) |
-| `lastName` | String | ❌ | ✅ | Player's last name (1-30 chars, letters/hyphens) |
+| `firstName` | String | ✅ | ✅ | Player's first name (1-30 chars, letters/hyphens/apostrophes/periods/accents) |
+| `lastName` | String | ❌ | ✅ | Player's last name (1-30 chars, letters/hyphens/apostrophes/periods/accents) |
 | `playerNumber` | Integer | ❌ | ✅ | Jersey number (0-99) |
 | `status` | String | ✅ | ✅ | Player status: `active`, `inactive`, `sub` |
 | `isGhost` | Boolean | ✅ | ❌ | True if player not linked to a user account |
@@ -306,6 +306,10 @@ SK: PLAYER#<playerId>
 | Function | Method | Endpoint | Status |
 |----------|--------|----------|--------|
 | `add-player` | POST | `/teams/{teamId}/players` | ✅ Implemented |
+| `list-players` | GET | `/teams/{teamId}/players` | ✅ Implemented |
+| `get-player` | GET | `/teams/{teamId}/players/{playerId}` | ✅ Implemented |
+| `update-player` | PUT | `/teams/{teamId}/players/{playerId}` | ✅ Implemented |
+| `remove-player` | DELETE | `/teams/{teamId}/players/{playerId}` | ✅ Implemented |
 
 **Notes:**
 - Ghost players are unlinked roster slots created by coaches/owners before players join
@@ -534,7 +538,7 @@ Condition: PK and SK do not exist (prevent duplicates)
 **Required Fields:** `firstName`
 **Optional Fields:** `lastName`, `playerNumber` (0-99), `status` (default: active)
 **Validation:**
-- firstName/lastName: 1-30 chars, letters and hyphens only, single word
+- firstName/lastName: 1-30 chars, letters, hyphens, apostrophes, periods, and accented characters allowed
 - playerNumber: Integer 0-99
 - status: One of `active`, `inactive`, `sub`
 
@@ -590,7 +594,7 @@ Auto-Updated: updatedAt
 
 **Lambda:** `update-player`
 **Endpoint:** `PUT /teams/{teamId}/players/{playerId}`
-**Validation:** Same as create (name, number, status validation)
+**Validation:** Same as create (name validation supports apostrophes, periods, accented characters)
 **Response:** `200 OK` with updated player data
 **Features:**
 - Can set lastName or playerNumber to null to remove
