@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'form_dialog.dart';
 
@@ -23,7 +22,7 @@ class ConfirmDialog extends StatelessWidget {
       title: title,
       content: Text(
         message,
-        style: GoogleFonts.tektur(color: AppColors.textPrimary),
+        style: Theme.of(context).textTheme.bodyMedium,
       ),
       cancelLabel: 'CANCEL',
       confirmLabel: confirmLabel,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import '../theme/app_colors.dart';
 import '../providers/team_providers.dart';
@@ -51,21 +50,12 @@ class AppDrawer extends ConsumerWidget {
                 children: [
                   Text(
                     'HACKTRACKER',
-                    style: GoogleFonts.tektur(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                      letterSpacing: 2,
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Slowpitch Stats Tracking',
-                    style: GoogleFonts.tektur(
-                      fontSize: 10,
-                      color: AppColors.textTertiary,
-                      letterSpacing: 1,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -202,12 +192,7 @@ class _DrawerSectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
       child: Text(
         title,
-        style: GoogleFonts.tektur(
-          fontSize: 11,
-          color: AppColors.textTertiary,
-          letterSpacing: 1.5,
-          fontWeight: FontWeight.bold,
-        ),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -233,18 +218,12 @@ class _DrawerItem extends StatelessWidget {
       leading: Icon(icon, color: AppColors.primary, size: 22),
       title: Text(
         title,
-        style: GoogleFonts.tektur(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-        ),
+        style: Theme.of(context).textTheme.bodyMedium,
       ),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
-              style: GoogleFonts.tektur(
-                color: AppColors.textTertiary,
-                fontSize: 11,
-              ),
+              style: Theme.of(context).textTheme.labelSmall,
             )
           : null,
       onTap: onTap,
@@ -274,10 +253,7 @@ class _DrawerSubItem extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: GoogleFonts.tektur(
-          color: AppColors.textLight,
-          fontSize: 13,
-        ),
+        style: Theme.of(context).textTheme.labelMedium,
       ),
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),

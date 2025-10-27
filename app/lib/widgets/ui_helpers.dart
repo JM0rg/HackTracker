@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../theme/custom_text_styles.dart';
 import '../utils/messenger.dart';
 
 void showSuccess(BuildContext context, String message) {
   (messengerKey.currentState ?? ScaffoldMessenger.of(context)).showSnackBar(
     SnackBar(
-      content: Text(message, style: GoogleFonts.tektur(fontSize: 12)),
+      content: Text(message, style: Theme.of(context).textTheme.bodySmall),
       backgroundColor: AppColors.primary,
     ),
   );
@@ -15,7 +15,7 @@ void showSuccess(BuildContext context, String message) {
 void showError(BuildContext context, String message) {
   (messengerKey.currentState ?? ScaffoldMessenger.of(context)).showSnackBar(
     SnackBar(
-      content: Text(message, style: GoogleFonts.tektur(fontSize: 12)),
+      content: Text(message, style: Theme.of(context).textTheme.bodySmall),
       backgroundColor: AppColors.error,
     ),
   );
@@ -46,8 +46,7 @@ class StatusChip extends StatelessWidget {
       ),
       child: Text(
         status.toUpperCase(),
-        style: GoogleFonts.tektur(
-          fontSize: 10,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: active ? Colors.black : AppColors.textSecondary,
           fontWeight: FontWeight.bold,
         ),
@@ -73,8 +72,7 @@ class PlayerNumberAvatar extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         text,
-        style: GoogleFonts.tektur(
-          fontSize: 12,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
           color: AppColors.primary,
           fontWeight: FontWeight.bold,
         ),

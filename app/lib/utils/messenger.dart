@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 final GlobalKey<ScaffoldMessengerState> messengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -9,9 +8,8 @@ void showSuccessToast(String message) {
     SnackBar(
       content: Text(
         message,
-        style: GoogleFonts.tektur(
+        style: const TextStyle(
           color: Colors.black,
-          fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -31,9 +29,8 @@ void showErrorToast(String message) {
     SnackBar(
       content: Text(
         message,
-        style: GoogleFonts.tektur(
+        style: const TextStyle(
           color: Colors.white,
-          fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
       ),

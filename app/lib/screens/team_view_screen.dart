@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hacktracker/services/api_service.dart';
 import '../theme/app_colors.dart';
+import '../theme/custom_text_styles.dart';
+import '../theme/decoration_styles.dart';
 import '../providers/team_providers.dart';
 import '../providers/player_providers.dart';
 import '../widgets/player_form_dialog.dart';
@@ -142,12 +143,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
         backgroundColor: AppColors.surface,
         title: Text(
           'EDIT TEAM',
-          style: GoogleFonts.tektur(
-            color: AppColors.primary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.primary),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -157,7 +153,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
               decoration: const InputDecoration(
                 labelText: 'TEAM NAME',
               ),
-              style: GoogleFonts.tektur(),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
             TextField(
@@ -165,7 +161,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
               decoration: const InputDecoration(
                 labelText: 'DESCRIPTION',
               ),
-              style: GoogleFonts.tektur(),
+              style: Theme.of(context).textTheme.bodyMedium,
               maxLines: 3,
             ),
           ],
@@ -267,15 +263,11 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
         backgroundColor: AppColors.surface,
         title: Text(
           'DELETE TEAM?',
-          style: GoogleFonts.tektur(
-            color: AppColors.error,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.error),
         ),
         content: Text(
           'Are you sure you want to delete "${team.name}"?\n\nThis action cannot be undone.',
-          style: GoogleFonts.tektur(color: AppColors.textPrimary),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         actions: [
           TextButton(
@@ -353,7 +345,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
             const SizedBox(height: 16),
             Text(
               error.toString(),
-              style: GoogleFonts.tektur(color: AppColors.textPrimary),
+              style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -414,22 +406,13 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
             const SizedBox(height: 24),
             Text(
               'NO TEAMS YET',
-              style: GoogleFonts.tektur(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                letterSpacing: 2,
-              ),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary),
             ),
             const SizedBox(height: 12),
             Text(
               'Track stats with your team!\nCreate a team or wait for an invitation.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.tektur(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(height: 1.5),
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -446,11 +429,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                 ),
                 child: Text(
                   'CREATE TEAM',
-                  style: GoogleFonts.tektur(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -474,11 +453,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                   const SizedBox(width: 8),
                   Text(
                     'VIEW INVITATIONS',
-                    style: GoogleFonts.tektur(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
+                    style: Theme.of(context).textTheme.labelLarge,
                   ),
                   // Badge for pending invites
                   const SizedBox(width: 8),
@@ -490,8 +465,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                     ),
                     child: Text(
                       '2',
-                      style: GoogleFonts.tektur(
-                        fontSize: 11,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -511,22 +485,13 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
             // Recruiter prompt
             Text(
               'LOOKING FOR A TEAM?',
-              style: GoogleFonts.tektur(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
-                letterSpacing: 1.5,
-              ),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
             Text(
               'Browse available teams and players in the Recruiter tab',
               textAlign: TextAlign.center,
-              style: GoogleFonts.tektur(
-                fontSize: 12,
-                color: AppColors.textTertiary,
-                height: 1.5,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.5),
             ),
             const SizedBox(height: 16),
             TextButton.icon(
@@ -534,11 +499,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
               icon: const Icon(Icons.person_search, size: 20),
               label: Text(
                 'OPEN RECRUITER',
-                style: GoogleFonts.tektur(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
+                style: Theme.of(context).textTheme.labelMedium,
               ),
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.secondary,
@@ -587,10 +548,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                             value: team,
                             child: Text(
                               team.name,
-                              style: GoogleFonts.tektur(
-                                fontSize: 16,
-                                color: AppColors.textPrimary,
-                              ),
+          style: Theme.of(context).textTheme.bodyLarge,
                             ),
                           );
                         }).toList(),
@@ -611,11 +569,9 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                       ),
                       child: Text(
                         _selectedTeam!.role.toUpperCase().replaceAll('-', ' '),
-                        style: GoogleFonts.tektur(
-                          fontSize: 10,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: _selectedTeam!.isOwner ? Colors.black : AppColors.textSecondary,
-                          letterSpacing: 1,
                         ),
                       ),
                     ),
@@ -635,7 +591,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                       icon: const Icon(Icons.edit, size: 16),
                       label: Text(
                         'EDIT TEAM',
-                        style: GoogleFonts.tektur(fontSize: 12),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
@@ -651,7 +607,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                       icon: const Icon(Icons.delete_outline, size: 16),
                       label: Text(
                         'DELETE',
-                        style: GoogleFonts.tektur(fontSize: 12),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
@@ -677,11 +633,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                 children: [
                   Text(
                     'TEAM STATS - 2024',
-                    style: GoogleFonts.tektur(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                      letterSpacing: 1.5,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall,
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -705,19 +657,14 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
               children: [
                 Text(
                   'QUICK ACTIONS',
-                  style: GoogleFonts.tektur(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    letterSpacing: 1.5,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.primary),
                 ),
                 TextButton.icon(
                   onPressed: _showCreateTeamDialog,
                   icon: const Icon(Icons.add_circle_outline, size: 18),
                   label: Text(
                     'NEW TEAM',
-                    style: GoogleFonts.tektur(fontSize: 12),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.secondary,
@@ -761,12 +708,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
               children: [
                 Text(
                   'ROSTER',
-                  style: GoogleFonts.tektur(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    letterSpacing: 1.5,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.primary),
                 ),
                 if (_selectedTeam!.canManageRoster)
                   SizedBox(
@@ -807,7 +749,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                 error: (e, st) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(e.toString(), style: GoogleFonts.tektur(color: AppColors.error)),
+                    Text(e.toString(), style: Theme.of(context).extension<CustomTextStyles>()!.errorMessage),
                     const SizedBox(height: 8),
                     OutlinedButton(
                       onPressed: () => ref.invalidate(rosterProvider(teamId)),
@@ -834,7 +776,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                               _selectedTeam!.canManageRoster
                                   ? 'No players yet. Tap + to add your first player.'
                                   : 'No players on the roster yet.',
-                              style: GoogleFonts.tektur(color: AppColors.textSecondary),
+                              style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ),
                         ],
@@ -915,20 +857,12 @@ class _StatColumn extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.tektur(
-            fontSize: 11,
-            color: AppColors.textTertiary,
-            letterSpacing: 1,
-          ),
+          style: Theme.of(context).textTheme.labelSmall,
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.tektur(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary),
         ),
       ],
     );
@@ -966,11 +900,7 @@ class _ActionButton extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              style: GoogleFonts.tektur(
-                fontSize: 11,
-                color: AppColors.textPrimary,
-                letterSpacing: 1,
-              ),
+              style: Theme.of(context).textTheme.labelSmall,
             ),
           ],
         ),
@@ -1018,19 +948,12 @@ class _PlayerCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: GoogleFonts.tektur(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   stats,
-                  style: GoogleFonts.tektur(
-                    fontSize: 12,
-                    color: AppColors.textTertiary,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -1126,8 +1049,7 @@ class _RosterPlayerCard extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               player.displayNumber,
-              style: GoogleFonts.tektur(
-                fontSize: 12,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
               ),
@@ -1143,11 +1065,7 @@ class _RosterPlayerCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         player.fullName,
-                        style: GoogleFonts.tektur(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: Theme.of(context).textTheme.labelLarge,
                       ),
                     ),
                     Container(
@@ -1160,8 +1078,7 @@ class _RosterPlayerCard extends StatelessWidget {
                       ),
                       child: Text(
                         player.status.toUpperCase(),
-                        style: GoogleFonts.tektur(
-                          fontSize: 10,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: player.status == 'active' ? Colors.black : AppColors.textSecondary,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1173,7 +1090,7 @@ class _RosterPlayerCard extends StatelessWidget {
                 if (player.isGhost)
                   Text(
                     'Guest Player',
-                    style: GoogleFonts.tektur(fontSize: 12, color: AppColors.textTertiary),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
               ],
             ),

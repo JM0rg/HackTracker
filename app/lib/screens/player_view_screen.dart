@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../theme/custom_text_styles.dart';
+import '../theme/decoration_styles.dart';
 
 /// Player View - Shows user's personal stats aggregated across all teams
 class PlayerViewScreen extends ConsumerWidget {
@@ -26,12 +27,7 @@ class PlayerViewScreen extends ConsumerWidget {
               children: [
                 Text(
                   'MY STATS',
-                  style: GoogleFonts.tektur(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    letterSpacing: 2,
-                  ),
+                  style: Theme.of(context).extension<CustomTextStyles>()!.sectionHeader.copyWith(color: AppColors.primary),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -44,10 +40,7 @@ class PlayerViewScreen extends ConsumerWidget {
                     children: [
                       Text(
                         '2024',
-                        style: GoogleFonts.tektur(
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium,
                       ),
                       const SizedBox(width: 4),
                       const Icon(
@@ -75,11 +68,7 @@ class PlayerViewScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'SEASON STATS',
-                    style: GoogleFonts.tektur(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                      letterSpacing: 1.5,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall,
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -100,12 +89,7 @@ class PlayerViewScreen extends ConsumerWidget {
             // My Teams Section
             Text(
               'MY TEAMS',
-              style: GoogleFonts.tektur(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                letterSpacing: 1.5,
-              ),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.primary),
             ),
 
             const SizedBox(height: 12),
@@ -147,11 +131,7 @@ class PlayerViewScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'SPRAY CHART',
-                    style: GoogleFonts.tektur(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                      letterSpacing: 1.5,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall,
                   ),
                   const SizedBox(height: 16),
                   Expanded(
@@ -167,10 +147,7 @@ class PlayerViewScreen extends ConsumerWidget {
                           const SizedBox(height: 12),
                           Text(
                             'Hit location visualization coming soon',
-                            style: GoogleFonts.tektur(
-                              fontSize: 13,
-                              color: AppColors.textTertiary,
-                            ),
+                            style: Theme.of(context).textTheme.labelMedium,
                           ),
                         ],
                       ),
@@ -185,12 +162,7 @@ class PlayerViewScreen extends ConsumerWidget {
             // Recent Games
             Text(
               'RECENT GAMES',
-              style: GoogleFonts.tektur(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                letterSpacing: 1.5,
-              ),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.primary),
             ),
 
             const SizedBox(height: 12),
@@ -234,11 +206,7 @@ class PlayerViewScreen extends ConsumerWidget {
               ),
               child: Text(
                 'VIEW ALL GAMES',
-                style: GoogleFonts.tektur(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                ),
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
 
@@ -263,20 +231,12 @@ class _StatColumn extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.tektur(
-            fontSize: 11,
-            color: AppColors.textTertiary,
-            letterSpacing: 1,
-          ),
+          style: Theme.of(context).textTheme.labelSmall,
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.tektur(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary),
         ),
       ],
     );
@@ -332,11 +292,7 @@ class _TeamCard extends StatelessWidget {
                 children: [
                   Text(
                     teamName,
-                    style: GoogleFonts.tektur(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 2),
                   Container(
@@ -347,11 +303,9 @@ class _TeamCard extends StatelessWidget {
                     ),
                     child: Text(
                       role,
-                      style: GoogleFonts.tektur(
-                        fontSize: 10,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: isOwner ? Colors.black : AppColors.textSecondary,
-                        letterSpacing: 1,
                       ),
                     ),
                   ),
@@ -410,9 +364,7 @@ class _GameCard extends StatelessWidget {
             child: Center(
               child: Text(
                 result,
-                style: GoogleFonts.tektur(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: isWin ? AppColors.primary : AppColors.error,
                 ),
               ),
@@ -425,27 +377,17 @@ class _GameCard extends StatelessWidget {
               children: [
                 Text(
                   opponent,
-                  style: GoogleFonts.tektur(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   personalStats,
-                  style: GoogleFonts.tektur(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: Theme.of(context).textTheme.labelMedium,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   date,
-                  style: GoogleFonts.tektur(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
-                  ),
+                  style: Theme.of(context).textTheme.labelSmall,
                 ),
               ],
             ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 /// Reusable text input field with consistent styling
@@ -54,7 +53,7 @@ class AppTextField extends StatelessWidget {
         prefixIcon: prefixIcon,
         counterText: maxLength != null ? null : '', // Hide counter if not needed
       ),
-      style: GoogleFonts.tektur(),
+      style: Theme.of(context).textTheme.bodyMedium,
       keyboardType: keyboardType,
       obscureText: obscureText,
       autofocus: autofocus,
@@ -122,7 +121,7 @@ class AppTextFormField extends StatelessWidget {
         prefixIcon: prefixIcon,
         counterText: maxLength != null ? null : '', // Hide counter if not needed
       ),
-      style: GoogleFonts.tektur(),
+      style: Theme.of(context).textTheme.bodyMedium,
       validator: validator,
       keyboardType: keyboardType,
       obscureText: obscureText,
@@ -167,7 +166,7 @@ class AppDropdownFormField<T> extends StatelessWidget {
       decoration: InputDecoration(
         labelText: labelText,
       ),
-      style: GoogleFonts.tektur(color: AppColors.textPrimary),
+      style: Theme.of(context).textTheme.bodyMedium,
       dropdownColor: AppColors.surface,
       validator: validator,
     );

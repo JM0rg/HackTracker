@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
+import '../theme/custom_text_styles.dart';
 import '../providers/user_providers.dart';
 
 /// Profile screen showing user info and settings
@@ -24,7 +24,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               'Failed to load user info',
-              style: GoogleFonts.tektur(color: AppColors.textPrimary),
+              style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -66,20 +66,12 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   Text(
                     user.email,
-                    style: GoogleFonts.tektur(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'PLAYER',
-                    style: GoogleFonts.tektur(
-                      fontSize: 11,
-                      color: AppColors.textTertiary,
-                      letterSpacing: 1.5,
-                    ),
+                    style: Theme.of(context).textTheme.labelSmall,
                   ),
                 ],
               ),
@@ -90,12 +82,7 @@ class ProfileScreen extends ConsumerWidget {
             // Settings Section
             Text(
               'SETTINGS',
-              style: GoogleFonts.tektur(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                letterSpacing: 1.5,
-              ),
+              style: Theme.of(context).extension<CustomTextStyles>()!.sectionHeader.copyWith(color: AppColors.primary),
             ),
 
             const SizedBox(height: 12),
@@ -142,10 +129,7 @@ class ProfileScreen extends ConsumerWidget {
             Center(
               child: Text(
                 'HackTracker v1.0.0',
-                style: GoogleFonts.tektur(
-                  fontSize: 11,
-                  color: AppColors.textTertiary,
-                ),
+                style: Theme.of(context).textTheme.labelSmall,
               ),
             ),
 
@@ -183,10 +167,7 @@ class _SettingsItem extends StatelessWidget {
         leading: Icon(icon, color: AppColors.primary, size: 22),
         title: Text(
           title,
-          style: GoogleFonts.tektur(
-            fontSize: 14,
-            color: AppColors.textPrimary,
-          ),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         trailing: const Icon(
           Icons.chevron_right,

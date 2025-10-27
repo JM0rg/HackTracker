@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../widgets/app_drawer.dart';
 import '../theme/app_colors.dart';
-import 'player_view_screen.dart';
-import 'team_view_screen.dart';
+import '../theme/custom_text_styles.dart';
 import 'profile_screen.dart';
 import 'recruiter_screen.dart';
+import '../features/home/home_tab_view.dart';
 
-/// Main home screen with top tabs (Player/Team) and bottom navigation
+/// Main home screen with bottom navigation
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -16,26 +15,19 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
-  late TabController _topTabController;
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _bottomNavIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _topTabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _topTabController.dispose();
-    super.dispose();
+  void _navigateToRecruiter() {
+    setState(() {
+      _bottomNavIndex = 2; // Recruiter tab index
+    });
   }
 
   Widget _buildCurrentScreen() {
     switch (_bottomNavIndex) {
       case 0: // Home - shows the tab view
-        return _buildTabView();
+        return HomeTabView(onNavigateToRecruiter: _navigateToRecruiter);
       case 1: // Record (placeholder for now)
         return const Center(
           child: Text(
@@ -48,78 +40,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       case 3: // Profile
         return const ProfileScreen();
       default:
-        return _buildTabView();
+        return HomeTabView(onNavigateToRecruiter: _navigateToRecruiter);
     }
-  }
-
-  void _navigateToTeamView() {
-    setState(() {
-      _topTabController.animateTo(1);
-    });
-  }
-
-  void _navigateToRecruiter() {
-    setState(() {
-      _bottomNavIndex = 2; // Recruiter tab index
-    });
-  }
-
-  Widget _buildTabView() {
-    return Column(
-      children: [
-        // Segmented Button Toggle (Player / Team)
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            border: Border(
-              bottom: BorderSide(color: AppColors.border, width: 1),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _ToggleButton(
-                  label: 'PLAYER VIEW',
-                  isSelected: _topTabController.index == 0,
-                  onTap: () {
-                    setState(() {
-                      _topTabController.animateTo(0);
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ToggleButton(
-                  label: 'TEAM VIEW',
-                  isSelected: _topTabController.index == 1,
-                  onTap: () {
-                    setState(() {
-                      _topTabController.animateTo(1);
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Tab Content
-        Expanded(
-          child: TabBarView(
-            controller: _topTabController,
-            children: [
-              PlayerViewScreen(
-                onNavigateToTeamView: _navigateToTeamView,
-              ),
-              TeamViewScreen(
-                onNavigateToRecruiter: _navigateToRecruiter,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 
   @override
@@ -139,12 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         ),
         title: Text(
           'HACKTRACKER',
-          style: GoogleFonts.tektur(
-            color: AppColors.primary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 2,
-          ),
+          style: Theme.of(context).extension<CustomTextStyles>()!.appBarTitle,
         ),
         actions: [
           IconButton(
@@ -173,8 +90,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           backgroundColor: AppColors.surface,
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.textTertiary,
-          selectedLabelStyle: GoogleFonts.tektur(fontSize: 11),
-          unselectedLabelStyle: GoogleFonts.tektur(fontSize: 11),
+          selectedLabelStyle: Theme.of(context).textTheme.labelSmall,
+          unselectedLabelStyle: Theme.of(context).textTheme.labelSmall,
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
@@ -198,50 +115,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               label: 'PROFILE',
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Custom toggle button for Player/Team view switching
-class _ToggleButton extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ToggleButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.background,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: 2,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.tektur(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.black : AppColors.textTertiary,
-              letterSpacing: 1.5,
-            ),
-          ),
         ),
       ),
     );

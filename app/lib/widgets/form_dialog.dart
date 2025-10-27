@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'app_input_fields.dart';
 
@@ -54,11 +53,8 @@ class FormDialog extends StatelessWidget {
               // Title
               Text(
                 title,
-                style: GoogleFonts.tektur(
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: isDestructive ? AppColors.error : AppColors.primary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -83,10 +79,7 @@ class FormDialog extends StatelessWidget {
                       foregroundColor: Colors.black,
                       // Fix button sizing - match TextButton height
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      textStyle: GoogleFonts.tektur(
-                        fontSize: 13, // Match TextButton size (14) but slightly smaller for visual hierarchy
-                        fontWeight: FontWeight.w600,
-                      ),
+                      textStyle: Theme.of(context).textTheme.labelLarge,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

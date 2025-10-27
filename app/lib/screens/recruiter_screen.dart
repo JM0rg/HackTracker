@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 
 /// Recruiter Hub - Browse players/subs and create free agent profile
@@ -30,22 +29,13 @@ class RecruiterScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'RECRUITER HUB',
-              style: GoogleFonts.tektur(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                letterSpacing: 2,
-              ),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.primary),
             ),
             const SizedBox(height: 12),
             Text(
               'Find available players or create your free agent profile',
               textAlign: TextAlign.center,
-              style: GoogleFonts.tektur(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -64,11 +54,7 @@ class RecruiterScreen extends StatelessWidget {
                 ),
                 child: Text(
                   'BROWSE PLAYERS',
-                  style: GoogleFonts.tektur(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -88,22 +74,14 @@ class RecruiterScreen extends StatelessWidget {
                 ),
                 child: Text(
                   'CREATE MY PROFILE',
-                  style: GoogleFonts.tektur(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
             const SizedBox(height: 24),
             Text(
               'Coming Soon',
-              style: GoogleFonts.tektur(
-                fontSize: 12,
-                color: AppColors.textTertiary,
-                fontStyle: FontStyle.italic,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
             ),
           ],
         ),
