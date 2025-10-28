@@ -208,3 +208,207 @@ def validate_player_status(status):
     
     return status
 
+
+def validate_game_title(title):
+    """
+    Validate game title
+    
+    Rules:
+    - 3-100 characters
+    - Letters, numbers, spaces, and common punctuation only
+    - Automatically trims whitespace
+    - Collapses multiple spaces into single space
+    
+    Args:
+        title (str): Game title to validate
+        
+    Returns:
+        str: Cleaned game title
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if not title or not isinstance(title, str):
+        raise ValueError("Game title is required and must be a string")
+    
+    # Remove leading/trailing whitespace
+    title = title.strip()
+    
+    # Collapse multiple spaces into single space
+    title = re.sub(r'\s+', ' ', title)
+    
+    # Check length
+    if len(title) < 3:
+        raise ValueError("Game title must be at least 3 characters")
+    
+    if len(title) > 100:
+        raise ValueError("Game title must not exceed 100 characters")
+    
+    # Check allowed characters (letters, numbers, spaces, common punctuation)
+    if not re.match(r'^[a-zA-Z0-9\s\-\.\,\:\!\?]+$', title):
+        raise ValueError("Game title can only contain letters, numbers, spaces, and common punctuation")
+    
+    return title
+
+
+def validate_game_status(status):
+    """
+    Validate game status
+    
+    Rules:
+    - Must be one of: SCHEDULED, IN_PROGRESS, FINAL, POSTPONED
+    - Defaults to 'SCHEDULED' if None or empty
+    
+    Args:
+        status (str or None): Game status
+        
+    Returns:
+        str: Validated status (defaults to 'SCHEDULED')
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    # Default to 'SCHEDULED' if not provided
+    if status is None or status == '':
+        return 'SCHEDULED'
+    
+    if not isinstance(status, str):
+        raise ValueError("status must be a string")
+    
+    # Normalize to uppercase
+    status = status.strip().upper()
+    
+    # Check valid values
+    valid_statuses = ['SCHEDULED', 'IN_PROGRESS', 'FINAL', 'POSTPONED']
+    if status not in valid_statuses:
+        raise ValueError(f"status must be one of: {', '.join(valid_statuses)}")
+    
+    return status
+
+
+def validate_score(score):
+    """
+    Validate game score
+    
+    Rules:
+    - Must be integer >= 0
+    - Can be string that converts to int
+    
+    Args:
+        score (int or str): Score to validate
+        
+    Returns:
+        int: Validated score
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    # Try to convert to int if string
+    try:
+        score = int(score)
+    except (TypeError, ValueError):
+        raise ValueError("Score must be a valid integer")
+    
+    # Check range
+    if score < 0:
+        raise ValueError("Score must be 0 or greater")
+    
+    return score
+
+
+def validate_team_type(team_type):
+    """
+    Validate team type
+    
+    Rules:
+    - Must be one of: MANAGED, PERSONAL
+    
+    Args:
+        team_type (str): Team type to validate
+        
+    Returns:
+        str: Validated team type (uppercase)
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if not team_type or not isinstance(team_type, str):
+        raise ValueError("Team type is required and must be a string")
+    
+    # Normalize to uppercase
+    team_type = team_type.strip().upper()
+    
+    # Check valid values
+    valid_types = ['MANAGED', 'PERSONAL']
+    if team_type not in valid_types:
+        raise ValueError(f'Team type must be one of: {", ".join(valid_types)}')
+    
+    return team_type
+
+
+def validate_lineup(lineup):
+    """
+    Validate game lineup
+    
+    Rules:
+    - Must be a list
+    - Each item must be a dict with 'playerId' and 'battingOrder'
+    - playerId must be non-empty string
+    - battingOrder must be integer >= 1
+    
+    Args:
+        lineup (list or None): Lineup to validate
+        
+    Returns:
+        list: Validated lineup
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if lineup is None:
+        return []
+    
+    if not isinstance(lineup, list):
+        raise ValueError("lineup must be a list")
+    
+    validated_lineup = []
+    batting_orders = set()
+    
+    for i, item in enumerate(lineup):
+        if not isinstance(item, dict):
+            raise ValueError(f"lineup item {i} must be a dictionary")
+        
+        # Check required fields
+        if 'playerId' not in item:
+            raise ValueError(f"lineup item {i} missing 'playerId' field")
+        
+        if 'battingOrder' not in item:
+            raise ValueError(f"lineup item {i} missing 'battingOrder' field")
+        
+        # Validate playerId
+        player_id = item['playerId']
+        if not isinstance(player_id, str) or not player_id.strip():
+            raise ValueError(f"lineup item {i} 'playerId' must be a non-empty string")
+        
+        # Validate battingOrder
+        try:
+            batting_order = int(item['battingOrder'])
+        except (TypeError, ValueError):
+            raise ValueError(f"lineup item {i} 'battingOrder' must be a valid integer")
+        
+        if batting_order < 1:
+            raise ValueError(f"lineup item {i} 'battingOrder' must be 1 or greater")
+        
+        # Check for duplicate batting orders
+        if batting_order in batting_orders:
+            raise ValueError(f"Duplicate batting order {batting_order} in lineup")
+        
+        batting_orders.add(batting_order)
+        
+        validated_lineup.append({
+            'playerId': player_id.strip(),
+            'battingOrder': batting_order
+        })
+    
+    return validated_lineup
+

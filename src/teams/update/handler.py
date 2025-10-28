@@ -23,7 +23,7 @@ from utils.authorization import get_user_id_from_event, authorize, check_persona
 ALLOWED_FIELDS = {'name', 'description'}
 
 # Fields that are read-only (cannot be updated)
-READONLY_FIELDS = {'teamId', 'ownerId', 'status', 'createdAt', 'updatedAt', 'deletedAt', 'recoveryToken', 'PK', 'SK', 'GSI1PK', 'GSI1SK', 'GSI2PK', 'GSI2SK', 'GSI3PK', 'GSI3SK', 'GSI4PK', 'GSI4SK', 'GSI5PK', 'GSI5SK'}
+READONLY_FIELDS = {'teamId', 'ownerId', 'status', 'team_type', 'createdAt', 'updatedAt', 'deletedAt', 'recoveryToken', 'PK', 'SK', 'GSI1PK', 'GSI1SK', 'GSI2PK', 'GSI2SK', 'GSI3PK', 'GSI3SK', 'GSI4PK', 'GSI4SK', 'GSI5PK', 'GSI5SK'}
 
 
 def handler(event, context):
@@ -217,6 +217,10 @@ def handler(event, context):
         # Add optional description
         if 'description' in updated_item and updated_item['description']:
             team_data['description'] = updated_item['description']
+        
+        # Add team_type if present
+        if 'team_type' in updated_item:
+            team_data['team_type'] = updated_item['team_type']
         
         print(json.dumps({
             'level': 'INFO',

@@ -84,6 +84,10 @@ def handler(event, context):
         if 'description' in team and team['description']:
             team_response['description'] = team['description']
         
+        # Add team_type if present
+        if 'team_type' in team:
+            team_response['team_type'] = team['team_type']
+        
         print(json.dumps({
             'level': 'INFO',
             'message': 'Team retrieved successfully',

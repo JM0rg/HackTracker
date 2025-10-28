@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
-from utils.validation import validate_team_name, validate_team_description
+from utils.validation import validate_team_name, validate_team_description, validate_team_type
 from utils.authorization import get_user_id_from_event
 
 
@@ -57,9 +57,18 @@ def handler(event, context):
         if not body.get('name'):
             return create_response(400, {'error': 'Team name is required'})
         
+        if not body.get('teamType'):
+            return create_response(400, {'error': 'teamType is required (MANAGED or PERSONAL)'})
+        
         # Validate and clean team name
         try:
             team_name = validate_team_name(body['name'])
+        except ValueError as e:
+            return create_response(400, {'error': str(e)})
+        
+        # Validate team type
+        try:
+            team_type = validate_team_type(body['teamType'])
         except ValueError as e:
             return create_response(400, {'error': str(e)})
         
@@ -75,6 +84,32 @@ def handler(event, context):
         team_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc).isoformat()
         
+        # Get table reference early (needed for user lookup and transaction)
+        table = get_table()
+        
+        # Get user's first name for PERSONAL team player creation
+        user_first_name = None
+        if team_type == 'PERSONAL':
+            try:
+                user_response = table.get_item(
+                    Key={
+                        'PK': f'USER#{user_id}',
+                        'SK': 'METADATA'
+                    }
+                )
+                if 'Item' in user_response:
+                    user_first_name = user_response['Item'].get('firstName', 'Player')
+                else:
+                    user_first_name = 'Player'
+            except Exception as e:
+                print(json.dumps({
+                    'level': 'WARN',
+                    'message': 'Could not fetch user name, using default',
+                    'userId': user_id,
+                    'error': str(e)
+                }))
+                user_first_name = 'Player'
+        
         # Prepare team record
         team_item = {
             'PK': f'TEAM#{team_id}',
@@ -82,6 +117,7 @@ def handler(event, context):
             'teamId': team_id,
             'name': team_name,
             'ownerId': user_id,
+            'team_type': team_type,
             'status': 'active',
             'createdAt': timestamp,
             'updatedAt': timestamp,
@@ -105,16 +141,35 @@ def handler(event, context):
             'invitedBy': None  # Self-created, no inviter
         }
         
+        # Prepare player record for owner (created for both MANAGED and PERSONAL teams)
+        player_id = str(uuid.uuid4())
+        player_first_name = user_first_name if team_type == 'PERSONAL' else 'Owner'
+        player_item = {
+            'PK': f'TEAM#{team_id}',
+            'SK': f'PLAYER#{player_id}',
+            'playerId': player_id,
+            'teamId': team_id,
+            'firstName': player_first_name,
+            'status': 'active',
+            'isGhost': False,  # Immediately linked to owner
+            'userId': user_id,  # Auto-linked to owner
+            'linkedAt': timestamp,
+            'createdAt': timestamp,
+            'updatedAt': timestamp,
+            'GSI4PK': f'USER#{user_id}',  # For stat queries
+            'GSI4SK': f'PLAYER#{player_id}'
+        }
+        
         print(json.dumps({
             'level': 'INFO',
             'message': 'Creating team with transaction',
             'teamId': team_id,
             'teamName': team_name,
+            'teamType': team_type,
             'ownerId': user_id
         }))
         
-        # Execute atomic transaction
-        table = get_table()
+        # Execute atomic transaction (team + membership + player)
         try:
             table.meta.client.transact_write_items(
                 TransactItems=[
@@ -129,6 +184,13 @@ def handler(event, context):
                         'Put': {
                             'TableName': table.name,
                             'Item': membership_item,
+                            'ConditionExpression': 'attribute_not_exists(PK) AND attribute_not_exists(SK)'
+                        }
+                    },
+                    {
+                        'Put': {
+                            'TableName': table.name,
+                            'Item': player_item,
                             'ConditionExpression': 'attribute_not_exists(PK) AND attribute_not_exists(SK)'
                         }
                     }
@@ -150,6 +212,7 @@ def handler(event, context):
             'teamId': team_id,
             'name': team_name,
             'ownerId': user_id,
+            'team_type': team_type,
             'role': 'team-owner',
             'status': 'active',
             'createdAt': timestamp,

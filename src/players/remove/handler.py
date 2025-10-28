@@ -57,8 +57,42 @@ def handler(event, context):
         if not player_id:
             return create_response(400, {'error': 'playerId is required in path'})
         
-        # Authorize: check if user can manage roster
         table = get_table()
+        
+        # Check team type - cannot remove owner's player from PERSONAL teams
+        try:
+            team_response = table.get_item(
+                Key={
+                    'PK': f'TEAM#{team_id}',
+                    'SK': 'METADATA'
+                }
+            )
+            
+            if 'Item' not in team_response:
+                return create_response(404, {'error': 'Team not found'})
+            
+            team = team_response['Item']
+            team_type = team.get('team_type', 'MANAGED')  # Default to MANAGED for backwards compatibility
+            
+            # Get player first to check if it's the owner
+            player_response = table.get_item(
+                Key={
+                    'PK': f'TEAM#{team_id}',
+                    'SK': f'PLAYER#{player_id}'
+                }
+            )
+            
+            if 'Item' in player_response:
+                player = player_response['Item']
+                # If PERSONAL team and player is linked to owner, block removal
+                if team_type == 'PERSONAL' and player.get('userId') == team.get('ownerId'):
+                    return create_response(400, {
+                        'error': 'Cannot remove the owner player from a personal team.'
+                    })
+        except ClientError as e:
+            return create_response(500, {'error': 'Could not verify team and player'})
+        
+        # Authorize: check if user can manage roster
         try:
             authorize(table, user_id, team_id, action='manage_roster')
         except PermissionError as e:
@@ -68,7 +102,7 @@ def handler(event, context):
                 return create_response(404, {'error': 'Team not found'})
             raise
         
-        # Get player to check if it's a ghost player
+        # Get player again (we already fetched it above, but need to verify it still exists)
         print(json.dumps({
             'level': 'INFO',
             'message': 'Checking player status',

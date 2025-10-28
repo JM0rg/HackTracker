@@ -516,7 +516,7 @@ Player Management (5 functions):
 - **Optimistic UI:** Race-condition-safe updates
 - **Persistent Caching:** Session-retained data
 - **Authorization:** v2 Policy Engine
-- **Personal Teams:** Auto-created for each user
+- **Team Types:** MANAGED (full roster) or PERSONAL (stat filtering label)
 - **Global DynamoDB Client:** Warm-start optimization
 
 ---

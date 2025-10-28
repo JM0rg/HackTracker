@@ -23,16 +23,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 from utils import get_table
 
 
-def create_team(user_id, name, description=None):
+def create_team(user_id, name, description=None, team_type='MANAGED'):
     """Test create team"""
     print(f"\n📝 Creating team: {name}")
     print(f"   Owner: {user_id}")
+    print(f"   Type: {team_type}")
     
     # Import handler
     from teams.create.handler import handler
     
     # Simulate API Gateway event
-    body = {"name": name}
+    body = {"name": name, "teamType": team_type}
     if description:
         body["description"] = description
     
@@ -53,6 +54,7 @@ def create_team(user_id, name, description=None):
         team = json.loads(response['body'])
         print(f"   ✅ Team created: {team['teamId']}")
         print(f"   Name: {team['name']}")
+        print(f"   Type: {team.get('team_type', 'N/A')}")
         print(f"   Role: {team['role']}")
         return team['teamId']
     else:
@@ -92,7 +94,7 @@ def get_team(team_id):
         return None
 
 
-def query_teams(user_id=None, owner_id=None):
+def query_teams(user_id=None, owner_id=None, team_type=None):
     """Test query teams"""
     if user_id:
         print(f"\n📋 Querying teams for user: {user_id}")
@@ -108,6 +110,8 @@ def query_teams(user_id=None, owner_id=None):
         query_params['userId'] = user_id
     elif owner_id:
         query_params['ownerId'] = owner_id
+    if team_type:
+        query_params['team_type'] = team_type
     
     event = {
         'queryStringParameters': query_params if query_params else None,
@@ -126,8 +130,8 @@ def query_teams(user_id=None, owner_id=None):
         print(f"   ✅ Found {data['count']} team(s)")
         for team in data['teams']:
             role = team.get('role', 'N/A')
-            is_personal = " [PERSONAL]" if team.get('isPersonal') else ""
-            print(f"   - {team['name']} ({team['teamId'][:8]}...) [Role: {role}]{is_personal}")
+            team_type_str = f" [{team.get('team_type', 'MANAGED')}]" if team.get('team_type') else ""
+            print(f"   - {team['name']} ({team['teamId'][:8]}...) [Role: {role}]{team_type_str}")
         return data['teams']
     else:
         print(f"   ❌ Failed: {response['statusCode']}")
@@ -231,11 +235,11 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python test_teams.py <command> [args]")
         print("\nCommands:")
-        print("  create <userId> <name> [description]  - Create a new team")
+        print("  create <userId> <name> [description] [teamType]  - Create a new team (MANAGED or PERSONAL)")
         print("  get <teamId>                          - Get team by ID")
-        print("  query list                            - List all teams")
-        print("  query user <userId>                   - List user's teams")
-        print("  query owner <ownerId>                 - List teams by owner")
+        print("  query list [teamType]                 - List all teams (optionally filter by type)")
+        print("  query user <userId> [teamType]        - List user's teams (optionally filter by type)")
+        print("  query owner <ownerId> [teamType]      - List teams by owner (optionally filter by type)")
         print("  update <userId> <teamId> name=<name>  - Update team name")
         print("  update <userId> <teamId> desc=<desc>  - Update description")
         print("  delete <userId> <teamId>              - Delete team (soft)")
@@ -250,7 +254,8 @@ def main():
             user_id = sys.argv[2]
             name = sys.argv[3]
             description = sys.argv[4] if len(sys.argv) > 4 else None
-            create_team(user_id, name, description)
+            team_type = sys.argv[5] if len(sys.argv) > 5 else 'MANAGED'
+            create_team(user_id, name, description, team_type)
         
         elif command == 'get':
             team_id = sys.argv[2]
@@ -258,14 +263,15 @@ def main():
         
         elif command == 'query':
             subcommand = sys.argv[2]
+            team_type = sys.argv[4] if len(sys.argv) > 4 else None
             if subcommand == 'list':
-                query_teams()
+                query_teams(team_type=team_type)
             elif subcommand == 'user':
                 user_id = sys.argv[3]
-                query_teams(user_id=user_id)
+                query_teams(user_id=user_id, team_type=team_type)
             elif subcommand == 'owner':
                 owner_id = sys.argv[3]
-                query_teams(owner_id=owner_id)
+                query_teams(owner_id=owner_id, team_type=team_type)
         
         elif command == 'update':
             user_id = sys.argv[2]
@@ -396,19 +402,27 @@ def run_full_test(user_id):
         team4 = get_team(team4_id)
         print(f"   Cleaned name: '{team4['name']}'")
     
-    # Test 9: Personal Team Restrictions
+    # Test 9: Personal Team Creation and Restrictions
     print("\n" + "=" * 60)
-    print("TEST 9: Personal Team Restrictions")
+    print("TEST 9: Personal Team Creation and Restrictions")
     print("=" * 60)
     
-    # Find user's personal team
-    print("🔍 Finding user's personal team...")
-    all_user_teams = query_teams(user_id=user_id)
-    personal_teams = [t for t in all_user_teams if t.get('isPersonal')]
+    # Create a personal team
+    print("\n🧪 Test: Create personal team")
+    personal_team_id = create_team(user_id, "My Personal Stats", "Personal team for stats", team_type='PERSONAL')
     
-    if personal_teams:
-        personal_team_id = personal_teams[0]['teamId']
-        print(f"✅ Found personal team: {personal_team_id}")
+    if personal_team_id:
+        print(f"✅ Created personal team: {personal_team_id}")
+        
+        # Get the team and verify team_type
+        personal_team = get_team(personal_team_id)
+        if personal_team and personal_team.get('team_type') == 'PERSONAL':
+            print("   ✅ Team type is PERSONAL")
+        
+        # Try to add a player to personal team (should fail)
+        print("\n🧪 Test: Try to add player to personal team (should fail)")
+        from test_players import add_player
+        add_player(user_id, personal_team_id, "Test", "Player", 99)
         
         # Try to delete personal team (should fail)
         print("\n🧪 Test: Try to delete personal team (should fail)")
@@ -421,14 +435,19 @@ def run_full_test(user_id):
         # Verify personal team is not in public list
         print("\n🧪 Test: Verify personal team not in public list")
         all_teams = query_teams()
-        personal_in_public = [t for t in all_teams if t.get('isPersonal')]
+        personal_in_public = [t for t in all_teams if t.get('team_type') == 'PERSONAL']
         if not personal_in_public:
             print("   ✅ Personal team correctly filtered from public list")
         else:
             print("   ❌ Personal team should not appear in public list")
-    else:
-        print("⚠️  No personal team found for user")
-        print("   (Personal teams are auto-created on user signup)")
+        
+        # Verify personal team appears when filtering by team_type
+        print("\n🧪 Test: Verify personal team appears when filtering by team_type=PERSONAL")
+        personal_teams_list = query_teams(user_id=user_id, team_type='PERSONAL')
+        if personal_teams_list and any(t.get('teamId') == personal_team_id for t in personal_teams_list):
+            print("   ✅ Personal team found in filtered list")
+        else:
+            print("   ❌ Personal team should appear in filtered list")
     
     # Summary
     print("\n" + "=" * 60)

@@ -221,6 +221,61 @@ module "api_gateway" {
         timeout_milliseconds   = 10000
       }
     }
+
+    # Create Game
+    "POST /games" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.create_game_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # List Games by Team
+    "GET /teams/{teamId}/games" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.list_games_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 30000
+      }
+    }
+
+    # Get Game by ID
+    "GET /games/{gameId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.get_game_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Update Game
+    "PATCH /games/{gameId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.update_game_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Delete Game
+    "DELETE /games/{gameId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.delete_game_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
   }
 
   tags = merge(local.common_tags, {
@@ -354,6 +409,51 @@ resource "aws_lambda_permission" "api_gateway_remove_player" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = module.remove_player_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Create Game Lambda
+resource "aws_lambda_permission" "api_gateway_create_game" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.create_game_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke List Games Lambda
+resource "aws_lambda_permission" "api_gateway_list_games" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.list_games_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Get Game Lambda
+resource "aws_lambda_permission" "api_gateway_get_game" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.get_game_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Update Game Lambda
+resource "aws_lambda_permission" "api_gateway_update_game" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.update_game_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Delete Game Lambda
+resource "aws_lambda_permission" "api_gateway_delete_game" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.delete_game_lambda.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
 }

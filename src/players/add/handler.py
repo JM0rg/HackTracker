@@ -93,12 +93,29 @@ def handler(event, context):
         except ValueError as e:
             return create_response(400, {'error': str(e)})
         
-        # Check if this is a personal team (can't add players to personal teams)
         table = get_table()
+        
+        # Check team type - PERSONAL teams can only have the owner's player
         try:
-            check_personal_team_operation(table, team_id, 'manage_roster')
-        except PermissionError as e:
-            return create_response(403, {'error': str(e)})
+            team_response = table.get_item(
+                Key={
+                    'PK': f'TEAM#{team_id}',
+                    'SK': 'METADATA'
+                }
+            )
+            
+            if 'Item' not in team_response:
+                return create_response(404, {'error': 'Team not found'})
+            
+            team = team_response['Item']
+            team_type = team.get('team_type', 'MANAGED')  # Default to MANAGED for backwards compatibility
+            
+            if team_type == 'PERSONAL':
+                return create_response(400, {
+                    'error': 'Cannot add players to personal teams. Personal teams can only contain the owner as a player.'
+                })
+        except ClientError as e:
+            return create_response(500, {'error': 'Could not verify team type'})
         
         # Authorize: check if user can manage roster
         try:

@@ -133,9 +133,9 @@ def test_create_user():
     print('\n📤 Response:')
     print(json.dumps(result, indent=2))
     
-    # Verify personal team was created
+    # Verify user was created
     print('\n' + '='*60)
-    print('🔍 Verifying Personal Team Creation...')
+    print('🔍 Verifying User Creation...')
     print('='*60)
     
     import boto3
@@ -149,58 +149,22 @@ def test_create_user():
     table = dynamodb.Table('HackTracker-dev')
     user_id = event['request']['userAttributes']['sub']
     
-    # Query user's teams
-    response = table.query(
-        KeyConditionExpression='PK = :pk AND begins_with(SK, :sk)',
-        ExpressionAttributeValues={
-            ':pk': f'USER#{user_id}',
-            ':sk': 'TEAM#'
-        }
+    # Get user record
+    user_response = table.get_item(
+        Key={'PK': f'USER#{user_id}', 'SK': 'METADATA'}
     )
     
-    teams = response.get('Items', [])
-    personal_teams = [t for t in teams if t.get('role') == 'team-owner']
-    
-    if personal_teams:
-        team_id = personal_teams[0]['teamId']
-        print(f'✅ Personal team membership found: {team_id}')
-        
-        # Get team details
-        team_response = table.get_item(
-            Key={'PK': f'TEAM#{team_id}', 'SK': 'METADATA'}
-        )
-        
-        if 'Item' in team_response:
-            team = team_response['Item']
-            if team.get('isPersonal'):
-                print(f'✅ Team is marked as personal: {team.get("name")}')
-            else:
-                print(f'⚠️  Team exists but isPersonal flag not set')
-        
-        # Check for personal player
-        player_response = table.query(
-            KeyConditionExpression='PK = :pk AND begins_with(SK, :sk)',
-            ExpressionAttributeValues={
-                ':pk': f'TEAM#{team_id}',
-                ':sk': 'PLAYER#'
-            }
-        )
-        
-        players = player_response.get('Items', [])
-        linked_players = [p for p in players if p.get('userId') == user_id]
-        
-        if linked_players:
-            player = linked_players[0]
-            print(f'✅ Personal player created and linked: {player.get("firstName")}')
-            if player.get('GSI4PK'):
-                print(f'✅ GSI4 keys populated for stat queries')
-        else:
-            print(f'⚠️  No linked player found on personal team')
+    if 'Item' in user_response:
+        user = user_response['Item']
+        print(f'✅ User record found: {user.get("firstName")} {user.get("lastName")}')
+        print(f'   Email: {user.get("email")}')
+        print(f'   Note: Personal teams are no longer auto-created.')
+        print(f'   Users can create PERSONAL teams via POST /teams with teamType=PERSONAL')
     else:
-        print(f'⚠️  No personal team found for user')
+        print(f'⚠️  User record not found in database')
     
     print('\n💡 Check DynamoDB Admin UI: http://localhost:8001')
-    print('   Look for the new user and personal team in the HackTracker-dev table')
+    print('   Look for the new user in the HackTracker-dev table')
 
 
 def test_get_user(user_id):

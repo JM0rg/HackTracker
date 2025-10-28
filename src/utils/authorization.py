@@ -16,12 +16,14 @@ class PermissionError(Exception):
 MANAGE_ROSTER_ROLES = ['team-owner', 'team-coach']
 MANAGE_TEAM_ROLES = ['team-owner', 'team-coach']
 DELETE_TEAM_ROLES = ['team-owner']
+MANAGE_GAMES_ROLES = ['team-owner', 'team-coach', 'team-scorekeeper']
 
 # Central policy map: action → required roles
 POLICY_MAP = {
     'manage_roster': MANAGE_ROSTER_ROLES,
     'manage_team': MANAGE_TEAM_ROLES,
     'delete_team': DELETE_TEAM_ROLES,
+    'manage_games': MANAGE_GAMES_ROLES,
 }
 
 
@@ -310,11 +312,11 @@ def check_personal_team_operation(table, team_id, operation):
     
     team = response['Item']
     
-    # If not a personal team, allow all operations
-    if not team.get('isPersonal', False):
+    # If not a PERSONAL team, allow all operations
+    if team.get('team_type') != 'PERSONAL':
         return
     
-    # Define blocked operations for personal teams
+    # Define blocked operations for PERSONAL teams
     blocked_operations = [
         'manage_roster',  # Can't add/remove players
         'delete_team',    # Can't delete personal team

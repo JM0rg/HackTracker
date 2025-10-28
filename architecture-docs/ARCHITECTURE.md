@@ -85,7 +85,7 @@ Aggregation Lambdas (Future)
 | ------------- | -------------------------------------------------------------------------- |
 | **User**      | Registered app user (Cognito account) - can own/join multiple teams       |
 | **Player**    | Roster slot on a team - can be "ghost" (unlinked) or linked to a User     |
-| **Team**      | Collection of players, schedule, stats - owned by a User                   |
+| **Team**      | Collection of players, schedule, stats - owned by a User. Can be MANAGED (full roster) or PERSONAL (stat filtering label) |
 | **League**    | Organizer of multiple teams, seasons, and tournaments                      |
 | **Season**    | Group of games belonging to either a team or league                        |
 | **Game**      | Individual match (may belong to a league season or team season)            |
@@ -251,18 +251,29 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 
 1. Sign up → Cognito triggers `post-confirmation` Lambda → Creates `USER#id`
 2. Player can:
+   * Create MANAGED teams (full roster management)
+   * Create PERSONAL teams (for filtering stats by team/season context)
    * Join an existing team via invite code
-   * Create personal stats profile
    * Join free agent pool (optional)
 
 ### 8.2 Team Flow
 
-1. Coach creates a team (`TEAM#id`)
-2. Adds players manually or via invites
-3. Creates a **team-owned season**
+**MANAGED Teams:**
+1. Coach creates a MANAGED team (`TEAM#id` with `team_type: MANAGED`)
+2. Owner player is auto-created and linked
+3. Adds additional players manually or via invites
+4. Creates a **team-owned season**
    * `TEAM#id#SEASON#2025SPRING`
-4. Adds games + records at-bats
-5. Team dashboard shows cumulative stats
+5. Adds games + records at-bats (lineup required for IN_PROGRESS)
+6. Team dashboard shows cumulative stats
+
+**PERSONAL Teams:**
+1. User creates a PERSONAL team (`TEAM#id` with `team_type: PERSONAL`)
+2. Owner player is auto-created and linked (uses user's firstName)
+3. Cannot add additional players (validation blocks it)
+4. Creates games for personal stat tracking (no lineup required)
+5. User can create multiple PERSONAL teams to filter stats by context (e.g., "Monday League", "Weekend Warriors")
+6. Personal teams enable filtering: "What was my batting average for Weekend Warriors during Spring 2025?"
 
 ### 8.3 League Flow
 
@@ -386,7 +397,7 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 - [x] Frontend persistent caching
 - [x] Optimistic UI updates
 - [x] JWT authentication with API Gateway authorizer
-- [x] Personal stats teams (auto-created for each user)
+- [x] Team type system (MANAGED/PERSONAL) for flexible stat filtering
 - [x] Player name validation (supports apostrophes, periods, accented chars)
 - [x] Lambda warm-start optimization (global DynamoDB client)
 - [x] Centralized styling system (Material 3 theme + custom extensions)

@@ -37,14 +37,14 @@ def format_team(item):
     if 'updatedAt' in item:
         team['updatedAt'] = item['updatedAt']
     
-    # Include isPersonal flag if present (for UI filtering)
-    if 'isPersonal' in item:
-        team['isPersonal'] = item['isPersonal']
+    # Include team_type if present
+    if 'team_type' in item:
+        team['team_type'] = item['team_type']
     
     return team
 
 
-def list_all_teams(table, limit=50, next_token=None):
+def list_all_teams(table, limit=50, next_token=None, team_type_filter=None):
     """List all teams with pagination using GSI2 (entity listing)"""
     query_params = {
         'IndexName': 'GSI2',
@@ -57,11 +57,24 @@ def list_all_teams(table, limit=50, next_token=None):
     
     response = table.query(**query_params)
     
-    # Filter out deleted teams and personal teams (personal teams should not appear in public lists)
+    # Filter out deleted teams
     items = [
         item for item in response.get('Items', [])
-        if item.get('status') != 'deleted' and not item.get('isPersonal', False)
+        if item.get('status') != 'deleted'
     ]
+    
+    # Apply team_type filter if provided
+    if team_type_filter:
+        items = [
+            item for item in items
+            if item.get('team_type') == team_type_filter
+        ]
+    # If no filter, exclude PERSONAL teams from public listing (default behavior)
+    else:
+        items = [
+            item for item in items
+            if item.get('team_type') != 'PERSONAL'
+        ]
     
     return {
         'items': items,
@@ -69,7 +82,7 @@ def list_all_teams(table, limit=50, next_token=None):
     }
 
 
-def list_teams_by_owner(table, owner_id, limit=50):
+def list_teams_by_owner(table, owner_id, limit=50, team_type_filter=None):
     """List teams owned by specific user (client-side filter on GSI2 results)"""
     # Query all teams from GSI2
     query_params = {
@@ -80,13 +93,16 @@ def list_teams_by_owner(table, owner_id, limit=50):
     
     response = table.query(**query_params)
     
-    # Filter by owner and status (exclude personal teams from owner listings)
+    # Filter by owner and status
     items = [
         item for item in response.get('Items', [])
         if item.get('ownerId') == owner_id 
         and item.get('status') != 'deleted'
-        and not item.get('isPersonal', False)
     ]
+    
+    # Apply team_type filter if provided
+    if team_type_filter:
+        items = [item for item in items if item.get('team_type') == team_type_filter]
     
     # Apply limit after filtering
     items = items[:limit]
@@ -97,7 +113,7 @@ def list_teams_by_owner(table, owner_id, limit=50):
     }
 
 
-def list_user_teams(table, user_id):
+def list_user_teams(table, user_id, team_type_filter=None):
     """List teams user is a member of (query user memberships)"""
     # Query user's team memberships
     response = table.query(
@@ -124,8 +140,12 @@ def list_user_teams(table, user_id):
         
         if 'Item' in team_response:
             team = team_response['Item']
-            # Filter out deleted teams and personal teams
-            if team.get('status') != 'deleted' and not team.get('isPersonal', False):
+            # Filter out deleted teams
+            if team.get('status') != 'deleted':
+                # Apply team_type filter if provided
+                if team_type_filter and team.get('team_type') != team_type_filter:
+                    continue
+                
                 team_data = format_team(team)
                 # Add user's role in this team
                 team_data['role'] = membership.get('role')
@@ -160,8 +180,15 @@ def handler(event, context):
         query_params = event.get('queryStringParameters') or {}
         user_id = query_params.get('userId')
         owner_id = query_params.get('ownerId')
+        team_type_filter = query_params.get('team_type')  # Optional: MANAGED or PERSONAL
         limit = int(query_params.get('limit', 50))
         next_token = query_params.get('nextToken')
+        
+        # Validate team_type filter if provided
+        if team_type_filter:
+            team_type_filter = team_type_filter.upper()
+            if team_type_filter not in ['MANAGED', 'PERSONAL']:
+                return create_response(400, {'error': 'team_type must be MANAGED or PERSONAL'})
         
         table = get_table()
         
@@ -170,10 +197,11 @@ def handler(event, context):
             print(json.dumps({
                 'level': 'INFO',
                 'message': 'Querying teams by user membership',
-                'userId': user_id
+                'userId': user_id,
+                'teamType': team_type_filter
             }))
             
-            result = list_user_teams(table, user_id)
+            result = list_user_teams(table, user_id, team_type_filter)
             
             response_body = {
                 'teams': result['items'],
@@ -187,10 +215,11 @@ def handler(event, context):
             print(json.dumps({
                 'level': 'INFO',
                 'message': 'Querying teams by owner',
-                'ownerId': owner_id
+                'ownerId': owner_id,
+                'teamType': team_type_filter
             }))
             
-            result = list_teams_by_owner(table, owner_id, limit)
+            result = list_teams_by_owner(table, owner_id, limit, team_type_filter)
             
             response_body = {
                 'teams': [format_team(item) for item in result['items']],
@@ -203,10 +232,11 @@ def handler(event, context):
         print(json.dumps({
             'level': 'INFO',
             'message': 'Listing all teams',
-            'limit': limit
+            'limit': limit,
+            'teamType': team_type_filter
         }))
         
-        result = list_all_teams(table, limit, next_token)
+        result = list_all_teams(table, limit, next_token, team_type_filter)
         
         response_body = {
             'teams': [format_team(item) for item in result['items']],

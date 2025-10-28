@@ -16,10 +16,6 @@ import boto3
 from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 
-# Add utils to path for personal_team import
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from utils.personal_team import create_personal_team
-
 
 # Initialize DynamoDB client
 def get_dynamodb_client():
@@ -129,33 +125,7 @@ def handler(event, context):
                 'email': email.lower()
             }))
             
-            # Create personal stats team for the user
-            # This is a nice-to-have feature, so we don't fail signup if it errors
-            try:
-                team_id, player_id = create_personal_team(table, user_id, given_name, timestamp)
-                if team_id and player_id:
-                    print(json.dumps({
-                        'level': 'INFO',
-                        'message': 'Personal stats team created for user',
-                        'userId': user_id,
-                        'personalTeamId': team_id,
-                        'personalPlayerId': player_id
-                    }))
-                else:
-                    print(json.dumps({
-                        'level': 'WARN',
-                        'message': 'Failed to create personal stats team, but user signup succeeded',
-                        'userId': user_id
-                    }))
-            except Exception as personal_team_error:
-                # Log error but don't fail the signup
-                print(json.dumps({
-                    'level': 'ERROR',
-                    'message': 'Exception creating personal stats team',
-                    'userId': user_id,
-                    'error': str(personal_team_error)
-                }))
-            
+            # Note: Personal teams are now created by users when needed via POST /teams with team_type=PERSONAL
         except ClientError as e:
             # If user already exists (e.g., Cognito retry or duplicate trigger)
             if e.response['Error']['Code'] == 'ConditionalCheckFailedException':

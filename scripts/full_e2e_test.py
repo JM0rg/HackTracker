@@ -47,8 +47,8 @@ def run_command(cmd, description):
 
 def main():
     print_header("🧪 HACKTRACKER FULL E2E TEST SUITE 🧪")
-    print_info("Testing Personal Stats Team Feature")
-    print_info("This will test: DB setup, user creation, personal team, restrictions, and more\n")
+    print_info("Testing Team Type System (MANAGED vs PERSONAL)")
+    print_info("This will test: DB setup, user creation, team type system, restrictions, and more\n")
     
     # Test 1: Reset Database
     print_header("TEST 1: Database Reset")
@@ -57,87 +57,74 @@ def main():
         print_error("Database reset failed. Exiting.")
         sys.exit(1)
     
-    # Test 2: Create User (should auto-create personal team)
-    print_header("TEST 2: Create User with Personal Team")
+    # Test 2: Create User
+    print_header("TEST 2: Create User")
     success, output = run_command("make test create", "Create test user")
     if not success:
         print_error("User creation failed. Exiting.")
         sys.exit(1)
     
-    # Check for personal team creation in output
-    if "Personal stats team created successfully" in output:
-        print_success("Personal team created successfully")
+    # Verify user was created
+    if "User created successfully" in output or "User record found" in output:
+        print_success("User created successfully")
     else:
-        print_error("Personal team creation not confirmed in output")
+        print_error("User creation not confirmed in output")
     
-    if "Personal player created and linked" in output:
-        print_success("Personal player created and linked")
-    else:
-        print_error("Personal player not confirmed in output")
+    print_info("Note: Personal teams are no longer auto-created. Users create them as needed.")
     
-    if "GSI4 keys populated" in output:
-        print_success("GSI4 keys populated for stat queries")
-    else:
-        print_error("GSI4 keys not confirmed")
-    
-    # Test 3: Query User's Teams (should include personal team)
-    print_header("TEST 3: Query User's Teams")
+    # Test 3: Create Personal Team
+    print_header("TEST 3: Create Personal Team")
     user_id = "12345678-1234-1234-1234-123456789012"
     success, output = run_command(
-        f"uv run python scripts/test_teams.py query user {user_id}",
-        "Query user's teams"
+        f'uv run python scripts/test_teams.py create {user_id} "Personal Stats" "Personal team for stats" PERSONAL',
+        "Create personal team"
     )
     if not success:
-        print_error("Failed to query user's teams")
-    elif "[PERSONAL]" in output:
-        print_success("Personal team appears in user's team list with [PERSONAL] indicator")
-    else:
-        print_error("Personal team not found or not marked as personal")
-    
-    # Extract personal team ID from output
-    personal_team_id = None
-    for line in output.split('\n'):
-        if '[PERSONAL]' in line and 'Personal Stats' in line:
-            # Extract team ID from format: "- Personal Stats (ae39905f...) [Role: team-owner] [PERSONAL]"
-            import re
-            match = re.search(r'\(([a-f0-9-]+)\.\.\.\)', line)
-            if match:
-                # Get full team ID from database
-                import boto3
-                dynamodb = boto3.resource(
-                    'dynamodb',
-                    endpoint_url='http://localhost:8000',
-                    region_name='us-east-1',
-                    aws_access_key_id='dummy',
-                    aws_secret_access_key='dummy'
-                )
-                table = dynamodb.Table('HackTracker-dev')
-                response = table.query(
-                    KeyConditionExpression='PK = :pk AND begins_with(SK, :sk)',
-                    ExpressionAttributeValues={
-                        ':pk': f'USER#{user_id}',
-                        ':sk': 'TEAM#'
-                    }
-                )
-                for item in response.get('Items', []):
-                    team_response = table.get_item(
-                        Key={'PK': f'TEAM#{item["teamId"]}', 'SK': 'METADATA'}
-                    )
-                    if 'Item' in team_response and team_response['Item'].get('isPersonal'):
-                        personal_team_id = item['teamId']
-                        break
-    
-    if personal_team_id:
-        print_success(f"Found personal team ID: {personal_team_id}")
-    else:
-        print_error("Could not extract personal team ID")
+        print_error("Failed to create personal team. Exiting.")
         sys.exit(1)
     
-    # Test 4: Create a Regular Team
-    print_header("TEST 4: Create Regular Team")
+    # Extract personal team ID from output
+    import re
+    import boto3
+    match = re.search(r'Team created: ([a-f0-9-]+)', output)
+    if match:
+        personal_team_id = match.group(1)
+        print_success(f"Created personal team ID: {personal_team_id}")
+    else:
+        # Try to find it from database
+        dynamodb = boto3.resource(
+            'dynamodb',
+            endpoint_url='http://localhost:8000',
+            region_name='us-east-1',
+            aws_access_key_id='dummy',
+            aws_secret_access_key='dummy'
+        )
+        table = dynamodb.Table('HackTracker-dev')
+        response = table.query(
+            KeyConditionExpression='PK = :pk AND begins_with(SK, :sk)',
+            ExpressionAttributeValues={
+                ':pk': f'USER#{user_id}',
+                ':sk': 'TEAM#'
+            }
+        )
+        for item in response.get('Items', []):
+            team_response = table.get_item(
+                Key={'PK': f'TEAM#{item["teamId"]}', 'SK': 'METADATA'}
+            )
+            if 'Item' in team_response and team_response['Item'].get('team_type') == 'PERSONAL':
+                personal_team_id = item['teamId']
+                print_success(f"Found personal team ID: {personal_team_id}")
+                break
+        
+        if not personal_team_id:
+            print_error("Could not extract personal team ID")
+            sys.exit(1)
+    
+    # Test 4: Create a MANAGED Team
+    print_header("TEST 4: Create MANAGED Team")
     success, output = run_command(
-        f'uv run python scripts/test_teams.py create {user_id} "Test Team" "A regular team"',
-        "Create regular team"
+        f'uv run python scripts/test_teams.py create {user_id} "Test Team" "A regular team" MANAGED',
+        "Create MANAGED team"
     )
     if not success:
         print_error("Failed to create regular team")
@@ -166,7 +153,7 @@ def main():
         f"uv run python scripts/test_teams.py delete {user_id} {personal_team_id}",
         "Attempt to delete personal team"
     )
-    if "Failed: 403" in output and "Cannot delete team on personal stats team" in output:
+    if "Failed: 403" in output and ("Cannot delete team" in output or "personal stats team" in output.lower()):
         print_success("Delete operation correctly blocked (403 Forbidden)")
     else:
         print_error("Delete should have been blocked with 403")
@@ -177,7 +164,7 @@ def main():
         f'uv run python scripts/test_teams.py update {user_id} {personal_team_id} name="New Name"',
         "Attempt to update personal team"
     )
-    if "Failed: 403" in output and "Cannot manage team on personal stats team" in output:
+    if "Failed: 403" in output and ("Cannot manage team" in output or "personal stats team" in output.lower()):
         print_success("Update operation correctly blocked (403 Forbidden)")
     else:
         print_error("Update should have been blocked with 403")
@@ -188,10 +175,12 @@ def main():
         f'uv run python scripts/test_players.py add {user_id} {personal_team_id} "Test" "Player" 99 active',
         "Attempt to add player to personal team"
     )
-    if "Failed: 403" in output and "Cannot manage roster on personal stats team" in output:
+    if "Failed: 400" in output and "Cannot add players to personal teams" in output:
+        print_success("Add player operation correctly blocked (400 Bad Request)")
+    elif "Failed: 403" in output:
         print_success("Add player operation correctly blocked (403 Forbidden)")
     else:
-        print_error("Add player should have been blocked with 403")
+        print_error("Add player should have been blocked")
     
     # Test 9: List Players on Personal Team (should show auto-created player)
     print_header("TEST 9: List Players on Personal Team")
@@ -264,17 +253,19 @@ def main():
     
     # Final Summary
     print_header("🎉 TEST SUITE COMPLETE 🎉")
-    print_success("All Personal Stats Team tests passed!")
+    print_success("All Team Type tests passed!")
     print_info("\nWhat was tested:")
     print("  ✅ Database reset and setup")
-    print("  ✅ User creation with auto-created personal team")
+    print("  ✅ User creation")
+    print("  ✅ PERSONAL team creation with team_type=PERSONAL")
+    print("  ✅ MANAGED team creation with team_type=MANAGED")
     print("  ✅ Personal team membership and player creation")
     print("  ✅ GSI4 keys populated for stat queries")
     print("  ✅ Personal team appears in user's team list")
     print("  ✅ Personal team filtered from public lists")
     print("  ✅ Delete personal team blocked (403)")
     print("  ✅ Update personal team blocked (403)")
-    print("  ✅ Add player to personal team blocked (403)")
+    print("  ✅ Add player to personal team blocked (400/403)")
     print("  ✅ Personal player auto-created and linked")
     print("  ✅ Full team test suite integration")
     

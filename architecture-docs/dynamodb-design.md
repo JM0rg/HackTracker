@@ -22,8 +22,7 @@ HackTracker uses a single DynamoDB table for all entities, following AWS best pr
 | `TEAM#<teamId>` | `PLAYER#<playerId>` | Player Roster Record |
 | `TEAM#<teamId>` | `INVITE#<inviteId>` | Pending Team Invite |
 | `TEAM#<teamId>#SEASON#<seasonId>` | `METADATA` | Team Season Info |
-| `TEAM#<teamId>#SEASON#<seasonId>` | `GAME#<gameId>` | Game under Team Season |
-| `GAME#<gameId>` | `METADATA` | Game Info |
+| `GAME#<gameId>` | `METADATA` | Game Info (standalone, optional seasonId) |
 | `GAME#<gameId>` | `ATBAT#<atBatId>` | Individual At-Bat Record |
 | `PLAYER#<playerId>` | `METADATA` | Player Info (cross-team) |
 | `LEAGUE#<leagueId>` | `METADATA` | League Info |
@@ -93,17 +92,19 @@ response = table.query(
 
 ---
 
-### GSI3: Geographic Search (Reserved)
+### GSI3: Games by Team
 
-**Purpose:** Find free agents/subs by region
+**Purpose:** Query all games for a specific team
 
 **Keys:**
-- `GSI3PK`: `REGION#<city>`
-- `GSI3SK`: `USER#<userId>`
+- `GSI3PK`: `TEAM#<teamId>`
+- `GSI3SK`: `GAME#<gameId>`
 
-**Use Case:** Free agent discovery by location
+**Use Case:** List games by team, team game history
 
-**Status:** Defined but not yet populated (future feature)
+**Status:** Active (used by list-games-by-team Lambda)
+
+**Why Essential:** Efficient querying of games by team without scanning
 
 ---
 
@@ -149,6 +150,7 @@ response = table.query(
 | Game at-bats | `GAME#<id>` + `SK` begins with `ATBAT#` | All at-bats |
 | League teams | `LEAGUE#<id>#SEASON#<id>` + `SK` begins with `TEAM#` | All teams |
 | User's teams | `USER#<id>` + `SK` begins with `TEAM#` | All memberships |
+| Team games | `GSI3PK = TEAM#<id>` + `GSI3SK` begins with `GAME#` | All games for team |
 
 **Example:**
 ```python
@@ -158,6 +160,16 @@ response = table.query(
     ExpressionAttributeValues={
         ':pk': f'TEAM#{team_id}',
         ':sk_prefix': 'PLAYER#'
+    }
+)
+
+# Get all games for a team
+response = table.query(
+    IndexName='GSI3',
+    KeyConditionExpression='GSI3PK = :pk AND begins_with(GSI3SK, :sk_prefix)',
+    ExpressionAttributeValues={
+        ':pk': f'TEAM#{team_id}',
+        ':sk_prefix': 'GAME#'
     }
 )
 ```
@@ -245,6 +257,7 @@ League/Team entities also include:
   "name": "Seattle Sluggers",
   "description": "Best team in Seattle",
   "ownerId": "12345678-1234-1234-1234-123456789012",
+  "team_type": "MANAGED",
   "status": "active",
   "createdAt": "2025-10-25T12:00:00.000Z",
   "updatedAt": "2025-10-25T12:00:00.000Z",
@@ -252,6 +265,10 @@ League/Team entities also include:
   "GSI2SK": "METADATA#a6f27724-7042-4816-94d3-a2183ef50a09"
 }
 ```
+
+**Team Types:**
+- `MANAGED`: Full roster management, lineup requirements, multi-player stat tracking
+- `PERSONAL`: Single-owner label team for filtering personal stats by team/season context. Cannot add additional players or delete. Always contains one player linked to the owner.
 
 ### Team Membership
 
