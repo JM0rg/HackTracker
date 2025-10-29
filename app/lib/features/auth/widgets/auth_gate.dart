@@ -5,6 +5,7 @@ import 'package:hacktracker/services/auth_service.dart';
 import 'package:hacktracker/screens/welcome_screen.dart';
 import 'package:hacktracker/screens/dynamic_home_screen.dart';
 import 'package:hacktracker/providers/user_context_provider.dart';
+import 'package:hacktracker/widgets/splash_screen.dart';
 import '../screens/login_screen.dart';
 
 /// Auth gate that checks authentication and user context
@@ -32,15 +33,9 @@ class AuthGate extends ConsumerWidget {
     return FutureBuilder<AuthStatus>(
       future: AuthService.validateAuth(),
       builder: (context, authSnapshot) {
-        // Show loading while checking auth
+        // Show splash screen while checking auth (initial app launch)
         if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primary,
-              ),
-            ),
-          );
+          return const SplashScreen();
         }
 
         final authStatus = authSnapshot.data ?? AuthStatus.invalidToken;
@@ -71,20 +66,12 @@ class AuthGate extends ConsumerWidget {
           },
           loading: () {
             print('⏳ AuthGate: Loading user context...');
+            // After login, use simple spinner instead of full splash screen
             return Scaffold(
+              backgroundColor: Theme.of(context).colorScheme.background,
               body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Loading your teams...',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
                 ),
               ),
             );

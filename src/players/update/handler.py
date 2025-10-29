@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
-from utils.validation import validate_player_name, validate_player_number, validate_player_status
+from utils.validation import validate_player_name, validate_player_number, validate_player_status, validate_player_positions
 from utils.authorization import get_user_id_from_event, authorize, PermissionError
 
 
@@ -125,6 +125,18 @@ def handler(event, context):
             try:
                 status = validate_player_status(body['status'])
                 update_fields['status'] = status
+            except ValueError as e:
+                return create_response(400, {'error': str(e)})
+        
+        # Validate positions if provided
+        if 'positions' in body:
+            try:
+                # Allow null/None to remove positions
+                if body['positions'] is None:
+                    update_fields['positions'] = None
+                else:
+                    positions = validate_player_positions(body['positions'])
+                    update_fields['positions'] = positions
             except ValueError as e:
                 return create_response(400, {'error': str(e)})
         

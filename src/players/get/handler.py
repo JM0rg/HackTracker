@@ -117,6 +117,9 @@ def handler(event, context):
         if 'linkedAt' in player and player['linkedAt']:
             response_data['linkedAt'] = player['linkedAt']
         
+        if 'positions' in player and player['positions']:
+            response_data['positions'] = player['positions']
+        
         print(json.dumps({
             'level': 'INFO',
             'message': 'Player retrieved successfully',

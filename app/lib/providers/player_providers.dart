@@ -102,6 +102,7 @@ class RosterActions {
     String? lastName,
     int? playerNumber,
     String? status,
+    List<String>? positions,
   }) async {
     // Create temp player for optimistic update
     final temp = Player(
@@ -111,6 +112,7 @@ class RosterActions {
       lastName: lastName,
       playerNumber: playerNumber,
       status: status ?? 'active',
+      positions: positions,
       isGhost: true,
       userId: null,
       linkedAt: null,
@@ -126,6 +128,7 @@ class RosterActions {
         lastName: lastName,
         playerNumber: playerNumber,
         status: status,
+        positions: positions,
       ),
       applyResult: (current, realPlayer) {
         // Replace temp with real player
@@ -154,6 +157,7 @@ class RosterActions {
     String? lastName,
     int? playerNumber,
     String? status,
+    List<String>? positions,
   }) async {
     // Find the original player for rollback
     final original = notifier.currentState.value?.firstWhere(
@@ -175,6 +179,7 @@ class RosterActions {
                 lastName: lastName ?? p.lastName,
                 playerNumber: playerNumber ?? p.playerNumber,
                 status: status ?? p.status,
+                positions: positions ?? p.positions,
                 isGhost: p.isGhost,
                 userId: p.userId,
                 linkedAt: p.linkedAt,
@@ -192,6 +197,7 @@ class RosterActions {
         lastName: lastName,
         playerNumber: playerNumber,
         status: status,
+        positions: positions,
       ),
       applyResult: (current, realPlayer) {
         // Replace with real updated player
@@ -243,6 +249,64 @@ class RosterActions {
       },
       successMessage: 'Removed ${removed.fullName}',
       errorMessage: (e) => 'Failed to remove player: $e',
+    );
+  }
+
+  /// Add multiple players at once with optimistic updates for all
+  Future<void> addPlayersBulk(List<Map<String, dynamic>> playersData) async {
+    if (playersData.isEmpty) return;
+
+    // Create temp players for all at once
+    final tempPlayers = playersData.map((data) {
+      return Player(
+        playerId: 'temp-${DateTime.now().microsecondsSinceEpoch}-${playersData.indexOf(data)}',
+        teamId: teamId,
+        firstName: data['firstName'],
+        lastName: data['lastName'],
+        playerNumber: data['playerNumber'],
+        status: data['status'] ?? 'active',
+        positions: data['positions'],
+        isGhost: true,
+        userId: null,
+        linkedAt: null,
+        createdAt: DateTime.now().toIso8601String(),
+        updatedAt: DateTime.now().toIso8601String(),
+      );
+    }).toList();
+
+    await notifier.mutate<List<Player>>(
+      optimisticUpdate: (current) => [...current, ...tempPlayers],
+      apiCall: () async {
+        // Add all players via API
+        final realPlayers = <Player>[];
+        for (final data in playersData) {
+          final player = await _api.addPlayer(
+            teamId: teamId,
+            firstName: data['firstName'],
+            lastName: data['lastName'],
+            playerNumber: data['playerNumber'],
+            status: data['status'],
+            positions: data['positions'],
+          );
+          realPlayers.add(player);
+        }
+        return realPlayers;
+      },
+      applyResult: (current, realPlayers) {
+        // Replace all temp players with real ones
+        var updated = current.where((p) => !tempPlayers.any((t) => t.playerId == p.playerId)).toList();
+        updated.addAll(realPlayers);
+        Persistence.setJson('roster_cache_$teamId', updated.map((p) => p.toJson()).toList());
+        return updated;
+      },
+      rollback: (current) {
+        // Remove all temp players on failure
+        final rolledBack = current.where((p) => !tempPlayers.any((t) => t.playerId == p.playerId)).toList();
+        Persistence.setJson('roster_cache_$teamId', rolledBack.map((p) => p.toJson()).toList());
+        return rolledBack;
+      },
+      successMessage: 'Added ${playersData.length} player${playersData.length > 1 ? 's' : ''} to roster',
+      errorMessage: (e) => 'Failed to add players: $e',
     );
   }
 }

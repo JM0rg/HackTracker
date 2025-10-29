@@ -4,6 +4,7 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'config/app_config.dart';
 import 'theme/app_theme.dart';
 import 'utils/messenger.dart';
+import 'widgets/splash_screen.dart';
 import 'features/auth/widgets/auth_gate.dart';
 
 /// Main HackTracker App
@@ -45,9 +46,7 @@ class _HackTrackerAppState extends State<HackTrackerApp> {
       scaffoldMessengerKey: messengerKey,
       home: _amplifyConfigured
           ? const AuthGate()
-          : const Center(
-              child: CircularProgressIndicator(),
-            ),
+          : const SplashScreen(),
     );
   }
 }

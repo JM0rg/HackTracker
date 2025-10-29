@@ -139,6 +139,9 @@ def handler(event, context):
             if 'linkedAt' in player and player['linkedAt']:
                 clean_player['linkedAt'] = player['linkedAt']
             
+            if 'positions' in player and player['positions']:
+                clean_player['positions'] = player['positions']
+            
             clean_players.append(clean_player)
         
         # Build response

@@ -209,6 +209,57 @@ def validate_player_status(status):
     return status
 
 
+def validate_player_positions(positions):
+    """
+    Validate player positions
+    
+    Rules:
+    - Must be a list/array
+    - Maximum 2 positions allowed
+    - Valid positions: 1B, 2B, 3B, SS, OF, C, P, DH, UTIL
+    - Positions are case-insensitive but returned in uppercase
+    - Duplicates are removed
+    
+    Args:
+        positions: List of position strings to validate
+        
+    Returns:
+        list: Validated and normalized positions array (uppercase, no duplicates)
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if positions is None:
+        return []
+    
+    if not isinstance(positions, (list, tuple)):
+        raise ValueError("positions must be an array")
+    
+    # Valid positions
+    valid_positions = ['1B', '2B', '3B', 'SS', 'OF', 'C', 'P', 'DH', 'UTIL']
+    
+    # Normalize and validate each position
+    normalized = []
+    for pos in positions:
+        if not isinstance(pos, str):
+            raise ValueError("Each position must be a string")
+        
+        pos_upper = pos.strip().upper()
+        
+        if pos_upper not in valid_positions:
+            raise ValueError(f"Invalid position '{pos}'. Valid positions: {', '.join(valid_positions)}")
+        
+        # Add if not already in list (remove duplicates)
+        if pos_upper not in normalized:
+            normalized.append(pos_upper)
+    
+    # Check max 2 positions
+    if len(normalized) > 2:
+        raise ValueError("A player can have a maximum of 2 positions")
+    
+    return normalized
+
+
 def validate_game_title(title):
     """
     Validate game title

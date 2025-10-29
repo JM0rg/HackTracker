@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
-from utils.validation import validate_player_name, validate_player_number, validate_player_status
+from utils.validation import validate_player_name, validate_player_number, validate_player_status, validate_player_positions
 from utils.authorization import get_user_id_from_event, authorize, check_personal_team_operation, PermissionError
 
 
@@ -93,6 +93,14 @@ def handler(event, context):
         except ValueError as e:
             return create_response(400, {'error': str(e)})
         
+        # Validate positions (optional)
+        positions = []
+        if 'positions' in body and body['positions'] is not None:
+            try:
+                positions = validate_player_positions(body['positions'])
+            except ValueError as e:
+                return create_response(400, {'error': str(e)})
+        
         table = get_table()
         
         # Check team type - PERSONAL teams can only have the owner's player
@@ -153,6 +161,9 @@ def handler(event, context):
         if player_number is not None:
             player_item['playerNumber'] = player_number
         
+        if positions:
+            player_item['positions'] = positions
+        
         print(json.dumps({
             'level': 'INFO',
             'message': 'Creating ghost player',
@@ -187,6 +198,7 @@ def handler(event, context):
             'lastName': last_name,
             'playerNumber': player_number,
             'status': status,
+            'positions': positions,
             'isGhost': True,
             'userId': None,
             'linkedAt': None,

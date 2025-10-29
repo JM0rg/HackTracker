@@ -284,11 +284,13 @@ class ApiService {
     String? lastName,
     int? playerNumber,
     String? status,
+    List<String>? positions,
   }) async {
     final body = <String, dynamic>{'firstName': firstName};
     if (lastName != null && lastName.isNotEmpty) body['lastName'] = lastName;
     if (playerNumber != null) body['playerNumber'] = playerNumber;
     if (status != null && status.isNotEmpty) body['status'] = status;
+    if (positions != null && positions.isNotEmpty) body['positions'] = positions;
 
     final response = await _authenticatedRequest(
       method: 'POST',
@@ -308,12 +310,14 @@ class ApiService {
     String? lastName,
     int? playerNumber,
     String? status,
+    List<String>? positions,
   }) async {
     final body = <String, dynamic>{};
     if (firstName != null) body['firstName'] = firstName;
     if (lastName != null) body['lastName'] = lastName; // may be null to remove via backend behavior
     if (playerNumber != null) body['playerNumber'] = playerNumber; // may be null to remove
     if (status != null) body['status'] = status;
+    if (positions != null) body['positions'] = positions; // may be empty array to remove
 
     final response = await _authenticatedRequest(
       method: 'PUT',
@@ -428,6 +432,7 @@ class Player {
   final String? lastName;
   final int? playerNumber;
   final String status;
+  final List<String>? positions;
   final bool isGhost;
   final String? userId;
   final String? linkedAt;
@@ -441,6 +446,7 @@ class Player {
     required this.lastName,
     required this.playerNumber,
     required this.status,
+    this.positions,
     required this.isGhost,
     required this.userId,
     required this.linkedAt,
@@ -456,6 +462,7 @@ class Player {
       lastName: json['lastName'] as String?,
       playerNumber: json['playerNumber'] == null ? null : (json['playerNumber'] as num).toInt(),
       status: json['status'] as String,
+      positions: json['positions'] == null ? null : List<String>.from(json['positions'] as List),
       isGhost: (json['isGhost'] as bool?) ?? false,
       userId: json['userId'] as String?,
       linkedAt: json['linkedAt'] as String?,
@@ -472,6 +479,7 @@ class Player {
       'lastName': lastName,
       'playerNumber': playerNumber,
       'status': status,
+      'positions': positions,
       'isGhost': isGhost,
       'userId': userId,
       'linkedAt': linkedAt,
