@@ -1,10 +1,11 @@
-.PHONY: help install package test test-players test-teams clean deploy db-start db-stop db-create db-delete db-clear db-reset db-status flutter-clean flutter-open flutter-run
+.PHONY: help install package test test-players test-teams test-unit test-unit-cov test-unit-verbose test-unit-install clean deploy db-start db-stop db-create db-delete db-clear db-reset db-status flutter-clean flutter-open flutter-run
 
 help:
 	@echo "🏗️  HackTracker - Python Lambda Development"
 	@echo ""
 	@echo "Setup:"
 	@echo "  make install          Install dependencies with uv"
+	@echo "  make test-unit-install Install unit test dependencies (pytest, moto)"
 	@echo ""
 	@echo "Development:"
 	@echo "  make test             Run user Lambda tests (see: make test-help)"
@@ -13,6 +14,11 @@ help:
 	@echo "  make test-e2e         Run full end-to-end test suite (all features)"
 	@echo "  make test-cloud       Run tests against deployed API Gateway"
 	@echo "  make package          Package Lambda functions"
+	@echo ""
+	@echo "Unit Tests:"
+	@echo "  make test-unit        Run all unit tests (pytest)"
+	@echo "  make test-unit-cov    Run unit tests with coverage report"
+	@echo "  make test-unit-verbose Run unit tests with verbose output"
 	@echo ""
 	@echo "Database:"
 	@echo "  make db-start         Start DynamoDB Local"
@@ -60,6 +66,25 @@ test-cloud:
 
 test-help:
 	@uv run python scripts/test_users.py
+
+test-unit-install:
+	@echo "📦 Installing unit test dependencies..."
+	@pip install -r tests/requirements.txt
+	@echo "✅ Unit test dependencies installed"
+
+test-unit:
+	@echo "🧪 Running all unit tests..."
+	@PYTHONPATH=$(shell pwd) pytest tests/ -v --tb=short
+	@echo "✅ All unit tests passed!"
+
+test-unit-cov:
+	@echo "🧪 Running unit tests with coverage..."
+	@PYTHONPATH=$(shell pwd) pytest tests/ --cov=src --cov-report=term-missing --cov-report=html -v
+	@echo "✅ Coverage report generated in htmlcov/index.html"
+
+test-unit-verbose:
+	@echo "🧪 Running unit tests (verbose)..."
+	@PYTHONPATH=$(shell pwd) pytest tests/ -vv --tb=long
 
 # Allow passing arguments to test commands
 %:
