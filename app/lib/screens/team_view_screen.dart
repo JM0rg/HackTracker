@@ -90,6 +90,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
     try {
       await ref.read(teamsProvider.notifier).createTeam(
         name: name,
+        teamType: 'MANAGED', // TeamView creates MANAGED teams
         description: description.isEmpty ? null : description,
       );
       
@@ -543,7 +544,7 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> {
                         underline: const SizedBox(),
                         isExpanded: true,
                         icon: const Icon(Icons.arrow_drop_down, color: AppColors.textTertiary),
-                        items: teams.map((team) {
+                        items: ref.read(teamsProvider.notifier).selectableTeams.map((team) {
                           return DropdownMenuItem<Team>(
                             value: team,
                             child: Text(

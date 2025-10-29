@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Key
 from utils import get_table, create_response
 from utils.validation import validate_game_title, validate_game_status, validate_score, validate_lineup
 from utils.authorization import get_user_id_from_event, authorize, PermissionError
@@ -55,13 +56,53 @@ def handler(event, context):
             return create_response(400, {'error': 'Invalid JSON in request body'})
         
         # Validate required fields
-        if not body.get('teamId'):
-            return create_response(400, {'error': 'teamId is required'})
-        
         if not body.get('gameTitle'):
             return create_response(400, {'error': 'gameTitle is required'})
         
-        team_id = body['teamId']
+        # Get table reference
+        table = get_table()
+        
+        # teamId is optional - if not provided, find user's "Default" personal team
+        team_id = body.get('teamId')
+        
+        if not team_id:
+            # Find user's "Default" PERSONAL team
+            user_teams_response = table.query(
+                KeyConditionExpression=Key('PK').eq(f'USER#{user_id}') & Key('SK').begins_with('TEAM#')
+            )
+            
+            default_team_id = None
+            for membership in user_teams_response.get('Items', []):
+                if membership.get('status') != 'active':
+                    continue
+                
+                # Get team details
+                team_response = table.get_item(
+                    Key={
+                        'PK': f'TEAM#{membership["teamId"]}',
+                        'SK': 'METADATA'
+                    }
+                )
+                
+                if 'Item' in team_response:
+                    team = team_response['Item']
+                    if team.get('name') == 'Default' and team.get('team_type') == 'PERSONAL':
+                        default_team_id = team['teamId']
+                        break
+            
+            if not default_team_id:
+                return create_response(400, {
+                    'error': 'No default personal team found. Please create a personal team first or specify a teamId.'
+                })
+            
+            team_id = default_team_id
+            
+            print(json.dumps({
+                'level': 'INFO',
+                'message': 'Using default personal team for game',
+                'userId': user_id,
+                'teamId': team_id
+            }))
         
         # Validate game title
         try:
@@ -70,7 +111,6 @@ def handler(event, context):
             return create_response(400, {'error': str(e)})
         
         # Authorize: check if user can manage games for this team
-        table = get_table()
         try:
             authorize(table, user_id, team_id, action='manage_games')
         except PermissionError as e:

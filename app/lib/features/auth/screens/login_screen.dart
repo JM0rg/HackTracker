@@ -5,7 +5,7 @@ import 'package:hacktracker/theme/app_colors.dart';
 import 'package:hacktracker/theme/custom_text_styles.dart';
 import 'package:hacktracker/theme/decoration_styles.dart';
 import 'package:hacktracker/widgets/app_input_fields.dart';
-import 'package:hacktracker/screens/home_screen.dart';
+import 'package:hacktracker/features/auth/widgets/auth_gate.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -49,12 +49,15 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
 
+      print('✅ Login successful, reloading AuthGate');
+      
+      // Navigate to AuthGate to force it to rebuild and check auth/context
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AuthGate()),
         );
       }
+      
     } on AuthException catch (e) {
       setState(() {
         _isLoading = false;

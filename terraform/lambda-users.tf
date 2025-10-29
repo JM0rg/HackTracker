@@ -201,6 +201,63 @@ module "query_users_lambda" {
 }
 
 ################################################################################
+# User Context Lambda (API Gateway - GET /users/context)
+################################################################################
+
+module "user_context_lambda" {
+  source  = "terraform-aws-modules/lambda/aws"
+  version = "~> 8.1"
+
+  function_name = "hacktracker-user-context-${local.environment}"
+  description   = "Get user's team context for dynamic UI rendering"
+  handler       = "handler.handler"
+  runtime       = "python3.13"
+  
+  # Use pre-built package
+  create_package         = false
+  local_existing_package = "${path.module}/lambdas/users-context.zip"
+  
+  # Lambda configuration
+  timeout       = 10
+  memory_size   = 128
+  architectures = ["arm64"]
+  
+  # Environment variables
+  environment_variables = {
+    TABLE_NAME  = aws_dynamodb_table.hacktracker.name
+    ENVIRONMENT = local.environment
+  }
+  
+  # IAM permissions (read-only)
+  attach_policy_json = true
+  policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:Query"
+        ]
+        Resource = [
+          aws_dynamodb_table.hacktracker.arn,
+          "${aws_dynamodb_table.hacktracker.arn}/index/*"
+        ]
+      }
+    ]
+  })
+  
+  # CloudWatch Logs
+  cloudwatch_logs_retention_in_days = 7
+  
+  # Tags
+  tags = merge(local.common_tags, {
+    Name     = "user-context"
+    Function = "api-user-context"
+  })
+}
+
+################################################################################
 # Update User Lambda
 ################################################################################
 
@@ -322,6 +379,16 @@ output "query_users_lambda_arn" {
 output "query_users_lambda_invoke_arn" {
   value       = module.query_users_lambda.lambda_function_invoke_arn
   description = "Invoke ARN of the Query Users Lambda function (for API Gateway)"
+}
+
+output "user_context_lambda_arn" {
+  value       = module.user_context_lambda.lambda_function_arn
+  description = "ARN of the User Context Lambda function"
+}
+
+output "user_context_lambda_invoke_arn" {
+  value       = module.user_context_lambda.lambda_function_invoke_arn
+  description = "Invoke ARN of the User Context Lambda function (for API Gateway)"
 }
 
 output "update_user_lambda_arn" {

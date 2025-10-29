@@ -4,6 +4,8 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import '../theme/app_colors.dart';
 import '../providers/team_providers.dart';
 import '../providers/user_providers.dart';
+import '../providers/user_context_provider.dart';
+import '../services/auth_service.dart';
 
 /// Collapsible sidebar drawer with navigation and team management
 class AppDrawer extends ConsumerWidget {
@@ -11,17 +13,27 @@ class AppDrawer extends ConsumerWidget {
 
   Future<void> _signOut(BuildContext context, WidgetRef ref) async {
     try {
-      await Amplify.Auth.signOut();
+      await AuthService.signOut();
       
       // Clear all cached data on logout
       ref.invalidate(teamsProvider);
       ref.invalidate(currentUserProvider);
-    } on AuthException catch (e) {
-      safePrint('Error signing out: ${e.message}');
+      ref.invalidate(userContextNotifierProvider);
+
+      if (context.mounted) {
+        Navigator.pop(context); // Close drawer
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Signed out successfully'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error signing out: ${e.message}'),
+            content: Text('Error signing out: $e'),
             backgroundColor: AppColors.error,
           ),
         );

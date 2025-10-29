@@ -171,9 +171,13 @@ class ApiService {
   /// Returns: The created team with teamId
   Future<Team> createTeam({
     required String name,
+    required String teamType, // MANAGED or PERSONAL
     String? description,
   }) async {
-    final body = <String, dynamic>{'name': name};
+    final body = <String, dynamic>{
+      'name': name,
+      'teamType': teamType,
+    };
     if (description != null && description.isNotEmpty) {
       body['description'] = description;
     }
@@ -330,6 +334,33 @@ class ApiService {
 
     _handleResponse(response);
   }
+
+  /// Get user's team context for dynamic UI rendering
+  ///
+  /// Returns: UserContext with has_personal_context and has_managed_context flags
+  Future<UserContext> getUserContext() async {
+    print('🌐 API: Calling GET /users/context');
+    print('   Base URL: $baseUrl');
+    
+    try {
+      final response = await _authenticatedRequest(
+        method: 'GET',
+        path: '/users/context',
+      );
+
+      print('✅ API: /users/context returned ${response.statusCode}');
+      
+      final data = _handleResponse(response);
+      final context = UserContext.fromJson(data as Map<String, dynamic>);
+      
+      print('📊 UserContext: has_personal=${context.hasPersonalContext}, has_managed=${context.hasManagedContext}');
+      
+      return context;
+    } catch (e) {
+      print('❌ API: /users/context failed: $e');
+      rethrow;
+    }
+  }
 }
 
 /// Team model
@@ -455,6 +486,41 @@ class Player {
 }
 
 /// API Exception
+/// User Context model for dynamic UI rendering
+class UserContext {
+  final bool hasPersonalContext;
+  final bool hasManagedContext;
+
+  UserContext({
+    required this.hasPersonalContext,
+    required this.hasManagedContext,
+  });
+
+  factory UserContext.fromJson(Map<String, dynamic> json) {
+    return UserContext(
+      hasPersonalContext: json['has_personal_context'] as bool,
+      hasManagedContext: json['has_managed_context'] as bool,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'has_personal_context': hasPersonalContext,
+      'has_managed_context': hasManagedContext,
+    };
+  }
+
+  /// Determine which view to show based on team context
+  /// - Both contexts: Show both views (tabs visible)
+  /// - Personal only: Show player view only (tabs hidden)
+  /// - Managed only: Show team view only (tabs hidden)
+  /// - Neither: Show welcome screen
+  bool get shouldShowTabs => hasPersonalContext && hasManagedContext;
+  bool get shouldShowPlayerViewOnly => hasPersonalContext && !hasManagedContext;
+  bool get shouldShowTeamViewOnly => !hasPersonalContext && hasManagedContext;
+  bool get shouldShowWelcome => !hasPersonalContext && !hasManagedContext;
+}
+
 class ApiException implements Exception {
   final int statusCode;
   final String message;

@@ -1,12 +1,77 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
 import '../theme/app_colors.dart';
 import '../theme/custom_text_styles.dart';
 import '../providers/user_providers.dart';
+import '../providers/team_providers.dart';
+import '../providers/user_context_provider.dart';
+import '../services/auth_service.dart';
 
 /// Profile screen showing user info and settings
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text(
+          'Sign Out',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        content: Text(
+          'Are you sure you want to sign out?',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+            ),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      // Sign out from Amplify
+      await AuthService.signOut();
+      
+      // Clear all cached data
+      ref.invalidate(teamsProvider);
+      ref.invalidate(currentUserProvider);
+      ref.invalidate(userContextNotifierProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Signed out successfully'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error signing out: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,6 +189,32 @@ class ProfileScreen extends ConsumerWidget {
             ),
 
             const SizedBox(height: 32),
+
+            // Sign Out Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _signOut(context, ref),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.logout),
+                label: const Text(
+                  'SIGN OUT',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
 
             // App Version
             Center(

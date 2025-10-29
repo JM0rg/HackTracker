@@ -87,28 +87,27 @@ def handler(event, context):
         # Get table reference early (needed for user lookup and transaction)
         table = get_table()
         
-        # Get user's first name for PERSONAL team player creation
+        # Get user's first name for player creation (both MANAGED and PERSONAL teams)
         user_first_name = None
-        if team_type == 'PERSONAL':
-            try:
-                user_response = table.get_item(
-                    Key={
-                        'PK': f'USER#{user_id}',
-                        'SK': 'METADATA'
-                    }
-                )
-                if 'Item' in user_response:
-                    user_first_name = user_response['Item'].get('firstName', 'Player')
-                else:
-                    user_first_name = 'Player'
-            except Exception as e:
-                print(json.dumps({
-                    'level': 'WARN',
-                    'message': 'Could not fetch user name, using default',
-                    'userId': user_id,
-                    'error': str(e)
-                }))
+        try:
+            user_response = table.get_item(
+                Key={
+                    'PK': f'USER#{user_id}',
+                    'SK': 'METADATA'
+                }
+            )
+            if 'Item' in user_response:
+                user_first_name = user_response['Item'].get('firstName', 'Player')
+            else:
                 user_first_name = 'Player'
+        except Exception as e:
+            print(json.dumps({
+                'level': 'WARN',
+                'message': 'Could not fetch user name, using default',
+                'userId': user_id,
+                'error': str(e)
+            }))
+            user_first_name = 'Player'
         
         # Prepare team record
         team_item = {
@@ -143,7 +142,7 @@ def handler(event, context):
         
         # Prepare player record for owner (created for both MANAGED and PERSONAL teams)
         player_id = str(uuid.uuid4())
-        player_first_name = user_first_name if team_type == 'PERSONAL' else 'Owner'
+        player_first_name = user_first_name
         player_item = {
             'PK': f'TEAM#{team_id}',
             'SK': f'PLAYER#{player_id}',

@@ -245,7 +245,7 @@ def create_test_team(user_id, name):
     
     event = {
         'headers': {'X-User-Id': user_id},
-        'body': json.dumps({"name": name}),
+        'body': json.dumps({"name": name, "teamType": "MANAGED"}),
         'requestContext': {
             'http': {
                 'method': 'POST',

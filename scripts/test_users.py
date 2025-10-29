@@ -463,6 +463,94 @@ def test_update_user(user_id, update_data):
         print(f'\n❌ Error: {body.get("error", "Unknown error")}')
 
 
+def test_user_context(user_id):
+    """Test user-context Lambda (API Gateway)"""
+    if not user_id:
+        print('❌ Error: userId is required')
+        print('Usage: python scripts/test_users.py context <userId> [--cloud]')
+        sys.exit(1)
+    
+    mode = '☁️  CLOUD' if IS_CLOUD else '💻 LOCAL'
+    print(f'🧪 Testing [{mode}]: GET /users/context')
+    print('='*60)
+    
+    if IS_CLOUD:
+        # Test against deployed API Gateway
+        status_code, body = make_http_request('GET', '/users/context')
+        
+        print(f'\n📤 Response (Status {status_code}):')
+        print(json.dumps(body, indent=2))
+        
+        if status_code == 200:
+            print('\n✅ User context retrieved successfully from cloud!')
+            print(f'   Has Personal Context: {body.get("has_personal_context")}')
+            print(f'   Has Managed Context: {body.get("has_managed_context")}')
+        else:
+            print(f'\n❌ Error: {body.get("error", "Unknown error")}')
+        
+        return
+    
+    # Test local Lambda
+    sys.path.insert(0, str(Path(__file__).parent.parent / 'src' / 'users' / 'context'))
+    from handler import handler
+    
+    # Create API Gateway event (format version 2.0) with JWT claims
+    event = {
+        'version': '2.0',
+        'routeKey': 'GET /users/context',
+        'rawPath': '/users/context',
+        'headers': {
+            'accept': 'application/json',
+            'content-type': 'application/json'
+        },
+        'requestContext': {
+            'accountId': '123456789012',
+            'apiId': 'test-api',
+            'authorizer': {
+                'jwt': {
+                    'claims': {
+                        'sub': user_id
+                    }
+                }
+            },
+            'http': {
+                'method': 'GET',
+                'path': '/users/context',
+                'protocol': 'HTTP/1.1',
+                'sourceIp': '127.0.0.1',
+                'userAgent': 'test-agent'
+            },
+            'requestId': 'test-request-id',
+            'routeKey': 'GET /users/context',
+            'stage': '$default',
+            'time': '01/Jan/2025:00:00:00 +0000',
+            'timeEpoch': 1704067200000
+        },
+        'isBase64Encoded': False
+    }
+    
+    class MockContext:
+        function_name = 'test-user-context'
+        aws_request_id = 'test-request-id'
+        
+        @staticmethod
+        def get_remaining_time_in_millis():
+            return 10000
+    
+    result = handler(event, MockContext())
+    
+    print(f'\n📤 Response (Status {result["statusCode"]}):')
+    body = json.loads(result['body'])
+    print(json.dumps(body, indent=2))
+    
+    if result['statusCode'] == 200:
+        print('\n✅ User context retrieved successfully!')
+        print(f'   Has Personal Context: {body.get("has_personal_context")}')
+        print(f'   Has Managed Context: {body.get("has_managed_context")}')
+    else:
+        print(f'\n❌ Error: {body.get("error", "Unknown error")}')
+
+
 def test_delete_user(user_id):
     """Test delete-user Lambda (API Gateway)"""
     if not user_id:
@@ -573,6 +661,7 @@ Commands:
     create                          Test create-user Lambda (Cognito trigger)
     get <userId>                    Test get-user Lambda
     query [type] [value]            Test query-users Lambda
+    context <userId>                Test user-context Lambda
     update <userId> <field=value>   Test update-user Lambda
     delete <userId>                 Test delete-user Lambda
 
@@ -640,6 +729,10 @@ def main():
                 sys.exit(1)
             
             test_query_users(query_type, query_value)
+        
+        elif command == 'context':
+            user_id = sys.argv[2] if len(sys.argv) > 2 else None
+            test_user_context(user_id)
         
         elif command == 'update':
             user_id = sys.argv[2] if len(sys.argv) > 2 else None

@@ -233,7 +233,7 @@ def create_test_team_with_players(user_id, name):
     # Create team
     event = {
         'headers': {'X-User-Id': user_id},
-        'body': json.dumps({"name": name}),
+        'body': json.dumps({"name": name, "teamType": "MANAGED"}),
         'requestContext': {
             'http': {
                 'method': 'POST',
@@ -300,23 +300,19 @@ def test_validation_errors(user_id, team_id):
     print("TEST: Validation Errors")
     print("=" * 60)
     
-    # Test 1: Missing teamId
-    print("\n📋 Test: Missing teamId")
-    from games.create.handler import handler
-    event = {
-        'headers': {'X-User-Id': user_id},
-        'body': json.dumps({"gameTitle": "Test Game"}),
-        'requestContext': {'http': {'method': 'POST', 'path': '/games'}}
-    }
-    response = handler(event, None)
-    if response['statusCode'] == 400:
-        print(f"   ✅ Correctly rejected: {response['statusCode']}")
-    else:
-        print(f"   ❌ Should have been 400, got: {response['statusCode']}")
+    # Test 1: teamId is now optional (will find Default team)
+    # Skipping missing teamId test since it's now optional
+    print("\n📋 Test: teamId is optional (will auto-find Default team)")
+    print("   ℹ️  Skipping - teamId now optional, finds Default PERSONAL team")
     
     # Test 2: Missing gameTitle
     print("\n📋 Test: Missing gameTitle")
-    event['body'] = json.dumps({"teamId": team_id})
+    from games.create.handler import handler
+    event = {
+        'headers': {'X-User-Id': user_id},
+        'body': json.dumps({"teamId": team_id}),
+        'requestContext': {'http': {'method': 'POST', 'path': '/games'}}
+    }
     response = handler(event, None)
     if response['statusCode'] == 400:
         print(f"   ✅ Correctly rejected: {response['statusCode']}")

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../services/api_service.dart';
 import '../config/app_config.dart';
 import '../utils/persistence.dart';
+import 'user_context_provider.dart';
 
 /// Provider for the ApiService instance
 final apiServiceProvider = Provider<ApiService>((ref) {
@@ -63,6 +64,7 @@ class TeamsNotifier extends AsyncNotifier<List<Team>> {
   /// Create a new team and refresh the list
   Future<Team> createTeam({
     required String name,
+    required String teamType, // MANAGED or PERSONAL
     String? description,
   }) async {
     // Optimistic add
@@ -83,6 +85,7 @@ class TeamsNotifier extends AsyncNotifier<List<Team>> {
     final apiService = ref.read(apiServiceProvider);
     final newTeam = await apiService.createTeam(
       name: name,
+      teamType: teamType,
       description: description,
     );
     // Replace temp with real
@@ -91,7 +94,22 @@ class TeamsNotifier extends AsyncNotifier<List<Team>> {
     state = AsyncValue.data(replaced);
     await Persistence.setJson('teams_cache', replaced.map((t) => t.toJson()).toList());
     
+    // Clear the "hall pass" if this was a MANAGED team creation
+    if (teamType == 'MANAGED') {
+      ref.read(creatingFirstTeamProvider.notifier).setCreating(false);
+      // Refresh user context to update UI - await to ensure it completes
+      await ref.read(userContextNotifierProvider.notifier).refresh();
+    }
+    
     return newTeam;
+  }
+  
+  /// Get non-Default teams for UI dropdowns
+  /// 
+  /// Filters out the hidden "Default" PERSONAL team from dropdowns
+  List<Team> get selectableTeams {
+    final teams = state.value ?? <Team>[];
+    return teams.where((t) => t.name != 'Default').toList();
   }
 
   /// Update a team and refresh the list

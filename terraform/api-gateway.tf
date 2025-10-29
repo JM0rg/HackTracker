@@ -90,6 +90,17 @@ module "api_gateway" {
       }
     }
 
+    # Get User Context
+    "GET /users/context" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.user_context_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
     # Update User
     "PUT /users/{userId}" = {
       authorization_type = "JWT"
@@ -301,6 +312,15 @@ resource "aws_lambda_permission" "api_gateway_query_users" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = module.query_users_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke User Context Lambda
+resource "aws_lambda_permission" "api_gateway_user_context" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.user_context_lambda.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
 }
