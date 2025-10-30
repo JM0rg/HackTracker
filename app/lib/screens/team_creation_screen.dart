@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/team_providers.dart';
 import '../providers/user_context_provider.dart';
 import '../utils/messenger.dart';
-import '../theme/app_colors.dart';
 
 /// Full-page team creation form for onboarding flow
 /// 

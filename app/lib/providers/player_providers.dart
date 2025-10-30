@@ -25,7 +25,7 @@ class RosterNotifier extends AsyncNotifier<List<Player>> {
       Future.microtask(() async {
         try {
           final api = ref.read(apiServiceProvider);
-          final fresh = await api.listPlayers(_teamId);
+          final fresh = await api.listPlayers(_teamId, includeRoles: true);
           state = AsyncValue.data(fresh);
           await Persistence.setJson(cacheKey, fresh.map((p) => p.toJson()).toList());
         } catch (_) {}
@@ -34,7 +34,7 @@ class RosterNotifier extends AsyncNotifier<List<Player>> {
     }
 
     final api = ref.read(apiServiceProvider);
-    final players = await api.listPlayers(_teamId);
+    final players = await api.listPlayers(_teamId, includeRoles: true);
     await Persistence.setJson(cacheKey, players.map((p) => p.toJson()).toList());
     return players;
   }

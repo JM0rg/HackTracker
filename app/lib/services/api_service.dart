@@ -240,6 +240,7 @@ class ApiService {
     String teamId, {
     String? status,
     bool? isGhost,
+    bool includeRoles = false,
   }) async {
     final query = <String, String>{};
     if (status != null && status.isNotEmpty) {
@@ -247,6 +248,9 @@ class ApiService {
     }
     if (isGhost != null) {
       query['isGhost'] = isGhost.toString();
+    }
+    if (includeRoles) {
+      query['includeRoles'] = 'true';
     }
 
     final queryString = query.isEmpty
@@ -339,6 +343,117 @@ class ApiService {
     _handleResponse(response);
   }
 
+  // ========== GAMES ENDPOINTS ==========
+
+  /// List games for a team
+  Future<List<Game>> listGames(String teamId) async {
+    final response = await _authenticatedRequest(
+      method: 'GET',
+      path: '/teams/${Uri.encodeComponent(teamId)}/games',
+    );
+
+    final data = _handleResponse(response);
+    // Response is an array directly
+    final games = (data as List)
+        .map((json) => Game.fromJson(json as Map<String, dynamic>))
+        .toList();
+
+    return games;
+  }
+
+  /// Get a single game
+  Future<Game> getGame(String gameId) async {
+    final response = await _authenticatedRequest(
+      method: 'GET',
+      path: '/games/${Uri.encodeComponent(gameId)}',
+    );
+
+    final data = _handleResponse(response);
+    return Game.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Create a new game
+  Future<Game> createGame({
+    String? teamId,
+    required String gameTitle,
+    String? status,
+    int? teamScore,
+    int? opponentScore,
+    String? scheduledStart,
+    String? opponentName,
+    String? location,
+    String? seasonId,
+    List<dynamic>? lineup,
+  }) async {
+    final body = <String, dynamic>{
+      'gameTitle': gameTitle,
+    };
+
+    if (teamId != null) body['teamId'] = teamId;
+    if (status != null) body['status'] = status;
+    if (teamScore != null) body['teamScore'] = teamScore;
+    if (opponentScore != null) body['opponentScore'] = opponentScore;
+    if (scheduledStart != null) body['scheduledStart'] = scheduledStart;
+    if (opponentName != null) body['opponentName'] = opponentName;
+    if (location != null) body['location'] = location;
+    if (seasonId != null) body['seasonId'] = seasonId;
+    if (lineup != null && lineup.isNotEmpty) body['lineup'] = lineup;
+
+    final response = await _authenticatedRequest(
+      method: 'POST',
+      path: '/games',
+      body: body,
+    );
+
+    final data = _handleResponse(response);
+    return Game.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Update an existing game
+  Future<Game> updateGame({
+    required String gameId,
+    String? gameTitle,
+    String? status,
+    int? teamScore,
+    int? opponentScore,
+    String? scheduledStart,
+    String? opponentName,
+    String? location,
+    String? seasonId,
+    List<dynamic>? lineup,
+  }) async {
+    final body = <String, dynamic>{};
+
+    if (gameTitle != null) body['gameTitle'] = gameTitle;
+    if (status != null) body['status'] = status;
+    if (teamScore != null) body['teamScore'] = teamScore;
+    if (opponentScore != null) body['opponentScore'] = opponentScore;
+    if (scheduledStart != null) body['scheduledStart'] = scheduledStart;
+    if (opponentName != null) body['opponentName'] = opponentName;
+    if (location != null) body['location'] = location;
+    if (seasonId != null) body['seasonId'] = seasonId;
+    if (lineup != null) body['lineup'] = lineup;
+
+    final response = await _authenticatedRequest(
+      method: 'PUT',
+      path: '/games/${Uri.encodeComponent(gameId)}',
+      body: body,
+    );
+
+    final data = _handleResponse(response);
+    return Game.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Delete a game
+  Future<void> deleteGame(String gameId) async {
+    final response = await _authenticatedRequest(
+      method: 'DELETE',
+      path: '/games/${Uri.encodeComponent(gameId)}',
+    );
+
+    _handleResponse(response);
+  }
+
   /// Get user's team context for dynamic UI rendering
   ///
   /// Returns: UserContext with has_personal_context and has_managed_context flags
@@ -394,7 +509,7 @@ class Team {
       teamId: json['teamId'] as String,
       name: json['name'] as String,
       description: json['description'] as String? ?? '',
-      role: json['role'] as String? ?? 'team-player', // Can be null for listTeams()
+      role: json['role'] as String? ?? 'player', // Can be null for listTeams()
       memberCount: json['memberCount'] as int? ?? 1,
       joinedAt: json['joinedAt'] != null 
           ? DateTime.parse(json['joinedAt'] as String)
@@ -417,11 +532,24 @@ class Team {
     };
   }
 
-  bool get isOwner => role == 'team-owner';
-  bool get isCoach => role == 'team-coach';
-  bool get isPlayer => role == 'team-player';
-  bool get isMember => role == 'team-player'; // Keep for backwards compatibility
-  bool get canManageRoster => isOwner || isCoach;
+  bool get isOwner => role == 'owner';
+  bool get isManager => role == 'manager';
+  bool get isPlayer => role == 'player';
+  bool get isMember => role == 'player'; // Keep for backwards compatibility
+  bool get canManageRoster => isOwner || isManager;
+  
+  String get displayRole {
+    switch (role) {
+      case 'owner':
+        return 'Owner';
+      case 'manager':
+        return 'Manager';
+      case 'player':
+        return 'Player';
+      default:
+        return 'Player';
+    }
+  }
 }
 
 /// Player model
@@ -436,6 +564,7 @@ class Player {
   final bool isGhost;
   final String? userId;
   final String? linkedAt;
+  final String? role; // owner, manager, player
   final String createdAt;
   final String updatedAt;
 
@@ -450,6 +579,7 @@ class Player {
     required this.isGhost,
     required this.userId,
     required this.linkedAt,
+    this.role,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -466,6 +596,7 @@ class Player {
       isGhost: (json['isGhost'] as bool?) ?? false,
       userId: json['userId'] as String?,
       linkedAt: json['linkedAt'] as String?,
+      role: json['role'] as String?,
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
     );
@@ -483,6 +614,7 @@ class Player {
       'isGhost': isGhost,
       'userId': userId,
       'linkedAt': linkedAt,
+      'role': role,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -491,9 +623,99 @@ class Player {
   String get fullName => (lastName != null && lastName!.isNotEmpty) ? '$firstName $lastName' : firstName;
   String get displayNumber => playerNumber?.toString() ?? '--';
   bool get isActive => status == 'active';
+  String get displayRole {
+    if (role == null) return 'Player';
+    switch (role) {
+      case 'owner':
+        return 'Owner';
+      case 'manager':
+        return 'Manager';
+      case 'player':
+        return 'Player';
+      default:
+        return 'Player';
+    }
+  }
 }
 
-/// API Exception
+/// Game model
+class Game {
+  final String gameId;
+  final String teamId;
+  final String gameTitle;
+  final String status; // SCHEDULED, IN_PROGRESS, FINAL, POSTPONED
+  final int teamScore;
+  final int opponentScore;
+  final List<dynamic>? lineup;
+  final DateTime? scheduledStart;
+  final String? opponentName;
+  final String? location;
+  final String? seasonId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  Game({
+    required this.gameId,
+    required this.teamId,
+    required this.gameTitle,
+    required this.status,
+    required this.teamScore,
+    required this.opponentScore,
+    this.lineup,
+    this.scheduledStart,
+    this.opponentName,
+    this.location,
+    this.seasonId,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory Game.fromJson(Map<String, dynamic> json) {
+    return Game(
+      gameId: json['gameId'] as String,
+      teamId: json['teamId'] as String,
+      gameTitle: json['gameTitle'] as String,
+      status: json['status'] as String,
+      teamScore: (json['teamScore'] as num?)?.toInt() ?? 0,
+      opponentScore: (json['opponentScore'] as num?)?.toInt() ?? 0,
+      lineup: json['lineup'] as List<dynamic>?,
+      scheduledStart: json['scheduledStart'] != null
+          ? DateTime.parse(json['scheduledStart'] as String)
+          : null,
+      opponentName: json['opponentName'] as String?,
+      location: json['location'] as String?,
+      seasonId: json['seasonId'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'gameId': gameId,
+      'teamId': teamId,
+      'gameTitle': gameTitle,
+      'status': status,
+      'teamScore': teamScore,
+      'opponentScore': opponentScore,
+      'lineup': lineup,
+      'scheduledStart': scheduledStart?.toIso8601String(),
+      'opponentName': opponentName,
+      'location': location,
+      'seasonId': seasonId,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  bool get isScheduled => status == 'SCHEDULED';
+  bool get isInProgress => status == 'IN_PROGRESS';
+  bool get isFinal => status == 'FINAL';
+  bool get isPostponed => status == 'POSTPONED';
+  bool get isCompleted => status == 'FINAL';
+  bool get isUpcoming => status == 'SCHEDULED' && (scheduledStart == null || scheduledStart!.isAfter(DateTime.now()));
+}
+
 /// User Context model for dynamic UI rendering
 class UserContext {
   final bool hasPersonalContext;

@@ -134,7 +134,7 @@ def handler(event, context):
             'SK': f'TEAM#{team_id}',
             'teamId': team_id,
             'userId': user_id,
-            'role': 'team-owner',
+            'role': 'owner',
             'status': 'active',
             'joinedAt': timestamp,
             'invitedBy': None  # Self-created, no inviter

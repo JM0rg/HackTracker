@@ -7,7 +7,7 @@ import '../screens/profile_screen.dart';
 import '../screens/recruiter_screen.dart';
 import '../widgets/app_drawer.dart';
 import '../features/home/home_tab_view.dart';
-import '../providers/user_context_provider.dart';
+import '../providers/team_providers.dart';
 
 /// Dynamic home screen that adapts UI based on user's team context
 /// 
@@ -39,6 +39,9 @@ class _DynamicHomeScreenState extends ConsumerState<DynamicHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch selectedTeamProvider to rebuild AppBar when team changes
+    ref.watch(selectedTeamProvider);
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(_getAppBarTitle()),
@@ -86,7 +89,9 @@ class _DynamicHomeScreenState extends ConsumerState<DynamicHomeScreen> {
     if (widget.userContext.shouldShowPlayerViewOnly) {
       return 'My Stats';
     } else if (widget.userContext.shouldShowTeamViewOnly) {
-      return 'My Team';
+      // Display the actual team name from selectedTeamProvider
+      final selectedTeam = ref.read(selectedTeamProvider);
+      return selectedTeam?.name ?? 'My Team';
     } else {
       return 'HackTracker';
     }

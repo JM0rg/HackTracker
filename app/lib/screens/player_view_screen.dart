@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../theme/custom_text_styles.dart';
-import '../theme/decoration_styles.dart';
 
 /// Player View - Shows user's personal stats aggregated across all teams
 class PlayerViewScreen extends ConsumerWidget {

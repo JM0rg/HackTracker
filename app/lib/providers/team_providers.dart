@@ -75,7 +75,7 @@ class TeamsNotifier extends AsyncNotifier<List<Team>> {
         teamId: 'temp-${DateTime.now().microsecondsSinceEpoch}',
         name: name,
         description: description ?? '',
-        role: 'team-owner',
+        role: 'owner',
         memberCount: 1,
         joinedAt: DateTime.now(),
         createdAt: DateTime.now(),

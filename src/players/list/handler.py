@@ -57,6 +57,7 @@ def handler(event, context):
         query_params = event.get('queryStringParameters') or {}
         status_filter = query_params.get('status')  # active, inactive, sub
         ghost_filter = query_params.get('isGhost')  # true, false
+        include_roles = query_params.get('includeRoles', '').lower() == 'true'
         
         # Authorize: any active team member can view roster
         table = get_table()
@@ -112,6 +113,50 @@ def handler(event, context):
         
         players.sort(key=sort_key)
         
+        # Fetch team memberships if includeRoles is requested
+        user_roles = {}
+        if include_roles:
+            try:
+                # Build userId -> role mapping by fetching each linked player's membership
+                user_ids_to_fetch = set()
+                for player in players:
+                    if player.get('userId'):
+                        user_ids_to_fetch.add(player['userId'])
+                
+                # Fetch memberships for each userId
+                for uid in user_ids_to_fetch:
+                    try:
+                        membership_response = table.get_item(
+                            Key={
+                                'PK': f'USER#{uid}',
+                                'SK': f'TEAM#{team_id}'
+                            }
+                        )
+                        
+                        if 'Item' in membership_response:
+                            membership = membership_response['Item']
+                            if membership.get('status') == 'active':
+                                role = membership.get('role')
+                                if role:
+                                    user_roles[uid] = role
+                    except ClientError as e:
+                        print(json.dumps({
+                            'level': 'WARN',
+                            'message': 'Failed to fetch membership for user',
+                            'error': str(e),
+                            'userId': uid,
+                            'teamId': team_id
+                        }))
+                        # Continue with other users
+            except Exception as e:
+                print(json.dumps({
+                    'level': 'WARN',
+                    'message': 'Failed to fetch team memberships for roles',
+                    'error': str(e),
+                    'teamId': team_id
+                }))
+                # Continue without roles rather than failing the whole request
+        
         # Build clean response (exclude internal DynamoDB keys)
         clean_players = []
         for player in players:
@@ -141,6 +186,15 @@ def handler(event, context):
             
             if 'positions' in player and player['positions']:
                 clean_player['positions'] = player['positions']
+            
+            # Add role if includeRoles was requested
+            if include_roles:
+                player_user_id = player.get('userId')
+                if player_user_id and player_user_id in user_roles:
+                    clean_player['role'] = user_roles[player_user_id]
+                else:
+                    # Ghost players or unmatched users default to 'player'
+                    clean_player['role'] = 'player'
             
             clean_players.append(clean_player)
         

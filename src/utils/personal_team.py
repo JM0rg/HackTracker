@@ -49,14 +49,14 @@ def create_personal_team(table, user_id, first_name, timestamp):
         'GSI2SK': f'METADATA#{team_id}'
     }
     
-    # Membership record (team-owner)
+    # Membership record (owner)
     # Note: invitedBy is omitted (not set to None) since this is self-created
     membership_item = {
         'PK': f'USER#{user_id}',
         'SK': f'TEAM#{team_id}',
         'teamId': team_id,
         'userId': user_id,
-        'role': 'team-owner',
+        'role': 'owner',
         'status': 'active',
         'joinedAt': timestamp
     }

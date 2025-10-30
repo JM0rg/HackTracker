@@ -91,14 +91,49 @@ class AppDrawer extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _DrawerSectionHeader(title: 'MY TEAMS'),
 
-                  // Teams list (placeholder - will be dynamic)
-                  _DrawerItem(
-                    icon: Icons.groups,
-                    title: 'Rockets',
-                    subtitle: 'Owner',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to team view
+                  // Dynamic teams list
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final teamsAsync = ref.watch(teamsProvider);
+                      final selectedTeam = ref.watch(selectedTeamProvider);
+                      
+                      return teamsAsync.when(
+                        loading: () => const _DrawerItem(
+                          icon: Icons.hourglass_empty,
+                          title: 'Loading teams...',
+                          onTap: null,
+                        ),
+                        error: (e, st) => _DrawerItem(
+                          icon: Icons.error_outline,
+                          title: 'Error loading teams',
+                          onTap: () {},
+                        ),
+                        data: (teams) {
+                          if (teams.isEmpty) {
+                            return const _DrawerItem(
+                              icon: Icons.info_outline,
+                              title: 'No teams yet',
+                              onTap: null,
+                            );
+                          }
+                          
+                          return Column(
+                            children: teams.map((team) {
+                              final isSelected = selectedTeam?.teamId == team.teamId;
+                              return _DrawerItem(
+                                icon: Icons.groups,
+                                title: team.name,
+                                subtitle: team.displayRole,
+                                isSelected: isSelected,
+                                onTap: () {
+                                  ref.read(selectedTeamProvider.notifier).state = team;
+                                  Navigator.pop(context);
+                                },
+                              );
+                            }).toList(),
+                          );
+                        },
+                      );
                     },
                   ),
 
@@ -112,50 +147,6 @@ class AppDrawer extends ConsumerWidget {
                     },
                   ),
 
-                  // Team Management (only shown if user is owner/admin)
-                  const SizedBox(height: 16),
-                  _DrawerSectionHeader(title: 'ROCKETS MANAGEMENT'),
-                  
-                  _DrawerSubItem(
-                    icon: Icons.event,
-                    title: 'Seasons',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to seasons
-                    },
-                  ),
-                  _DrawerSubItem(
-                    icon: Icons.emoji_events,
-                    title: 'Tournaments',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to tournaments
-                    },
-                  ),
-                  _DrawerSubItem(
-                    icon: Icons.people,
-                    title: 'Roster',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to roster
-                    },
-                  ),
-                  _DrawerSubItem(
-                    icon: Icons.sports_baseball,
-                    title: 'Games',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to games
-                    },
-                  ),
-                  _DrawerSubItem(
-                    icon: Icons.settings,
-                    title: 'Team Settings',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Navigate to team settings
-                    },
-                  ),
                 ],
               ),
             ),
@@ -215,31 +206,43 @@ class _DrawerItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool isSelected;
 
   const _DrawerItem({
     required this.icon,
     required this.title,
     this.subtitle,
     required this.onTap,
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary, size: 22),
-      title: Text(
-        title,
-        style: Theme.of(context).textTheme.bodyMedium,
+    return Container(
+      color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          size: 22,
+        ),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: isSelected ? AppColors.primary : null,
+            fontWeight: isSelected ? FontWeight.bold : null,
+          ),
+        ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle!,
+                style: Theme.of(context).textTheme.labelSmall,
+              )
+            : null,
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: Theme.of(context).textTheme.labelSmall,
-            )
-          : null,
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
     );
   }
 }

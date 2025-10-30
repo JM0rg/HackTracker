@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:amplify_flutter/amplify_flutter.dart';
 import '../theme/app_colors.dart';
 import '../theme/custom_text_styles.dart';
 import '../providers/user_providers.dart';

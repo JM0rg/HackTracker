@@ -239,6 +239,9 @@ def handler(event, context):
         if 'linkedAt' in updated_player and updated_player['linkedAt']:
             response_data['linkedAt'] = updated_player['linkedAt']
         
+        if 'positions' in updated_player and updated_player['positions']:
+            response_data['positions'] = updated_player['positions']
+        
         print(json.dumps({
             'level': 'INFO',
             'message': 'Player updated successfully',

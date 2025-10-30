@@ -13,10 +13,10 @@ class PermissionError(Exception):
 
 
 # Permission constants for common operations
-MANAGE_ROSTER_ROLES = ['team-owner', 'team-coach']
-MANAGE_TEAM_ROLES = ['team-owner', 'team-coach']
-DELETE_TEAM_ROLES = ['team-owner']
-MANAGE_GAMES_ROLES = ['team-owner', 'team-coach', 'team-scorekeeper']
+MANAGE_ROSTER_ROLES = ['owner', 'manager']
+MANAGE_TEAM_ROLES = ['owner', 'manager']
+DELETE_TEAM_ROLES = ['owner']
+MANAGE_GAMES_ROLES = ['owner', 'manager', 'scorekeeper']
 
 # Central policy map: action → required roles
 POLICY_MAP = {
@@ -72,7 +72,7 @@ def _check_team_role(table, user_id, team_id, required_roles):
         table: DynamoDB table resource
         user_id (str): User ID to check
         team_id (str): Team ID to check
-        required_roles (list): List of acceptable roles (e.g., ['team-owner', 'team-coach'])
+        required_roles (list): List of acceptable roles (e.g., ['owner', 'manager'])
         
     Returns:
         dict: Membership record if authorized
