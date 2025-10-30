@@ -113,19 +113,93 @@ class _TeamViewScreenState extends ConsumerState<TeamViewScreen> with SingleTick
 }
 
 /// Stats Tab - Placeholder for future statistics
-class _StatsTab extends StatelessWidget {
+class _StatsTab extends ConsumerStatefulWidget {
   final Team team;
 
   const _StatsTab({required this.team});
 
   @override
+  ConsumerState<_StatsTab> createState() => _StatsTabState();
+}
+
+class _StatsTabState extends ConsumerState<_StatsTab> {
+  bool _showMyStats = true; // true = My Stats, false = Team Stats
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // View toggle
+        Container(
+          padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+          child: SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: true, label: Text('MY STATS'), icon: Icon(Icons.person)),
+              ButtonSegment(value: false, label: Text('TEAM STATS'), icon: Icon(Icons.groups)),
+            ],
+            selected: {_showMyStats},
+            onSelectionChanged: (Set<bool> selection) {
+              setState(() => _showMyStats = selection.first);
+            },
+          ),
+        ),
+        Expanded(
+          child: _showMyStats
+              ? _MyStatsView(team: widget.team)
+              : _TeamStatsView(team: widget.team),
+        ),
+      ],
+    );
+  }
+}
+
+class _MyStatsView extends StatelessWidget {
+  final Team team;
+
+  const _MyStatsView({required this.team});
+
+  @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Placeholder cards
+          _PlaceholderCard(
+            icon: Icons.sports_baseball,
+            title: 'My Batting Average',
+            subtitle: 'Coming soon - track at-bats to see your stats',
+          ),
+          const SizedBox(height: 16),
+          _PlaceholderCard(
+            icon: Icons.show_chart,
+            title: 'My Performance Trend',
+            subtitle: 'Your stats over time',
+          ),
+          const SizedBox(height: 16),
+          _PlaceholderCard(
+            icon: Icons.emoji_events,
+            title: 'My Achievements',
+            subtitle: 'Personal milestones and highlights',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TeamStatsView extends StatelessWidget {
+  final Team team;
+
+  const _TeamStatsView({required this.team});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           _PlaceholderCard(
             icon: Icons.sports_baseball,
             title: 'Team Batting Average',

@@ -440,84 +440,77 @@ class PlayerViewScreen extends ConsumerWidget {
 
 **File:** `lib/screens/team_view_screen.dart`
 
-**Purpose:** Team management and roster operations
+**Purpose:** Team management, roster operations, game scheduling, and statistics
 
 **Widget Tree Structure:**
 ```
 TeamViewScreen
 ├── Scaffold
 │   ├── AppBar
-│   │   ├── IconButton (back)
-│   │   ├── DropdownButton (team selector)
-│   │   └── IconButton (add player)
-│   ├── Body
-│   │   └── Consumer (teams)
-│   │       └── Switch (teams state)
-│   │           ├── Empty → Empty state
-│   │           └── Has teams → Team content
-│   │               ├── Consumer (selected team)
-│   │               └── Consumer (players)
-│   │                   └── Column
-│   │                       ├── Text ("Roster")
-│   │                       └── ListView (players)
-│   └── FloatingActionButton (create team)
+│   │   ├── IconButton (drawer)
+│   │   ├── Text (team name)
+│   │   └── TabBar
+│   │       ├── Tab ("Stats")
+│   │       ├── Tab ("Schedule")
+│   │       ├── Tab ("Roster")
+│   │       └── Tab ("Chat")
+│   └── Body
+│       └── TabBarView
+│           ├── _StatsTab
+│           │   ├── SegmentedButton (My Stats / Team Stats)
+│           │   └── StatefulWidget
+│           │       ├── _MyStatsView → Placeholder cards
+│           │       └── _TeamStatsView → Placeholder cards
+│           ├── _ScheduleTab
+│           │   ├── SegmentedButton (List / Calendar)
+│           │   └── StatefulWidget
+│           │       ├── _GameListView → Grouped games list
+│           │       └── _GameCalendarView → Placeholder
+│           ├── _RosterTab
+│           │   ├── Legend (Has Account / No Account)
+│           │   ├── Button (Add Player) [owner only]
+│           │   └── ListView (_RosterPlayerCard)
+│           └── _ChatTab → Placeholder
 ```
 
 **Props and Callbacks:**
-- `onNavigateToRecruiter` - Navigate to recruiter callback
+- `team` - Current team being viewed (passed to screen)
 
 **State Dependencies:**
 - `teamsProvider` - Team data with optimistic updates
-- `selectedTeamProvider` - Currently selected team
-- `playersProvider` - Team roster data
+- `rosterProvider` - Team roster data with roles
+- `gamesProvider` - Team games data
+- Tab-specific state for view toggles
+
+**Tab Features:**
+
+**Stats Tab:**
+- SegmentedButton toggle: "MY STATS" / "TEAM STATS"
+- My Stats view: Personal batting average, performance trend, achievements (placeholder)
+- Team Stats view: Team batting average, top performers, recent games summary (placeholder)
+
+**Schedule Tab:**
+- SegmentedButton toggle: "LIST" / "CALENDAR"
+- List view: Games grouped by "This Week", "Next Week", "Later"
+- Calendar view: Coming soon (placeholder)
+- Floating action button for adding games (owner only)
+
+**Roster Tab:**
+- Color-coded legend for linked vs ghost players
+- Player cards with number, name, positions, and role
+- Edit/remove actions for owners
+- Add player button (owner only)
+
+**Chat Tab:**
+- Placeholder for future team communication
 
 **Navigation Patterns:**
-- Back → Previous screen
-- Create Team → `FormDialog`
-- Add Player → `PlayerFormDialog`
+- View Team → `TeamViewScreen`
+- Add Player → `PlayerFormDialog` (bottom sheet)
+- Edit Player → `PlayerFormDialog` (bottom sheet)
 - Remove Player → `ConfirmDialog`
-- Navigate to Recruiter → Parent callback
-
-**Code Example:**
-```dart
-class TeamViewScreen extends ConsumerWidget {
-  final VoidCallback onNavigateToRecruiter;
-  
-  const TeamViewScreen({super.key, required this.onNavigateToRecruiter});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final teamsAsync = ref.watch(teamsProvider);
-    final selectedTeam = ref.watch(selectedTeamProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: _buildTeamSelector(context, ref, teamsAsync),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          if (selectedTeam != null)
-            IconButton(
-              icon: const Icon(Icons.person_add),
-              onPressed: () => _showAddPlayerDialog(context, ref, selectedTeam),
-            ),
-        ],
-      ),
-      body: teamsAsync.when(
-        data: (teams) => _buildTeamContent(context, ref, teams, selectedTeam),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateTeamDialog(context, ref),
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-```
+- Add Game → `GameFormDialog` (bottom sheet)
+- Edit Game → `GameFormDialog` (bottom sheet)
 
 ### ProfileScreen
 
