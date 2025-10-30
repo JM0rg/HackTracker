@@ -1,5 +1,7 @@
 # Optimistic UI Implementation Guide
 
+**Part of:** [ARCHITECTURE.md](../ARCHITECTURE.md) - Complete system architecture guide
+
 HackTracker's race-condition-safe optimistic UI pattern for instant, responsive user experiences.
 
 ---
@@ -642,8 +644,8 @@ void debouncedUpdate() {
 
 ## See Also
 
-- **[architecture-docs/ui/state-management.md](./architecture-docs/ui/state-management.md)** - Riverpod patterns
-- **[DATA_MODEL.md](./DATA_MODEL.md)** - Current implementation
+- **[state-management.md](./state-management.md)** - Riverpod 3.0+ patterns
+- **[../DATA_MODEL.md](../DATA_MODEL.md)** - Current implementation
 - **[Riverpod Documentation](https://riverpod.dev/)** - State management library
 
 ---

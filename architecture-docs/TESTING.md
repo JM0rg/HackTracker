@@ -542,7 +542,7 @@ mocker.patch('src.players.add.handler.authorize')
 ## See Also
 
 - **[DATA_MODEL.md](./DATA_MODEL.md)** - Current implementation
-- **[architecture-docs/api/lambda-functions.md](./architecture-docs/api/lambda-functions.md)** - Lambda function catalog
+- **[api/lambda-functions.md](./api/lambda-functions.md)** - Lambda function catalog
 - **[pytest documentation](https://docs.pytest.org/)** - pytest framework
 - **[moto documentation](https://docs.getmoto.org/)** - AWS mocking
 

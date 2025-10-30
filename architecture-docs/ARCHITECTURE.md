@@ -5,16 +5,16 @@
 > **📖 Documentation Structure:**
 > - **This document:** High-level system overview and design philosophy
 > - **Sub-Documents:** Detailed guides for specific topics (see below)
-> - **[DATA_MODEL.md](../DATA_MODEL.md):** Current implementation snapshot
+> - **[DATA_MODEL.md](./DATA_MODEL.md):** Current implementation snapshot
 
 ---
 
 ## 📚 Documentation Index
 
 ### Getting Started
-- **[DATA_MODEL.md](../DATA_MODEL.md)** - Current implementation snapshot (start here!)
-- **[TESTING.md](../TESTING.md)** - Testing guide (pytest, moto, 72% coverage)
-- **[OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md)** - Optimistic UI patterns
+- **[DATA_MODEL.md](./DATA_MODEL.md)** - Current implementation snapshot (start here!)
+- **[TESTING.md](./TESTING.md)** - Testing guide (pytest, moto, 72% coverage)
+- **[ui/OPTIMISTIC_UI_GUIDE.md](./ui/OPTIMISTIC_UI_GUIDE.md)** - Optimistic UI patterns
 
 ### Backend / API
 - **[api/dynamodb-design.md](./api/dynamodb-design.md)** - Single-table design, GSIs, query patterns
@@ -240,7 +240,7 @@ await notifier.mutate(
 
 **See:** 
 - [ui/state-management.md](./ui/state-management.md) for Riverpod patterns
-- [OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md) for detailed implementation
+- [ui/OPTIMISTIC_UI_GUIDE.md](./ui/OPTIMISTIC_UI_GUIDE.md) for detailed implementation
 
 ---
 
@@ -401,7 +401,7 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 - `invite-sub` - Invite free agent to team
 
 **See:** 
-- [DATA_MODEL.md](../DATA_MODEL.md) for current implementation snapshot
+- [DATA_MODEL.md](./DATA_MODEL.md) for current implementation snapshot
 - [api/lambda-functions.md](./api/lambda-functions.md) for complete API documentation
 
 ---
@@ -458,7 +458,7 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 - **Cloud Testing:** HTTP requests to deployed API Gateway
 - **Database:** DynamoDB Local for development, AWS DynamoDB for staging/prod
 
-**See:** [TESTING.md](../TESTING.md) for detailed workflows
+**See:** [TESTING.md](./TESTING.md) for detailed workflows
 
 ---
 
@@ -581,9 +581,9 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 ### Internal Guides
 
 **Getting Started:**
-- **[DATA_MODEL.md](../DATA_MODEL.md)** - Current implementation snapshot (start here!)
-- **[TESTING.md](../TESTING.md)** - Testing guide (pytest, moto, 72% coverage)
-- **[OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md)** - Optimistic UI patterns
+- **[DATA_MODEL.md](./DATA_MODEL.md)** - Current implementation snapshot (start here!)
+- **[TESTING.md](./TESTING.md)** - Testing guide (pytest, moto, 72% coverage)
+- **[ui/OPTIMISTIC_UI_GUIDE.md](./ui/OPTIMISTIC_UI_GUIDE.md)** - Optimistic UI patterns
 
 **Backend / API:**
 - **[api/dynamodb-design.md](./api/dynamodb-design.md)** - Complete DynamoDB schema and query patterns
@@ -612,5 +612,5 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 - [ ] Player dashboard (stats across all teams)
 
 **See:** 
-- [DATA_MODEL.md](../DATA_MODEL.md) for detailed implementation status
+- [DATA_MODEL.md](./DATA_MODEL.md) for detailed implementation status
 - [api/lambda-functions.md](./api/lambda-functions.md) for complete API documentation

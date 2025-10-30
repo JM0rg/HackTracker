@@ -183,7 +183,7 @@ POLICY_MAP = {
 }
 ```
 
-**See:** [architecture-docs/api/authorization.md](./architecture-docs/api/authorization.md)
+**See:** [api/authorization.md](./api/authorization.md)
 
 ---
 
@@ -258,12 +258,12 @@ The following entities are planned but not yet implemented:
 
 ## Related Documentation
 
-- **[architecture-docs/ARCHITECTURE.md](./architecture-docs/ARCHITECTURE.md)** - Complete system architecture
-- **[architecture-docs/api/lambda-functions.md](./architecture-docs/api/lambda-functions.md)** - All 21 Lambda functions
-- **[architecture-docs/api/dynamodb-design.md](./architecture-docs/api/dynamodb-design.md)** - Database schema
-- **[architecture-docs/api/authorization.md](./architecture-docs/api/authorization.md)** - Authorization system
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system architecture
+- **[api/lambda-functions.md](./api/lambda-functions.md)** - All 21 Lambda functions
+- **[api/dynamodb-design.md](./api/dynamodb-design.md)** - Database schema
+- **[api/authorization.md](./api/authorization.md)** - Authorization system
 - **[TESTING.md](./TESTING.md)** - Testing guide
-- **[OPTIMISTIC_UI_GUIDE.md](./OPTIMISTIC_UI_GUIDE.md)** - Optimistic UI patterns
+- **[ui/OPTIMISTIC_UI_GUIDE.md](./ui/OPTIMISTIC_UI_GUIDE.md)** - Optimistic UI patterns
 
 ---
 
