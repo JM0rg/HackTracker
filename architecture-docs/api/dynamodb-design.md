@@ -20,16 +20,7 @@ HackTracker uses a single DynamoDB table for all entities, following AWS best pr
 | `USER#<userId>` | `TEAM#<teamId>` | Team Membership |
 | `TEAM#<teamId>` | `METADATA` | Team Profile |
 | `TEAM#<teamId>` | `PLAYER#<playerId>` | Player Roster Record |
-| `TEAM#<teamId>` | `INVITE#<inviteId>` | Pending Team Invite |
-| `TEAM#<teamId>#SEASON#<seasonId>` | `METADATA` | Team Season Info |
-| `GAME#<gameId>` | `METADATA` | Game Info (standalone, optional seasonId) |
-| `GAME#<gameId>` | `ATBAT#<atBatId>` | Individual At-Bat Record |
-| `PLAYER#<playerId>` | `METADATA` | Player Info (cross-team) |
-| `LEAGUE#<leagueId>` | `METADATA` | League Info |
-| `LEAGUE#<leagueId>#SEASON#<seasonId>` | `METADATA` | League Season Info |
-| `LEAGUE#<leagueId>#SEASON#<seasonId>` | `GAME#<gameId>` | League Game Info |
-| `LEAGUE#<leagueId>#SEASON#<seasonId>` | `TEAM#<teamId>` | Team Participation Link |
-| `FREEAGENCY#<region>` | `USER#<userId>` | Free Agent Listing |
+| `GAME#<gameId>` | `METADATA` | Game Info |
 
 ---
 
@@ -66,12 +57,13 @@ response = table.query(
 **Purpose:** List all entities of a specific type
 
 **Keys:**
-- `GSI2PK`: `ENTITY#<type>` (e.g., `ENTITY#USER`, `ENTITY#TEAM`)
+- `GSI2PK`: `ENTITY#<type>` (e.g., `ENTITY#USER`, `ENTITY#TEAM`, `ENTITY#GAME`)
 - `GSI2SK`: `METADATA#<id>`
 
 **Use Cases:**
 - List all users
 - List all teams
+- List all games
 - Admin dashboards
 - Generic entity queries
 
@@ -100,15 +92,28 @@ response = table.query(
 - `GSI3PK`: `TEAM#<teamId>`
 - `GSI3SK`: `GAME#<gameId>`
 
-**Use Case:** List games by team, team game history
+**Use Case:** List games by team, team game history, schedule management
 
-**Status:** Active (used by list-games-by-team Lambda)
+**Status:** Active (used by list-games Lambda)
 
 **Why Essential:** Efficient querying of games by team without scanning
 
+**Example Query:**
+```python
+# Get all games for a team
+response = table.query(
+    IndexName='GSI3',
+    KeyConditionExpression='GSI3PK = :pk AND begins_with(GSI3SK, :sk_prefix)',
+    ExpressionAttributeValues={
+        ':pk': f'TEAM#{team_id}',
+        ':sk_prefix': 'GAME#'
+    }
+)
+```
+
 ---
 
-### GSI4: User's Players (Reserved)
+### GSI4: User's Players (Reserved for Future)
 
 **Purpose:** Find all players linked to a user across all teams
 
@@ -120,11 +125,11 @@ response = table.query(
 
 **Status:** Defined but not yet populated (future feature)
 
-**Why Essential:** User's cross-team stats survive team deletion
+**Why Planned:** User's cross-team stats survive team deletion
 
 ---
 
-### GSI5: Player Stats (Reserved)
+### GSI5: Player Stats (Reserved for Future)
 
 **Purpose:** Query all at-bats for a player
 
@@ -136,7 +141,7 @@ response = table.query(
 
 **Status:** Defined but not yet populated (future feature)
 
-**Why Essential:** Player stat aggregation (hot path)
+**Why Planned:** Player stat aggregation (hot path)
 
 ---
 
@@ -147,8 +152,6 @@ response = table.query(
 | Query | Pattern | Returns |
 |-------|---------|---------|
 | Team roster | `TEAM#<id>` + `SK` begins with `PLAYER#` | All players |
-| Game at-bats | `GAME#<id>` + `SK` begins with `ATBAT#` | All at-bats |
-| League teams | `LEAGUE#<id>#SEASON#<id>` + `SK` begins with `TEAM#` | All teams |
 | User's teams | `USER#<id>` + `SK` begins with `TEAM#` | All memberships |
 | Team games | `GSI3PK = TEAM#<id>` + `GSI3SK` begins with `GAME#` | All games for team |
 
@@ -189,9 +192,9 @@ response = table.query(
 
 **GSI1 (Cognito)** - No alternative for login flow  
 **GSI2 (Entity)** - Generic listing (replaces 4+ specific GSIs)  
-**GSI3 (Region)** - Geographic search has no alternative  
-**GSI4 (User→Players)** - Cross-team user stats (survives team deletion)  
-**GSI5 (Player→AtBats)** - Player stat aggregation (hot path)  
+**GSI3 (Games by Team)** - Team schedule and game history  
+**GSI4 (User→Players)** - Cross-team user stats (future)  
+**GSI5 (Player→AtBats)** - Player stat aggregation (future)  
 
 **Why not more?**
 - Most queries use PK/SK directly
@@ -212,16 +215,6 @@ All entities include:
 }
 ```
 
-League/Team entities also include:
-
-```json
-{
-  "ownerType": "team" | "league",
-  "isEditable": true | false,
-  "inheritedFromLeague": true | false
-}
-```
-
 ---
 
 ## Entity Examples
@@ -237,7 +230,6 @@ League/Team entities also include:
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+15555551234",
-  "status": "active",
   "createdAt": "2025-10-25T12:00:00.000Z",
   "updatedAt": "2025-10-25T12:00:00.000Z",
   "GSI1PK": "COGNITO#12345678-1234-1234-1234-123456789012",
@@ -258,7 +250,6 @@ League/Team entities also include:
   "description": "Best team in Seattle",
   "ownerId": "12345678-1234-1234-1234-123456789012",
   "team_type": "MANAGED",
-  "status": "active",
   "createdAt": "2025-10-25T12:00:00.000Z",
   "updatedAt": "2025-10-25T12:00:00.000Z",
   "GSI2PK": "ENTITY#TEAM",
@@ -268,7 +259,7 @@ League/Team entities also include:
 
 **Team Types:**
 - `MANAGED`: Full roster management, lineup requirements, multi-player stat tracking
-- `PERSONAL`: Single-owner label team for filtering personal stats by team/season context. Cannot add additional players or delete. Always contains one player linked to the owner.
+- `PERSONAL`: Single-owner label team for filtering personal stats by team/season context. Cannot add additional players. Always contains one player linked to the owner.
 
 ### Team Membership
 
@@ -278,14 +269,20 @@ League/Team entities also include:
   "SK": "TEAM#a6f27724-7042-4816-94d3-a2183ef50a09",
   "userId": "12345678-1234-1234-1234-123456789012",
   "teamId": "a6f27724-7042-4816-94d3-a2183ef50a09",
-  "role": "team-owner",
+  "role": "owner",
   "status": "active",
   "joinedAt": "2025-10-25T12:00:00.000Z",
   "invitedBy": null
 }
 ```
 
-### Player (Ghost)
+**Roles:**
+- `owner`: Team creator, full control
+- `manager`: Coach/assistant, can manage roster and games
+- `player`: Team member, can view and edit own profile
+- `scorekeeper`: Can record stats during games
+
+### Player (Roster Record)
 
 ```json
 {
@@ -296,14 +293,56 @@ League/Team entities also include:
   "firstName": "John",
   "lastName": "Doe",
   "playerNumber": 12,
+  "positions": ["SS", "2B"],
   "status": "active",
-  "isGhost": true,
-  "userId": null,
-  "linkedAt": null,
+  "isGhost": false,
+  "userId": "12345678-1234-1234-1234-123456789012",
+  "linkedAt": "2025-10-25T12:00:00.000Z",
   "createdAt": "2025-10-25T12:00:00.000Z",
   "updatedAt": "2025-10-25T12:00:00.000Z"
 }
 ```
+
+**Player Types:**
+- **Ghost Player** (`isGhost: true`, `userId: null`): Roster slot not yet linked to a user
+- **Linked Player** (`isGhost: false`, `userId` present): Player connected to a registered user
+
+**Positions:** Array of position codes (e.g., `["P", "1B", "OF"]`)
+
+**Status:** `active`, `inactive`, `sub`
+
+### Game
+
+```json
+{
+  "PK": "GAME#c8d39946-9264-6038-c6f5-d4405gh72c2b",
+  "SK": "METADATA",
+  "gameId": "c8d39946-9264-6038-c6f5-d4405gh72c2b",
+  "teamId": "a6f27724-7042-4816-94d3-a2183ef50a09",
+  "status": "SCHEDULED",
+  "scheduledStart": "2025-11-01T19:30:00.000Z",
+  "opponentName": "Portland Pioneers",
+  "location": "Lincoln Park Field 3",
+  "teamScore": 0,
+  "opponentScore": 0,
+  "lineup": [],
+  "createdAt": "2025-10-25T12:00:00.000Z",
+  "updatedAt": "2025-10-25T12:00:00.000Z",
+  "GSI2PK": "ENTITY#GAME",
+  "GSI2SK": "METADATA#c8d39946-9264-6038-c6f5-d4405gh72c2b",
+  "GSI3PK": "TEAM#a6f27724-7042-4816-94d3-a2183ef50a09",
+  "GSI3SK": "GAME#c8d39946-9264-6038-c6f5-d4405gh72c2b"
+}
+```
+
+**Game Status:** `SCHEDULED`, `IN_PROGRESS`, `FINAL`, `POSTPONED`
+
+**Fields:**
+- `scheduledStart` (optional): ISO 8601 datetime
+- `opponentName` (optional): Name of opponent team
+- `location` (optional): Game location
+- `seasonId` (optional): Associated season (future feature)
+- `lineup` (optional): Array of player IDs in batting order
 
 ---
 
@@ -371,19 +410,6 @@ item['updatedAt'] = datetime.now(timezone.utc).isoformat()
 
 ---
 
-## Eliminated GSIs & Alternatives
-
-| Removed GSI | Original Purpose | Alternative Solution |
-|-------------|------------------|---------------------|
-| ~~Email lookup~~ | User by email | Use Cognito `ListUsers` API (rare operation) |
-| ~~League→Teams~~ | League's teams | Query `LEAGUE#id → TEAM#*` (already PK/SK) |
-| ~~Email→Invites~~ | Invites by email | Query `TEAM#id → INVITE#*` and filter (rare operation) |
-| ~~Season→Games~~ | Season's games | Query `TEAM#id#SEASON#id → GAME#*` (already PK/SK) |
-
-**Note:** Game→AtBats doesn't need a GSI because `GAME#<id> → ATBAT#*` is the primary key pattern.
-
----
-
 ## Performance Considerations
 
 ### Hot Partitions
@@ -391,9 +417,9 @@ item['updatedAt'] = datetime.now(timezone.utc).isoformat()
 **Problem:** Too many requests to same partition key
 
 **Solutions:**
-- Use composite keys (e.g., `TEAM#id#SEASON#id`)
+- Use composite keys where appropriate
 - Spread writes across time
-- Use caching (see [caching.md](./caching.md))
+- Use frontend caching (see [../ui/state-management.md](../ui/state-management.md))
 
 ### Large Items
 
@@ -427,7 +453,7 @@ if 'LastEvaluatedKey' in response:
 
 ## See Also
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system design
-- **[DATA_MODEL.md](../DATA_MODEL.md)** - Current implementation
+- **[ARCHITECTURE.md](../ARCHITECTURE.md)** - Complete system design
 - **[authorization.md](./authorization.md)** - Authorization system
+- **[lambda-functions.md](./lambda-functions.md)** - Lambda function catalog
 

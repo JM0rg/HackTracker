@@ -1,6 +1,6 @@
 # Screen Documentation
 
-**Part of:** [UI_ARCHITECTURE.md](../UI_ARCHITECTURE.md) - Complete frontend implementation guide
+**Part of:** [ARCHITECTURE.md](../ARCHITECTURE.md) - Complete system architecture guide
 
 This document provides comprehensive documentation for all screens in the HackTracker Flutter application.
 

@@ -1,6 +1,6 @@
 # Form Handling Documentation
 
-**Part of:** [UI_ARCHITECTURE.md](../UI_ARCHITECTURE.md) - Complete frontend implementation guide
+**Part of:** [ARCHITECTURE.md](../ARCHITECTURE.md) - Complete system architecture guide
 
 This document provides comprehensive patterns and examples for form handling in the HackTracker Flutter application, including input validation, form state management, error display, and accessibility.
 

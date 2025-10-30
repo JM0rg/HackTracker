@@ -13,11 +13,20 @@ class DecorationStyles {
     );
   }
 
-  /// Surface container decoration (surface background with border)
+  /// Surface container decoration (surface background with border, 12px radius)
   static BoxDecoration surfaceContainer() {
     return BoxDecoration(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppColors.border),
+    );
+  }
+
+  /// Surface container decoration with smaller radius (8px)
+  static BoxDecoration surfaceContainerSmall() {
+    return BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(8),
       border: Border.all(color: AppColors.border),
     );
   }

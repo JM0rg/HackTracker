@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../theme/custom_text_styles.dart';
+import '../theme/decoration_styles.dart';
 import '../providers/user_providers.dart';
 import '../providers/team_providers.dart';
 import '../providers/user_context_provider.dart';
 import '../services/auth_service.dart';
+import '../widgets/ui_helpers.dart';
 
 /// Profile screen showing user info and settings
 class ProfileScreen extends ConsumerWidget {
@@ -53,21 +55,11 @@ class ProfileScreen extends ConsumerWidget {
       ref.invalidate(userContextNotifierProvider);
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Signed out successfully'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        showSuccess(context, 'Signed out successfully');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error signing out: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        showError(context, 'Error signing out: $e');
       }
     }
   }
@@ -78,7 +70,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return userAsync.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+        child: LoadingIndicator(),
       ),
       error: (error, stack) => Center(
         child: Column(
@@ -107,11 +99,7 @@ class ProfileScreen extends ConsumerWidget {
             // Profile Header
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary, width: 2),
-              ),
+              decoration: DecorationStyles.primaryBorder(),
               child: Column(
                 children: [
                   Container(
@@ -151,35 +139,35 @@ class ProfileScreen extends ConsumerWidget {
 
             const SizedBox(height: 12),
 
-            _SettingsItem(
+            ListItemCard(
               icon: Icons.person_outline,
               title: 'Edit Profile',
               onTap: () {
                 // TODO: Navigate to edit profile
               },
             ),
-            _SettingsItem(
+            ListItemCard(
               icon: Icons.notifications_outlined,
               title: 'Notifications',
               onTap: () {
                 // TODO: Navigate to notification settings
               },
             ),
-            _SettingsItem(
+            ListItemCard(
               icon: Icons.security_outlined,
               title: 'Privacy & Security',
               onTap: () {
                 // TODO: Navigate to privacy settings
               },
             ),
-            _SettingsItem(
+            ListItemCard(
               icon: Icons.help_outline,
               title: 'Help & Support',
               onTap: () {
                 // TODO: Navigate to help
               },
             ),
-            _SettingsItem(
+            ListItemCard(
               icon: Icons.info_outline,
               title: 'About',
               onTap: () {
@@ -231,41 +219,3 @@ class ProfileScreen extends ConsumerWidget {
     ); // End of when()
   }
 }
-
-/// Settings item widget
-class _SettingsItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-
-  const _SettingsItem({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: AppColors.primary, size: 22),
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: AppColors.textTertiary,
-        ),
-        onTap: onTap,
-      ),
-    );
-  }
-}
-

@@ -1,6 +1,6 @@
 # Styling Documentation
 
-**Part of:** [UI_ARCHITECTURE.md](../UI_ARCHITECTURE.md) - Complete frontend implementation guide
+**Part of:** [ARCHITECTURE.md](../ARCHITECTURE.md) - Complete system architecture guide
 
 This document provides a comprehensive guide to HackTracker's theming system, including Material 3 integration, custom extensions, and responsive design patterns.
 
@@ -369,8 +369,18 @@ class AppColors {
   // Status colors
   static const error = Color(0xFFEF4444);
   static const success = Color(0xFF14D68E);
-  static const warning = Color(0xFFF59E0B);
-  static const info = Color(0xFF3B82F6);
+  static const warning = Color(0xFFF97316);      // Orange for in-progress/warnings
+  static const info = Color(0xFF64748B);         // Grey for postponed/inactive
+
+  // Semantic colors for game statuses
+  static const statusScheduled = primary;        // Green
+  static const statusInProgress = warning;       // Orange
+  static const statusFinal = success;            // Green
+  static const statusPostponed = info;           // Grey
+
+  // Player/User status colors
+  static const linkedUserColor = success;        // Green for linked accounts
+  static const guestUserColor = info;            // Grey for guest players
 }
 ```
 
@@ -432,15 +442,18 @@ ThemeData _buildTheme() {
 ```dart
 // app/lib/theme/decoration_styles.dart
 class DecorationStyles {
-  // Primary border decoration
+  // Private constructor to prevent instantiation
+  DecorationStyles._();
+
+  // Primary border decoration (2px primary color border, 12px radius)
   static BoxDecoration primaryBorder() {
     return BoxDecoration(
       border: Border.all(color: AppColors.primary, width: 2),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
     );
   }
   
-  // Surface container decoration
+  // Surface container decoration (surface background with border, 12px radius)
   static BoxDecoration surfaceContainer() {
     return BoxDecoration(
       color: AppColors.surface,
@@ -448,18 +461,9 @@ class DecorationStyles {
       border: Border.all(color: AppColors.border),
     );
   }
-  
-  // Error container decoration
-  static BoxDecoration errorContainer() {
-    return BoxDecoration(
-      color: AppColors.error.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: AppColors.error),
-    );
-  }
-  
-  // Status container decoration
-  static BoxDecoration statusContainer() {
+
+  // Surface container decoration with smaller radius (8px)
+  static BoxDecoration surfaceContainerSmall() {
     return BoxDecoration(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(8),
@@ -467,36 +471,48 @@ class DecorationStyles {
     );
   }
   
-  // Card decoration
+  // Error container decoration (red tinted background with red border)
+  static BoxDecoration errorContainer() {
+    return BoxDecoration(
+      color: Colors.red.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.red.withOpacity(0.5)),
+    );
+  }
+  
+  // Status container decoration (surface background with bottom border only)
+  static BoxDecoration statusContainer() {
+    return const BoxDecoration(
+      color: AppColors.surface,
+      border: Border(
+        bottom: BorderSide(color: AppColors.border, width: 1),
+      ),
+    );
+  }
+  
+  // Card decoration (standard card with surface color and border)
   static BoxDecoration cardDecoration() {
     return BoxDecoration(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: AppColors.border),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
     );
   }
   
-  // Info box decoration
+  // Info box decoration (surface background with border, smaller radius)
   static BoxDecoration infoBox() {
     return BoxDecoration(
-      color: AppColors.info.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: AppColors.info),
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppColors.border),
     );
   }
   
-  // Password requirements decoration
+  // Password requirements box decoration
   static BoxDecoration passwordRequirements() {
     return BoxDecoration(
       color: AppColors.surface,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       border: Border.all(color: AppColors.border),
     );
   }

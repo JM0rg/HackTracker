@@ -1,6 +1,6 @@
 # State Management Documentation
 
-**Part of:** [UI_ARCHITECTURE.md](../UI_ARCHITECTURE.md) - Complete frontend implementation guide
+**Part of:** [ARCHITECTURE.md](../ARCHITECTURE.md) - Complete system architecture guide
 
 This document provides a deep dive into HackTracker's Riverpod 3.0+ state management implementation, including provider architecture, caching strategies, and optimistic UI patterns.
 

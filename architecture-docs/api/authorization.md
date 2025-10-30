@@ -8,12 +8,10 @@
 ```python
 # In every handler - FRAGILE!
 check_team_role(table, user_id, team_id, [
-    'team-owner', 
-    'team-coach', 
-    'team-player', 
-    'team-assistant', 
-    'team-scorekeeper', 
-    'team-viewer'
+    'owner', 
+    'manager', 
+    'player', 
+    'scorekeeper'
 ])
 ```
 
@@ -37,9 +35,9 @@ check_team_membership(table, user_id, team_id)
 **Step 2: Centralized permission constants**
 ```python
 # In authorization.py
-MANAGE_ROSTER_ROLES = ['team-owner', 'team-coach']
-MANAGE_TEAM_ROLES = ['team-owner', 'team-coach']
-DELETE_TEAM_ROLES = ['team-owner']
+MANAGE_ROSTER_ROLES = ['owner', 'manager']
+MANAGE_TEAM_ROLES = ['owner', 'manager']
+DELETE_TEAM_ROLES = ['owner']
 
 # In handlers
 check_team_role(table, user_id, team_id, MANAGE_ROSTER_ROLES)
@@ -62,6 +60,7 @@ POLICY_MAP = {
     'manage_roster': MANAGE_ROSTER_ROLES,
     'manage_team': MANAGE_TEAM_ROLES,
     'delete_team': DELETE_TEAM_ROLES,
+    'manage_games': MANAGE_GAMES_ROLES,
 }
 ```
 
@@ -117,9 +116,9 @@ authorize(table, user_id, team_id, action='manage_roster')
 All authorization logic lives in one place: `POLICY_MAP`
 
 ```python
-# Want to add team-assistant to roster management?
+# Want to add new role to roster management?
 # Just update ONE line:
-MANAGE_ROSTER_ROLES = ['team-owner', 'team-coach', 'team-assistant']
+MANAGE_ROSTER_ROLES = ['owner', 'manager', 'assistant']
 
 # All handlers automatically get the new permission!
 ```
@@ -128,8 +127,8 @@ MANAGE_ROSTER_ROLES = ['team-owner', 'team-coach', 'team-assistant']
 Adding new roles or actions is trivial:
 
 ```python
-# Add a new role
-RECORD_STATS_ROLES = ['team-owner', 'team-coach', 'team-scorekeeper']
+# Add a new action
+RECORD_STATS_ROLES = ['owner', 'manager', 'scorekeeper']
 
 # Add to policy map
 POLICY_MAP = {
@@ -149,10 +148,10 @@ The policy map serves as documentation:
 ```python
 # Anyone can see all available actions and who can perform them
 POLICY_MAP = {
-    'manage_roster': ['team-owner', 'team-coach'],
-    'manage_team': ['team-owner', 'team-coach'],
-    'delete_team': ['team-owner'],
-    # ... more actions
+    'manage_roster': ['owner', 'manager'],
+    'manage_team': ['owner', 'manager'],
+    'delete_team': ['owner'],
+    'manage_games': ['owner', 'manager', 'scorekeeper'],
 }
 ```
 
@@ -184,25 +183,45 @@ get_user_id_from_event(event)
 
 # Backward compatibility (prefer authorize())
 check_team_role(table, user_id, team_id, required_roles)
+
+# Personal team check
+check_personal_team_operation(table, team_id, user_id, operation)
 ```
 
 **Internal Implementation:**
 ```python
-# Permission constants
-MANAGE_ROSTER_ROLES = ['team-owner', 'team-coach']
-MANAGE_TEAM_ROLES = ['team-owner', 'team-coach']
-DELETE_TEAM_ROLES = ['team-owner']
+# Permission constants for common operations
+MANAGE_ROSTER_ROLES = ['owner', 'manager']
+MANAGE_TEAM_ROLES = ['owner', 'manager']
+DELETE_TEAM_ROLES = ['owner']
+MANAGE_GAMES_ROLES = ['owner', 'manager', 'scorekeeper']
 
-# Central policy map
+# Central policy map: action → required roles
 POLICY_MAP = {
     'manage_roster': MANAGE_ROSTER_ROLES,
     'manage_team': MANAGE_TEAM_ROLES,
     'delete_team': DELETE_TEAM_ROLES,
+    'manage_games': MANAGE_GAMES_ROLES,
 }
 
 # Private helper (used by authorize())
 _check_team_role(table, user_id, team_id, required_roles)
 ```
+
+---
+
+## Current Roles
+
+### Team-Scoped Roles
+
+| Role | Permissions | Use Case |
+|------|-------------|----------|
+| **owner** | Full control, can delete team | Team creator |
+| **manager** | Manage roster, record stats, schedule games | Coach/assistant coach |
+| **player** | View team data, edit own profile | Team member |
+| **scorekeeper** | Record stats during games | Designated scorekeeper |
+
+**Note:** Roles are team-scoped. A user can have different roles on different teams.
 
 ---
 
@@ -214,7 +233,7 @@ _check_team_role(table, user_id, team_id, required_roles)
 - `src/players/get/handler.py` → `check_team_membership()`
 - `src/players/list/handler.py` → `check_team_membership()`
 
-**Write Operations (owner/coach only):**
+**Write Operations (owner/manager only):**
 - `src/players/add/handler.py` → `authorize(..., action='manage_roster')`
 - `src/players/update/handler.py` → `authorize(..., action='manage_roster')`
 - `src/players/remove/handler.py` → `authorize(..., action='manage_roster')`
@@ -227,6 +246,13 @@ _check_team_role(table, user_id, team_id, required_roles)
 **Team Deletion:**
 - `src/teams/delete/handler.py` → `authorize(..., action='delete_team')`
 
+### Game Handlers
+
+**Game Management:**
+- `src/games/create/handler.py` → `authorize(..., action='manage_games')`
+- `src/games/update/handler.py` → `authorize(..., action='manage_games')`
+- `src/games/delete/handler.py` → `authorize(..., action='manage_games')`
+
 ---
 
 ## Adding New Actions (Example)
@@ -236,7 +262,7 @@ _check_team_role(table, user_id, team_id, required_roles)
 **Step 1: Define roles**
 ```python
 # In authorization.py
-RECORD_STATS_ROLES = ['team-owner', 'team-coach', 'team-scorekeeper']
+RECORD_STATS_ROLES = ['owner', 'manager', 'scorekeeper']
 ```
 
 **Step 2: Add to policy map**
@@ -245,6 +271,7 @@ POLICY_MAP = {
     'manage_roster': MANAGE_ROSTER_ROLES,
     'manage_team': MANAGE_TEAM_ROLES,
     'delete_team': DELETE_TEAM_ROLES,
+    'manage_games': MANAGE_GAMES_ROLES,
     'record_stats': RECORD_STATS_ROLES,  # ← New!
 }
 ```
@@ -266,14 +293,14 @@ except PermissionError as e:
 
 ## Testing
 
-All authorization tests pass with the new system:
+All authorization tests pass with the v2 system:
 
 ```bash
-# Test player operations
-make test-players <userId>
+# Run unit tests
+pytest tests/ -v
 
-# Test team operations
-make test-teams <userId>
+# Test specific authorization scenarios
+pytest tests/test_players_add.py::TestAddPlayerAuthorization -v
 ```
 
 ---
@@ -319,30 +346,9 @@ authorize(..., audit=True)
 
 ---
 
-## Migration Notes
-
-**v0 → v1 (Completed):**
-- ✅ Added `check_team_membership()` for read operations
-- ✅ Created permission constants (`MANAGE_ROSTER_ROLES`, etc.)
-- ✅ Updated all handlers to use constants
-
-**v1 → v2 (Completed):**
-- ✅ Created `POLICY_MAP` central registry
-- ✅ Added `authorize()` function
-- ✅ Updated all handlers to use `authorize()`
-- ✅ Kept `check_team_role()` for backward compatibility
-- ✅ Deployed to AWS (15 Lambda functions updated)
-
-**Next Steps:**
-- Consider moving to database-driven policies
-- Add audit logging for compliance
-- Implement permission caching for performance
-
----
-
 ## See Also
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system design
-- **[DATA_MODEL.md](./DATA_MODEL.md)** - Current implementation
-- **[src/utils/authorization.py](./src/utils/authorization.py)** - Authorization implementation
+- **[ARCHITECTURE.md](../ARCHITECTURE.md)** - Complete system design
+- **[dynamodb-design.md](./dynamodb-design.md)** - Database schema
+- **[lambda-functions.md](./lambda-functions.md)** - Lambda function catalog
 

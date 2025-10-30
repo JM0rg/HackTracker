@@ -25,5 +25,17 @@ class AppColors {
   // Status colors
   static const error = Color(0xFFEF4444);
   static const success = Color(0xFF14D68E);
+  static const warning = Color(0xFFF97316); // Orange for in-progress/warnings
+  static const info = Color(0xFF64748B); // Grey for postponed/inactive
+
+  // Semantic colors for game statuses
+  static const statusScheduled = primary; // Green
+  static const statusInProgress = warning; // Orange
+  static const statusFinal = success; // Green
+  static const statusPostponed = info; // Grey
+
+  // Player/User status colors
+  static const linkedUserColor = success; // Green for linked accounts
+  static const guestUserColor = info; // Grey for guest players
 }
 

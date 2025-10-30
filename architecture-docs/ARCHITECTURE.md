@@ -11,16 +11,22 @@
 
 ## 📚 Documentation Index
 
-### Core Architecture
-- **[dynamodb-design.md](./dynamodb-design.md)** - Single-table design, GSIs, query patterns
-- **[authorization.md](./authorization.md)** - v2 Policy Engine, role-based access control
-- **[caching.md](./caching.md)** - Frontend caching, optimistic UI, state management
+### Getting Started
+- **[DATA_MODEL.md](../DATA_MODEL.md)** - Current implementation snapshot (start here!)
+- **[TESTING.md](../TESTING.md)** - Testing guide (pytest, moto, 72% coverage)
+- **[OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md)** - Optimistic UI patterns
 
-### Implementation Guides
-- **[DATA_MODEL.md](../DATA_MODEL.md)** - Current entities, Lambda functions, API routes
-- **[TESTING.md](../TESTING.md)** - Local and cloud testing workflows
-- **[OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md)** - Detailed optimistic UI patterns
-- **[RIVERPOD_V3_MIGRATION.md](./RIVERPOD_V3_MIGRATION.md)** - Riverpod v2 to v3 migration guide
+### Backend / API
+- **[api/dynamodb-design.md](./api/dynamodb-design.md)** - Single-table design, GSIs, query patterns
+- **[api/authorization.md](./api/authorization.md)** - v2 Policy Engine, RBAC
+- **[api/lambda-functions.md](./api/lambda-functions.md)** - All 21 Lambda functions
+
+### Frontend / UI
+- **[ui/state-management.md](./ui/state-management.md)** - Riverpod 3.0+ patterns
+- **[ui/screens.md](./ui/screens.md)** - Screen catalog and navigation
+- **[ui/widgets.md](./ui/widgets.md)** - Reusable component library
+- **[ui/styling.md](./ui/styling.md)** - Theme system and colors
+- **[ui/forms.md](./ui/forms.md)** - Form patterns and dialogs
 
 ---
 
@@ -79,16 +85,21 @@ Aggregation Lambdas (Future)
 
 ## 🧠 3. Domain Model
 
-### Core Entities
+### Implemented Entities ✅
 
 | Entity        | Description                                                                |
 | ------------- | -------------------------------------------------------------------------- |
 | **User**      | Registered app user (Cognito account) - can own/join multiple teams       |
 | **Player**    | Roster slot on a team - can be "ghost" (unlinked) or linked to a User     |
 | **Team**      | Collection of players, schedule, stats - owned by a User. Can be MANAGED (full roster) or PERSONAL (stat filtering label) |
+| **Game**      | Individual match with scheduledStart, opponent, location, scores, and lineup |
+
+### Future Features (Planned, Not Yet Implemented)
+
+| Entity        | Description                                                                |
+| ------------- | -------------------------------------------------------------------------- |
 | **League**    | Organizer of multiple teams, seasons, and tournaments                      |
 | **Season**    | Group of games belonging to either a team or league                        |
-| **Game**      | Individual match (may belong to a league season or team season)            |
 | **AtBat**     | Single play event (atomic unit of stat tracking) - always linked to Player |
 | **FreeAgent** | Player advertising availability to teams                                   |
 | **Invite**    | Pending invitation to join a team (email-based, 1 week expiration)         |
@@ -117,7 +128,7 @@ Aggregation Lambdas (Future)
 5. User leaves Team → link broken, but Player + at-bats remain for team
 6. User can still query their historical stats from that Team
 
-**See:** [dynamodb-design.md](./dynamodb-design.md) for data model details
+**See:** [api/dynamodb-design.md](./api/dynamodb-design.md) for data model details
 
 ---
 
@@ -127,13 +138,11 @@ HackTracker uses a **v2 Policy Engine** for authorization.
 
 ### Key Concepts
 
-**Team-Scoped Roles:**
-- `team-owner` - Full control, can delete team
-- `team-coach` - Manage roster, record stats
-- `team-player` - View team data, edit own profile
-- `team-assistant` - Record stats, view roster (no edits)
-- `team-scorekeeper` - Record at-bats during games only
-- `team-viewer` - Read-only access (parents, fans)
+**Team-Scoped Roles (Implemented):**
+- `owner` - Full control, can delete team
+- `manager` - Manage roster, schedule games, record stats
+- `player` - View team data, edit own profile
+- `scorekeeper` - Record stats during games
 
 **Policy Engine Pattern:**
 ```python
@@ -142,6 +151,13 @@ authorize(table, user_id, team_id, action='manage_roster')
 
 # They don't need to know WHO can do X
 # That's defined in the central POLICY_MAP
+
+POLICY_MAP = {
+    'manage_roster': ['owner', 'manager'],
+    'manage_team': ['owner', 'manager'],
+    'delete_team': ['owner'],
+    'manage_games': ['owner', 'manager', 'scorekeeper'],
+}
 ```
 
 **Benefits:**
@@ -150,7 +166,7 @@ authorize(table, user_id, team_id, action='manage_roster')
 - ✅ Future-proof - add roles without touching handlers
 - ✅ Self-documenting - policy map shows all permissions
 
-**See:** [authorization.md](./authorization.md) for complete details
+**See:** [api/authorization.md](./api/authorization.md) for complete details
 
 ---
 
@@ -168,10 +184,10 @@ All entities stored in one DynamoDB table for optimal performance and cost effic
 
 **Global Secondary Indexes (5):**
 1. **GSI1** - User lookup by Cognito sub (login flow)
-2. **GSI2** - Entity listing (generic queries)
-3. **GSI3** - Geographic search (reserved for free agents)
-4. **GSI4** - User's players (cross-team stats)
-5. **GSI5** - Player's at-bats (stat aggregation)
+2. **GSI2** - Entity listing (generic queries for users, teams, games)
+3. **GSI3** - Games by team (team schedule and game history) ✅
+4. **GSI4** - User's players (cross-team stats) - Reserved for future
+5. **GSI5** - Player's at-bats (stat aggregation) - Reserved for future
 
 **Key Principles:**
 - Most queries use PK/SK directly (no GSI needed)
@@ -179,7 +195,7 @@ All entities stored in one DynamoDB table for optimal performance and cost effic
 - Conditional writes prevent race conditions
 - Cognito sub used as userId (no cross-referencing)
 
-**See:** [dynamodb-design.md](./dynamodb-design.md) for complete schema
+**See:** [api/dynamodb-design.md](./api/dynamodb-design.md) for complete schema
 
 ---
 
@@ -222,7 +238,9 @@ await notifier.mutate(
 );
 ```
 
-**See:** [caching.md](./caching.md) for implementation details
+**See:** 
+- [ui/state-management.md](./ui/state-management.md) for Riverpod patterns
+- [OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md) for detailed implementation
 
 ---
 
@@ -329,45 +347,62 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 
 ## ⚙️ 10. Lambda Functions
 
-### Implemented (MVP Complete)
+### Implemented ✅ (21 functions)
 
-**User Management:**
+**User Management (6):**
 - `create-user` - Cognito post-confirmation trigger
 - `get-user` - Retrieve user profile
 - `query-users` - List/search users
 - `update-user` - Update user profile
-- `delete-user` - Soft delete user
+- `delete-user` - Delete user
+- `context-user` - Get user context for UI
 
-**Team Management:**
+**Team Management (5):**
 - `create-team` - Create team + owner membership (atomic)
 - `get-team` - Retrieve team by ID
 - `query-teams` - List teams (all or by user)
 - `update-team` - Update team metadata
-- `delete-team` - Soft delete team
+- `delete-team` - Delete team
 
-**Player Management:**
+**Player Management (5):**
 - `add-player` - Add ghost player to roster
-- `list-players` - List team roster
+- `list-players` - List team roster (with optional roles)
 - `get-player` - Retrieve player by ID
 - `update-player` - Update player details
 - `remove-player` - Remove ghost player
 
+**Game Management (5):**
+- `create-game` - Create game for team
+- `list-games` - List games by team
+- `get-game` - Retrieve game by ID
+- `update-game` - Update game details
+- `delete-game` - Delete game
+
 ### Planned (Future)
 
+**Player Invitations:**
 - `invite-player` - Send invite link/email
-- `join-team` - Add player to roster
+- `link-player` - Link user to roster slot
+
+**Seasons & Stats:**
 - `create-season` - Create season (team or league context)
 - `update-season` - Update season metadata
-- `record-game` - Add game + at-bats
-- `sync-league-season` - Mirror league seasons/games to teams
+- `record-atbat` - Record individual play event
+- `aggregate-stats` - Compute averages, slugging, etc.
 - `get-dashboard` - Fetch stats for user/team/league
+
+**League Management:**
+- `create-league` - Create league
+- `sync-league-season` - Mirror league seasons/games to teams
+
+**Free Agency:**
 - `join-free-agency` - Add user to FA pool
 - `search-free-agents` - Query regional pool
 - `invite-sub` - Invite free agent to team
-- `accept-sub` - Join as sub
-- `aggregate-stats` - Compute averages, slugging, etc.
 
-**See:** [DATA_MODEL.md](../DATA_MODEL.md) for current implementation status
+**See:** 
+- [DATA_MODEL.md](../DATA_MODEL.md) for current implementation snapshot
+- [api/lambda-functions.md](./api/lambda-functions.md) for complete API documentation
 
 ---
 
@@ -384,26 +419,27 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 
 ### Phase 1 Progress (MVP) ✅
 
-- [x] User CRUD operations
+**Completed:**
+- [x] User CRUD operations (6 Lambda functions)
 - [x] Cognito post-confirmation trigger
-- [x] API Gateway integration
+- [x] API Gateway integration with JWT authorizer
 - [x] Local development environment
-- [x] Test infrastructure
-- [x] Team CRUD operations
+- [x] Test infrastructure (pytest + moto, 72% coverage)
+- [x] Team CRUD operations (5 Lambda functions)
 - [x] Team ownership & atomic membership creation
 - [x] Role-based authorization (v2 Policy Engine)
-- [x] Soft delete with 30-day recovery
-- [x] Player roster management (full CRUD)
-- [x] Frontend persistent caching
-- [x] Optimistic UI updates
-- [x] JWT authentication with API Gateway authorizer
-- [x] Team type system (MANAGED/PERSONAL) for flexible stat filtering
-- [x] Player name validation (supports apostrophes, periods, accented chars)
-- [x] Lambda warm-start optimization (global DynamoDB client)
-- [x] Centralized styling system (Material 3 theme + custom extensions)
+- [x] Team type system (MANAGED/PERSONAL)
+- [x] Player roster management (5 Lambda functions)
+- [x] Game management (5 Lambda functions)
+- [x] Frontend persistent caching (SWR pattern)
+- [x] Optimistic UI updates (race-condition-safe)
+- [x] Lambda warm-start optimization
+- [x] Centralized styling system (Material 3)
+- [x] Dynamic team view with tabs (Stats, Schedule, Roster, Chat)
+
+**Next Up (Phase 2):**
 - [ ] Player invitations and linking
 - [ ] Season management
-- [ ] Game recording
 - [ ] At-bat tracking
 - [ ] Basic stat aggregation
 
@@ -543,22 +579,38 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 - [Terraform AWS Lambda Module](https://registry.terraform.io/modules/terraform-aws-modules/lambda/aws/latest)
 
 ### Internal Guides
-- **[dynamodb-design.md](./dynamodb-design.md)** - Complete DynamoDB schema and query patterns
-- **[authorization.md](./authorization.md)** - v2 Policy Engine implementation
-- **[caching.md](./caching.md)** - Frontend caching and optimistic UI
-- **[DATA_MODEL.md](../DATA_MODEL.md)** - Current implementation snapshot
-- **[TESTING.md](../TESTING.md)** - Local and cloud testing workflows
-- **[OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md)** - Detailed optimistic UI patterns
+
+**Getting Started:**
+- **[DATA_MODEL.md](../DATA_MODEL.md)** - Current implementation snapshot (start here!)
+- **[TESTING.md](../TESTING.md)** - Testing guide (pytest, moto, 72% coverage)
+- **[OPTIMISTIC_UI_GUIDE.md](../OPTIMISTIC_UI_GUIDE.md)** - Optimistic UI patterns
+
+**Backend / API:**
+- **[api/dynamodb-design.md](./api/dynamodb-design.md)** - Complete DynamoDB schema and query patterns
+- **[api/authorization.md](./api/authorization.md)** - v2 Policy Engine implementation
+- **[api/lambda-functions.md](./api/lambda-functions.md)** - All 21 Lambda functions
+
+**Frontend / UI:**
+- **[ui/state-management.md](./ui/state-management.md)** - Riverpod 3.0+ patterns
+- **[ui/screens.md](./ui/screens.md)** - Screen catalog and navigation
+- **[ui/widgets.md](./ui/widgets.md)** - Reusable component library
+- **[ui/styling.md](./ui/styling.md)** - Theme system and colors
+- **[ui/forms.md](./ui/forms.md)** - Form patterns and dialogs
 
 ---
 
 ## 🎯 Next Steps
 
-**Current Focus:** Phase 2 - Stats Implementation
-- [ ] Season management (create, update, list)
-- [ ] Game recording (create game, link to season)
-- [ ] At-bat tracking (record individual plays)
+**Current Status:** Phase 1 (MVP) Complete ✅  
+**Next Focus:** Phase 2 - Stats Implementation
+
+**Immediate Priorities:**
+- [ ] Player invitations and linking (connect users to roster slots)
+- [ ] Season management (create, update, list seasons)
+- [ ] At-bat tracking (record individual plays during games)
 - [ ] Basic stat aggregation (batting average, slugging, etc.)
 - [ ] Player dashboard (stats across all teams)
 
-**See:** [DATA_MODEL.md](../DATA_MODEL.md) for detailed implementation status
+**See:** 
+- [DATA_MODEL.md](../DATA_MODEL.md) for detailed implementation status
+- [api/lambda-functions.md](./api/lambda-functions.md) for complete API documentation

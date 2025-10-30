@@ -81,4 +81,157 @@ class PlayerNumberAvatar extends StatelessWidget {
   }
 }
 
+/// Generic status badge with customizable color and text
+class StatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  final double fontSize;
+
+  const StatusBadge({
+    super.key,
+    required this.label,
+    required this.color,
+    this.fontSize = 10,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+/// Game status badge with predefined colors
+class GameStatusBadge extends StatelessWidget {
+  final String status;
+
+  const GameStatusBadge({super.key, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    String label;
+
+    switch (status) {
+      case 'SCHEDULED':
+        color = AppColors.statusScheduled;
+        label = 'SCHEDULED';
+        break;
+      case 'IN_PROGRESS':
+        color = AppColors.statusInProgress;
+        label = 'LIVE';
+        break;
+      case 'FINAL':
+        color = AppColors.statusFinal;
+        label = 'FINAL';
+        break;
+      case 'POSTPONED':
+        color = AppColors.statusPostponed;
+        label = 'POSTPONED';
+        break;
+      default:
+        color = AppColors.textTertiary;
+        label = status;
+    }
+
+    return StatusBadge(label: label, color: color);
+  }
+}
+
+/// Section header with uppercase text and primary color
+class SectionHeader extends StatelessWidget {
+  final String text;
+  final double? letterSpacing;
+
+  const SectionHeader({
+    super.key,
+    required this.text,
+    this.letterSpacing = 1.2,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: AppColors.primary,
+        letterSpacing: letterSpacing,
+      ),
+    );
+  }
+}
+
+/// Reusable list item card with icon, title, trailing icon
+class ListItemCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final Widget? trailing;
+
+  const ListItemCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: AppColors.primary, size: 22),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle!,
+                style: Theme.of(context).textTheme.labelSmall,
+              )
+            : null,
+        trailing: trailing ??
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textTertiary,
+            ),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// Themed loading indicator
+class LoadingIndicator extends StatelessWidget {
+  const LoadingIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const CircularProgressIndicator(color: AppColors.primary);
+  }
+}
+
 

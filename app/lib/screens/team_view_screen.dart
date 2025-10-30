@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hacktracker/services/api_service.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_colors.dart';
+import '../theme/decoration_styles.dart';
 import '../providers/team_providers.dart';
 import '../providers/player_providers.dart';
 import '../providers/game_providers.dart';
 import '../widgets/player_form_dialog.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/game_form_dialog.dart';
+import '../widgets/ui_helpers.dart';
 
 /// Team View - Shows team-specific stats, schedule, roster, and chat
 class TeamViewScreen extends ConsumerStatefulWidget {
@@ -162,11 +164,7 @@ class _PlaceholderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+      decoration: DecorationStyles.surfaceContainer(),
       child: Column(
         children: [
           Icon(icon, size: 48, color: AppColors.textTertiary),
@@ -330,13 +328,7 @@ class _GameListView extends StatelessWidget {
           children: [
             for (var entry in groupedGames.entries) ...[
               if (entry != groupedGames.entries.first) const SizedBox(height: 24),
-              Text(
-                entry.key.toUpperCase(),
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.primary,
-                  letterSpacing: 1.2,
-                ),
-              ),
+              SectionHeader(text: entry.key),
               const SizedBox(height: 12),
               ...entry.value.map((game) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -382,11 +374,7 @@ class _GameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
-      ),
+      decoration: DecorationStyles.surfaceContainerSmall(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -468,57 +456,6 @@ class _GameCard extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  final String status;
-
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color;
-    String label;
-
-    switch (status) {
-      case 'SCHEDULED':
-        color = AppColors.primary;
-        label = 'SCHEDULED';
-        break;
-      case 'IN_PROGRESS':
-        color = Colors.orange;
-        label = 'LIVE';
-        break;
-      case 'FINAL':
-        color = Colors.green;
-        label = 'FINAL';
-        break;
-      case 'POSTPONED':
-        color = Colors.grey;
-        label= 'POSTPONED';
-        break;
-      default:
-        color = AppColors.textTertiary;
-        label = status;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}
-
 class _GameCalendarView extends StatelessWidget {
   final Team team;
   final AsyncValue<List<Game>> gamesAsync;
@@ -568,11 +505,7 @@ class _RosterTab extends ConsumerWidget {
         Container(
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.border),
-          ),
+          decoration: DecorationStyles.surfaceContainerSmall(),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -580,7 +513,7 @@ class _RosterTab extends ConsumerWidget {
                 width: 12,
                 height: 12,
                 decoration: const BoxDecoration(
-                  color: Colors.green,
+                  color: AppColors.linkedUserColor,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -593,8 +526,8 @@ class _RosterTab extends ConsumerWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade600,
+                decoration: const BoxDecoration(
+                  color: AppColors.guestUserColor,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -709,15 +642,11 @@ class _RosterPlayerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLinked = player.userId != null;
-    final numberColor = isLinked ? Colors.green : Colors.grey.shade600;
+    final numberColor = isLinked ? AppColors.linkedUserColor : AppColors.guestUserColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
-      ),
+      decoration: DecorationStyles.surfaceContainerSmall(),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
