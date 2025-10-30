@@ -16,11 +16,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from botocore.exceptions import ClientError
 from utils import get_table, create_response
-from utils.validation import validate_game_title, validate_game_status, validate_score, validate_lineup
+from utils.validation import validate_game_status, validate_score, validate_lineup
 from utils.authorization import get_user_id_from_event, authorize, PermissionError
 
 # Fields that are allowed to be updated
-ALLOWED_FIELDS = {'gameTitle', 'status', 'scheduledStart', 'opponentName', 'location', 'teamScore', 'opponentScore', 'lineup', 'seasonId'}
+ALLOWED_FIELDS = {'status', 'scheduledStart', 'opponentName', 'location', 'teamScore', 'opponentScore', 'lineup', 'seasonId'}
 
 # Fields that are read-only (cannot be updated)
 READONLY_FIELDS = {'gameId', 'teamId', 'createdAt', 'updatedAt', 'PK', 'SK', 'GSI1PK', 'GSI1SK', 'GSI2PK', 'GSI2SK', 'GSI3PK', 'GSI3SK', 'GSI4PK', 'GSI4SK', 'GSI5PK', 'GSI5SK'}
@@ -78,8 +78,8 @@ def handler(event, context):
     """
     Lambda handler for PATCH /games/{gameId}
     
-    Allows updating: gameTitle, status, scheduledStart, opponentName, location, teamScore, opponentScore, lineup, seasonId
-    Requires: team-owner, team-coach, or team-scorekeeper role
+    Allows updating: status, scheduledStart, opponentName, location, teamScore, opponentScore, lineup, seasonId
+    Requires: owner, manager, or scorekeeper role
     Automatically updates: updatedAt
     Read-only: gameId, teamId, createdAt, GSI*
     
@@ -211,15 +211,8 @@ def handler(event, context):
         # Validate and add user-provided fields
         for field, value in body.items():
             if field in ALLOWED_FIELDS:
-                # Validate gameTitle
-                if field == 'gameTitle':
-                    try:
-                        value = validate_game_title(value)
-                    except ValueError as e:
-                        return create_response(400, {'error': str(e)})
-                
                 # Validate status
-                elif field == 'status':
+                if field == 'status':
                     try:
                         value = validate_game_status(value)
                     except ValueError as e:
@@ -302,7 +295,6 @@ def handler(event, context):
         game_data = {
             'gameId': updated_item.get('gameId'),
             'teamId': updated_item.get('teamId'),
-            'gameTitle': updated_item.get('gameTitle'),
             'status': updated_item.get('status'),
             'teamScore': updated_item.get('teamScore', 0),
             'opponentScore': updated_item.get('opponentScore', 0),

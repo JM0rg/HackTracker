@@ -260,48 +260,6 @@ def validate_player_positions(positions):
     return normalized
 
 
-def validate_game_title(title):
-    """
-    Validate game title
-    
-    Rules:
-    - 3-100 characters
-    - Letters, numbers, spaces, and common punctuation only
-    - Automatically trims whitespace
-    - Collapses multiple spaces into single space
-    
-    Args:
-        title (str): Game title to validate
-        
-    Returns:
-        str: Cleaned game title
-        
-    Raises:
-        ValueError: If validation fails
-    """
-    if not title or not isinstance(title, str):
-        raise ValueError("Game title is required and must be a string")
-    
-    # Remove leading/trailing whitespace
-    title = title.strip()
-    
-    # Collapse multiple spaces into single space
-    title = re.sub(r'\s+', ' ', title)
-    
-    # Check length
-    if len(title) < 3:
-        raise ValueError("Game title must be at least 3 characters")
-    
-    if len(title) > 100:
-        raise ValueError("Game title must not exceed 100 characters")
-    
-    # Check allowed characters (letters, numbers, spaces, common punctuation)
-    if not re.match(r'^[a-zA-Z0-9\s\-\.\,\:\!\?]+$', title):
-        raise ValueError("Game title can only contain letters, numbers, spaces, and common punctuation")
-    
-    return title
-
-
 def validate_game_status(status):
     """
     Validate game status

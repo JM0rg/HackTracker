@@ -84,7 +84,6 @@ class GamesNotifier extends AsyncNotifier<List<Game>> {
 
   /// Create a new game with optimistic update
   Future<Game?> createGame({
-    required String gameTitle,
     String? status,
     int? teamScore,
     int? opponentScore,
@@ -98,7 +97,6 @@ class GamesNotifier extends AsyncNotifier<List<Game>> {
     final temp = Game(
       gameId: 'temp-${DateTime.now().microsecondsSinceEpoch}',
       teamId: _teamId,
-      gameTitle: gameTitle,
       status: status ?? 'SCHEDULED',
       teamScore: teamScore ?? 0,
       opponentScore: opponentScore ?? 0,
@@ -119,7 +117,6 @@ class GamesNotifier extends AsyncNotifier<List<Game>> {
       final api = ref.read(apiServiceProvider);
       final newGame = await api.createGame(
         teamId: _teamId,
-        gameTitle: gameTitle,
         status: status,
         teamScore: teamScore,
         opponentScore: opponentScore,
@@ -161,7 +158,6 @@ class GamesNotifier extends AsyncNotifier<List<Game>> {
   /// Update an existing game with optimistic update
   Future<Game?> updateGame({
     required String gameId,
-    String? gameTitle,
     String? status,
     int? teamScore,
     int? opponentScore,
@@ -181,7 +177,6 @@ class GamesNotifier extends AsyncNotifier<List<Game>> {
           Game(
             gameId: g.gameId,
             teamId: g.teamId,
-            gameTitle: gameTitle ?? g.gameTitle,
             status: status ?? g.status,
             teamScore: teamScore ?? g.teamScore,
             opponentScore: opponentScore ?? g.opponentScore,
@@ -202,7 +197,6 @@ class GamesNotifier extends AsyncNotifier<List<Game>> {
       final api = ref.read(apiServiceProvider);
       final updatedGame = await api.updateGame(
         gameId: gameId,
-        gameTitle: gameTitle,
         status: status,
         teamScore: teamScore,
         opponentScore: opponentScore,

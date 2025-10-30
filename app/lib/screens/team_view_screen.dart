@@ -215,7 +215,7 @@ class _ScheduleTabState extends ConsumerState<_ScheduleTab> {
           children: [
             // View toggle
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
               child: SegmentedButton<bool>(
                 segments: const [
                   ButtonSegment(value: true, label: Text('LIST'), icon: Icon(Icons.list)),
@@ -261,6 +261,37 @@ class _GameListView extends StatelessWidget {
 
   const _GameListView({required this.team, required this.gamesAsync});
 
+  Map<String, List<Game>> _groupGamesByDateRange(List<Game> games) {
+    final now = DateTime.now();
+    final thisWeekEnd = now.add(Duration(days: 7 - now.weekday));
+    final nextWeekEnd = thisWeekEnd.add(const Duration(days: 7));
+    
+    final Map<String, List<Game>> grouped = {
+      'This Week': [],
+      'Next Week': [],
+      'Later': [],
+    };
+    
+    // Only include scheduled games
+    final scheduledGames = games.where((g) => g.status == 'SCHEDULED').toList();
+    
+    for (final game in scheduledGames) {
+      if (game.scheduledStart == null) {
+        grouped['Later']!.add(game);
+      } else if (game.scheduledStart!.isBefore(thisWeekEnd)) {
+        grouped['This Week']!.add(game);
+      } else if (game.scheduledStart!.isBefore(nextWeekEnd)) {
+        grouped['Next Week']!.add(game);
+      } else {
+        grouped['Later']!.add(game);
+      }
+    }
+    
+    // Remove empty groups
+    grouped.removeWhere((key, value) => value.isEmpty);
+    return grouped;
+  }
+
   @override
   Widget build(BuildContext context) {
     return gamesAsync.when(
@@ -292,39 +323,22 @@ class _GameListView extends StatelessWidget {
           );
         }
 
-        // Split into upcoming and completed
-        final now = DateTime.now();
-        final upcoming = games.where((g) => 
-          g.status == 'SCHEDULED' && (g.scheduledStart == null || g.scheduledStart!.isAfter(now))
-        ).toList();
-        final completed = games.where((g) => g.status == 'FINAL').toList();
+        final groupedGames = _groupGamesByDateRange(games);
 
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
           children: [
-            if (upcoming.isNotEmpty) ...[
+            for (var entry in groupedGames.entries) ...[
+              if (entry != groupedGames.entries.first) const SizedBox(height: 24),
               Text(
-                'UPCOMING GAMES',
+                entry.key.toUpperCase(),
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: AppColors.primary,
+                  letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(height: 8),
-              ...upcoming.map((game) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _GameCard(game: game),
-              )),
-              const SizedBox(height: 24),
-            ],
-            if (completed.isNotEmpty) ...[
-              Text(
-                'COMPLETED GAMES',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...completed.map((game) => Padding(
+              const SizedBox(height: 12),
+              ...entry.value.map((game) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _GameCard(game: game),
               )),
@@ -341,10 +355,33 @@ class _GameCard extends StatelessWidget {
 
   const _GameCard({required this.game});
 
+  String _formatGameDate(DateTime date) {
+    final day = DateFormat('EEEE').format(date);
+    final month = DateFormat('MMMM').format(date);
+    final dayNum = date.day;
+    final suffix = _getDaySuffix(dayNum);
+    
+    return '$day, $month $dayNum$suffix';
+  }
+
+  String _formatTime(DateTime date) {
+    return DateFormat.jm().format(date);
+  }
+
+  String _getDaySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
@@ -353,49 +390,53 @@ class _GameCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  game.gameTitle,
+          if (game.scheduledStart != null) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date on the left
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          _formatGameDate(game.scheduledStart!),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Time on the right - larger and more prominent
+                Text(
+                  _formatTime(game.scheduledStart!),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            children: [
+              const Icon(Icons.people, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                'vs ${game.opponentName ?? 'TBD'}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-              _StatusBadge(status: game.status),
             ],
           ),
-          if (game.scheduledStart != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  '${game.scheduledStart!.month}/${game.scheduledStart!.day}/${game.scheduledStart!.year} ${DateFormat.jm().format(game.scheduledStart!)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          if (game.opponentName != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.people, size: 16, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  'vs ${game.opponentName}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
           if (game.location != null) ...[
             const SizedBox(height: 4),
             Row(
@@ -545,7 +586,7 @@ class _RosterTab extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Linked Player',
+                'Has Account',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(width: 16),
@@ -559,7 +600,7 @@ class _RosterTab extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                'Guest Player',
+                'No Account',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],

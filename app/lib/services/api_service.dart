@@ -375,7 +375,6 @@ class ApiService {
   /// Create a new game
   Future<Game> createGame({
     String? teamId,
-    required String gameTitle,
     String? status,
     int? teamScore,
     int? opponentScore,
@@ -385,9 +384,7 @@ class ApiService {
     String? seasonId,
     List<dynamic>? lineup,
   }) async {
-    final body = <String, dynamic>{
-      'gameTitle': gameTitle,
-    };
+    final body = <String, dynamic>{};
 
     if (teamId != null) body['teamId'] = teamId;
     if (status != null) body['status'] = status;
@@ -412,7 +409,6 @@ class ApiService {
   /// Update an existing game
   Future<Game> updateGame({
     required String gameId,
-    String? gameTitle,
     String? status,
     int? teamScore,
     int? opponentScore,
@@ -424,7 +420,6 @@ class ApiService {
   }) async {
     final body = <String, dynamic>{};
 
-    if (gameTitle != null) body['gameTitle'] = gameTitle;
     if (status != null) body['status'] = status;
     if (teamScore != null) body['teamScore'] = teamScore;
     if (opponentScore != null) body['opponentScore'] = opponentScore;
@@ -642,7 +637,6 @@ class Player {
 class Game {
   final String gameId;
   final String teamId;
-  final String gameTitle;
   final String status; // SCHEDULED, IN_PROGRESS, FINAL, POSTPONED
   final int teamScore;
   final int opponentScore;
@@ -657,7 +651,6 @@ class Game {
   Game({
     required this.gameId,
     required this.teamId,
-    required this.gameTitle,
     required this.status,
     required this.teamScore,
     required this.opponentScore,
@@ -674,7 +667,6 @@ class Game {
     return Game(
       gameId: json['gameId'] as String,
       teamId: json['teamId'] as String,
-      gameTitle: json['gameTitle'] as String,
       status: json['status'] as String,
       teamScore: (json['teamScore'] as num?)?.toInt() ?? 0,
       opponentScore: (json['opponentScore'] as num?)?.toInt() ?? 0,
@@ -694,7 +686,6 @@ class Game {
     return {
       'gameId': gameId,
       'teamId': teamId,
-      'gameTitle': gameTitle,
       'status': status,
       'teamScore': teamScore,
       'opponentScore': opponentScore,

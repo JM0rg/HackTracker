@@ -22,7 +22,6 @@ class GameFormDialog extends ConsumerStatefulWidget {
 }
 
 class _GameFormDialogState extends ConsumerState<GameFormDialog> {
-  late final TextEditingController _titleController;
   late final TextEditingController _opponentController;
   late final TextEditingController _locationController;
   late String _status;
@@ -35,7 +34,6 @@ class _GameFormDialogState extends ConsumerState<GameFormDialog> {
   void initState() {
     super.initState();
     final game = widget.game;
-    _titleController = TextEditingController(text: game?.gameTitle ?? '');
     _opponentController = TextEditingController(text: game?.opponentName ?? '');
     _locationController = TextEditingController(text: game?.location ?? '');
     _status = game?.status ?? 'SCHEDULED';
@@ -46,7 +44,6 @@ class _GameFormDialogState extends ConsumerState<GameFormDialog> {
 
   @override
   void dispose() {
-    _titleController.dispose();
     _opponentController.dispose();
     _locationController.dispose();
     _teamScoreController.dispose();
@@ -85,13 +82,6 @@ class _GameFormDialogState extends ConsumerState<GameFormDialog> {
   }
 
   Future<void> _submit() async {
-    if (_titleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Game title is required')),
-      );
-      return;
-    }
-
     setState(() => _isSubmitting = true);
 
     try {
@@ -100,7 +90,6 @@ class _GameFormDialogState extends ConsumerState<GameFormDialog> {
       if (widget.game == null) {
         // Create mode
         await notifier.createGame(
-          gameTitle: _titleController.text.trim(),
           status: _status,
           teamScore: int.tryParse(_teamScoreController.text) ?? 0,
           opponentScore: int.tryParse(_opponentScoreController.text) ?? 0,
@@ -112,7 +101,6 @@ class _GameFormDialogState extends ConsumerState<GameFormDialog> {
         // Edit mode
         await notifier.updateGame(
           gameId: widget.game!.gameId,
-          gameTitle: _titleController.text.trim(),
           status: _status,
           teamScore: int.tryParse(_teamScoreController.text) ?? 0,
           opponentScore: int.tryParse(_opponentScoreController.text) ?? 0,
@@ -147,17 +135,10 @@ class _GameFormDialogState extends ConsumerState<GameFormDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AppTextField(
-              controller: _titleController,
-              labelText: 'GAME TITLE',
-              hintText: 'e.g., "vs Tigers" or "Home Game 1"',
-              autofocus: !isEditMode,
-              enabled: !_isSubmitting,
-            ),
-            const SizedBox(height: 16),
-            AppTextField(
               controller: _opponentController,
               labelText: 'OPPONENT NAME (Optional)',
               hintText: 'Enter opponent team name',
+              autofocus: !isEditMode,
               enabled: !_isSubmitting,
             ),
             const SizedBox(height: 16),

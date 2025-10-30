@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 from utils import get_table, create_response
-from utils.validation import validate_game_title, validate_game_status, validate_score, validate_lineup
+from utils.validation import validate_game_status, validate_score, validate_lineup
 from utils.authorization import get_user_id_from_event, authorize, PermissionError
 
 
@@ -55,9 +55,7 @@ def handler(event, context):
         except json.JSONDecodeError:
             return create_response(400, {'error': 'Invalid JSON in request body'})
         
-        # Validate required fields
-        if not body.get('gameTitle'):
-            return create_response(400, {'error': 'gameTitle is required'})
+        # No required fields in body - teamId is optional
         
         # Get table reference
         table = get_table()
@@ -103,12 +101,6 @@ def handler(event, context):
                 'userId': user_id,
                 'teamId': team_id
             }))
-        
-        # Validate game title
-        try:
-            game_title = validate_game_title(body['gameTitle'])
-        except ValueError as e:
-            return create_response(400, {'error': str(e)})
         
         # Authorize: check if user can manage games for this team
         try:
@@ -161,7 +153,6 @@ def handler(event, context):
             'SK': 'METADATA',
             'gameId': game_id,
             'teamId': team_id,
-            'gameTitle': game_title,
             'status': status,
             'teamScore': team_score,
             'opponentScore': opponent_score,
@@ -192,7 +183,6 @@ def handler(event, context):
             'message': 'Creating game',
             'gameId': game_id,
             'teamId': team_id,
-            'gameTitle': game_title,
             'status': status
         }))
         
@@ -217,7 +207,6 @@ def handler(event, context):
         response_data = {
             'gameId': game_id,
             'teamId': team_id,
-            'gameTitle': game_title,
             'status': status,
             'teamScore': team_score,
             'opponentScore': opponent_score,

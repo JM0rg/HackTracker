@@ -98,7 +98,6 @@ def handler(event, context):
             game_response = {
                 'gameId': game['gameId'],
                 'teamId': game['teamId'],
-                'gameTitle': game['gameTitle'],
                 'status': game['status'],
                 'teamScore': game.get('teamScore', 0),
                 'opponentScore': game.get('opponentScore', 0),
