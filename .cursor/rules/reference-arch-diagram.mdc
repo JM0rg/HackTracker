@@ -2,6 +2,6 @@
 alwaysApply: true
 ---
 
-Always reference every file in /architecture-docs before implementing features or making new changes. Always follow up any code changes by seeing if anything needs to be updated in the /architecture-docs folder.
+Always reference every file in /architecture-docs folder, and all sub-folders, before implementing features or making new changes. Always follow up any code changes by seeing if anything needs to be updated in the /architecture-docs folder, and all sub-folders.
 
 For new AI sessions with zero context, start with reviewing teh architecture-docs.

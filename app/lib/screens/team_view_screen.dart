@@ -239,8 +239,11 @@ class _ScheduleTabState extends ConsumerState<_ScheduleTab> {
             bottom: 16,
             child: FloatingActionButton(
               onPressed: () async {
-                await showDialog(
+                await showModalBottomSheet(
                   context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  enableDrag: true,
                   builder: (_) => GameFormDialog(teamId: widget.team.teamId),
                 );
               },
@@ -547,8 +550,11 @@ class _RosterTab extends ConsumerWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () async {
-                  await showDialog(
+                  await showModalBottomSheet(
                     context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    enableDrag: true,
                     builder: (_) => PlayerFormDialog(teamId: team.teamId),
                   );
                 },
@@ -590,8 +596,11 @@ class _RosterTab extends ConsumerWidget {
                       player: players[index],
                       canManage: team.isOwner,
                       onEdit: () async {
-                        await showDialog(
+                        await showModalBottomSheet(
                           context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          enableDrag: true,
                           builder: (_) => PlayerFormDialog(
                             teamId: team.teamId,
                             player: players[index],

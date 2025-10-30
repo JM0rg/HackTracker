@@ -4,7 +4,6 @@ import '../services/api_service.dart';
 import '../providers/game_providers.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_input_fields.dart';
-import '../widgets/form_dialog.dart';
 
 /// Dialog for creating or editing a game
 class GameFormDialog extends ConsumerStatefulWidget {
@@ -126,14 +125,30 @@ class _GameFormDialogState extends ConsumerState<GameFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditMode = widget.game != null;
+    final title = isEditMode ? 'Edit Game' : 'Create Game';
 
-    return FormDialog(
-      title: isEditMode ? 'EDIT GAME' : 'CREATE GAME',
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return Container(
+        padding: const EdgeInsets.only(top: 50),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(title),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             AppTextField(
               controller: _opponentController,
               labelText: 'OPPONENT NAME (Optional)',
@@ -221,11 +236,59 @@ class _GameFormDialogState extends ConsumerState<GameFormDialog> {
           ],
         ),
       ),
-      cancelLabel: 'CANCEL',
-      confirmLabel: isEditMode ? 'UPDATE' : 'CREATE',
-      onConfirm: _isSubmitting ? null : _submit,
-      isLoading: _isSubmitting,
-    );
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+          top: 16,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          border: Border(
+            top: BorderSide(color: AppColors.border, width: 1),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: AppColors.border),
+                ),
+                child: const Text('CANCEL'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation: 0,
+                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : Text(isEditMode ? 'UPDATE' : 'CREATE'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
   }
 }
 

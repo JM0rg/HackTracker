@@ -4,7 +4,6 @@ import '../theme/app_colors.dart';
 import '../providers/player_providers.dart';
 import '../services/api_service.dart';
 import '../utils/messenger.dart';
-import 'form_dialog.dart';
 import 'app_input_fields.dart';
 
 class PlayerFormDialog extends ConsumerStatefulWidget {
@@ -184,14 +183,30 @@ class _PlayerFormDialogState extends ConsumerState<PlayerFormDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.player != null;
     final totalPlayers = _playerQueue.length + 1;
+    final title = isEdit ? 'Edit Player' : (_playerQueue.isEmpty ? 'Add Player' : 'Add Players ($totalPlayers)');
     
-    return FormDialog(
-      title: isEdit ? 'EDIT PLAYER' : (_playerQueue.isEmpty ? 'ADD PLAYER' : 'ADD PLAYERS ($totalPlayers)'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return Container(
+        padding: const EdgeInsets.only(top: 50),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(title),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.pop(context),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             // Show queued players
             if (_playerQueue.isNotEmpty) ...[
               Text(
@@ -365,11 +380,59 @@ class _PlayerFormDialogState extends ConsumerState<PlayerFormDialog> {
           ],
         ),
       ),
-      cancelLabel: 'CANCEL',
-      confirmLabel: isEdit ? 'SAVE' : (_playerQueue.isEmpty ? 'ADD' : 'ADD ALL'),
-      isLoading: _saving,
-      onConfirm: _submit,
-    );
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+          top: 16,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          border: Border(
+            top: BorderSide(color: AppColors.border, width: 1),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: AppColors.border),
+                ),
+                child: const Text('CANCEL'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton(
+                onPressed: _saving ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation: 0,
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : Text(isEdit ? 'SAVE' : (_playerQueue.isEmpty ? 'ADD' : 'ADD ALL')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
   }
 }
 

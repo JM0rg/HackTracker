@@ -781,6 +781,129 @@ class AccessibleErrorDisplay extends StatelessWidget {
 
 ## Form Patterns
 
+### Bottom Sheets vs Dialogs
+
+**When to Use Full-Screen Bottom Sheets:**
+- Forms with multiple input fields (player creation, game creation)
+- Forms that need significant vertical space
+- Forms with conditional fields that may expand
+- Mobile-first UX where more screen space is beneficial
+
+**When to Use Small Dialogs:**
+- Quick confirmations (yes/no)
+- Simple alerts
+- Single-field inputs
+- Destructive action confirmations
+
+### Full-Screen Bottom Sheet Pattern
+
+All data entry forms in HackTracker use full-screen bottom sheets for better mobile UX:
+
+```dart
+// Open a form as a full-screen bottom sheet
+await showModalBottomSheet(
+  context: context,
+  isScrollControlled: true,  // Allow full height
+  backgroundColor: Colors.transparent,  // For rounded corners
+  enableDrag: true,  // Allow swipe down to close
+  builder: (_) => PlayerFormDialog(teamId: teamId),
+);
+```
+
+**Form Widget Structure:**
+
+```dart
+class PlayerFormDialog extends ConsumerStatefulWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      // Top padding to clear iPhone notch/Dynamic Island
+      padding: const EdgeInsets.only(top: 50),
+      // Rounded top corners
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        // AppBar with close button
+        appBar: AppBar(
+          title: Text('Add Player'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        // Scrollable form content
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // Form fields here
+            ],
+          ),
+        ),
+        // Fixed action buttons at bottom
+        bottomNavigationBar: Container(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            top: 16,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            border: Border(
+              top: BorderSide(color: AppColors.border, width: 1),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('CANCEL'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  child: const Text('SAVE'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+**Key Implementation Details:**
+- `padding: const EdgeInsets.only(top: 50)` on the outer Container ensures the title and close button are positioned below the iPhone notch/Dynamic Island
+- `bottomNavigationBar` uses `MediaQuery.of(context).padding.bottom` to respect safe area at bottom of screen
+- Forms remain draggable with `enableDrag: true` in `showModalBottomSheet`
+- Transparent backgrounds allow for rounded top corners to show properly
+
+**Benefits:**
+- ✅ More space for form fields
+- ✅ Better mobile experience
+- ✅ Scrollable content with fixed actions
+- ✅ Swipe down to dismiss
+- ✅ Keyboard doesn't cover inputs
+- ✅ Consistent AppBar with close button
+
+**Current Forms Using Bottom Sheets:**
+- `PlayerFormDialog` - Add/edit players
+- `GameFormDialog` - Create/edit games
+
+---
+
 ### Create Team Form
 
 ```dart
