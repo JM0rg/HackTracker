@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:http/http.dart' as http;
@@ -30,14 +31,6 @@ class ApiService {
       final cognitoSession = session as CognitoAuthSession;
       final tokens = cognitoSession.userPoolTokensResult.value;
       
-      if (tokens.idToken == null) {
-        throw ApiException(
-          statusCode: 401,
-          message: 'No authentication token available',
-          errorType: 'Unauthorized',
-        );
-      }
-
       return tokens.idToken.raw;
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -261,7 +254,7 @@ class ApiService {
 
     final queryString = query.isEmpty
         ? ''
-        : ('?' + query.entries.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&'));
+        : '?${query.entries.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&')}';
 
     final response = await _authenticatedRequest(
       method: 'GET',
@@ -459,8 +452,8 @@ class ApiService {
   ///
   /// Returns: UserContext with has_personal_context and has_managed_context flags
   Future<UserContext> getUserContext() async {
-    print('🌐 API: Calling GET /users/context');
-    print('   Base URL: $baseUrl');
+    debugPrint('🌐 API: Calling GET /users/context');
+    debugPrint('   Base URL: $baseUrl');
     
     try {
       final response = await _authenticatedRequest(
@@ -468,16 +461,16 @@ class ApiService {
         path: '/users/context',
       );
 
-      print('✅ API: /users/context returned ${response.statusCode}');
+      debugPrint('✅ API: /users/context returned ${response.statusCode}');
       
       final data = _handleResponse(response);
       final context = UserContext.fromJson(data as Map<String, dynamic>);
       
-      print('📊 UserContext: has_personal=${context.hasPersonalContext}, has_managed=${context.hasManagedContext}');
+      debugPrint('📊 UserContext: has_personal=${context.hasPersonalContext}, has_managed=${context.hasManagedContext}');
       
       return context;
     } catch (e) {
-      print('❌ API: /users/context failed: $e');
+      debugPrint('❌ API: /users/context failed: $e');
       rethrow;
     }
   }

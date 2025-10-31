@@ -75,28 +75,6 @@ class _LineupFormDialogState extends ConsumerState<LineupFormDialog> {
     });
   }
 
-  void _adjustBattingOrder(int index, int newOrder) {
-    if (newOrder < 1) return;
-    
-    setState(() {
-      final oldOrder = _lineup[index]['battingOrder'] as int;
-      
-      // Check if new order conflicts with existing
-      final conflictingIndex = _lineup.indexWhere(
-        (item) => item['battingOrder'] == newOrder && item != _lineup[index],
-      );
-      
-      if (conflictingIndex != -1) {
-        // Swap orders
-        _lineup[conflictingIndex]['battingOrder'] = oldOrder;
-      }
-      
-      _lineup[index]['battingOrder'] = newOrder;
-      // Re-sort
-      _lineup.sort((a, b) => (a['battingOrder'] as int).compareTo(b['battingOrder'] as int));
-    });
-  }
-
   Future<void> _submit() async {
     setState(() => _saving = true);
 
@@ -188,7 +166,6 @@ class _LineupFormDialogState extends ConsumerState<LineupFormDialog> {
                             });
                           },
                           children: _lineup.asMap().entries.map((entry) {
-                            final index = entry.key;
                             final item = entry.value;
                             final player = players.firstWhere(
                               (p) => p.playerId == item['playerId'],
@@ -217,7 +194,7 @@ class _LineupFormDialogState extends ConsumerState<LineupFormDialog> {
                                     width: 32,
                                     height: 32,
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
+                                      color: AppColors.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     alignment: Alignment.center,
@@ -283,7 +260,7 @@ class _LineupFormDialogState extends ConsumerState<LineupFormDialog> {
                           margin: const EdgeInsets.only(bottom: 4),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isInLineup ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+                            color: isInLineup ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surface,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: isInLineup ? AppColors.primary : AppColors.border,

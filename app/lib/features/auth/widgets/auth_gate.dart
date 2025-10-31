@@ -47,28 +47,28 @@ class AuthGate extends ConsumerWidget {
         }
 
         // User is authenticated, check team context
-        print('🔐 AuthGate: User authenticated, checking team context...');
+        debugPrint('🔐 AuthGate: User authenticated, checking team context...');
         final userContextAsync = ref.watch(userContextNotifierProvider);
 
         return userContextAsync.when(
           data: (userContext) {
-            print('📊 AuthGate: UserContext loaded - personal: ${userContext.hasPersonalContext}, managed: ${userContext.hasManagedContext}');
+            debugPrint('📊 AuthGate: UserContext loaded - personal: ${userContext.hasPersonalContext}, managed: ${userContext.hasManagedContext}');
             
             // User has no teams - show welcome screen
             if (userContext.shouldShowWelcome) {
-              print('👋 AuthGate: No teams, showing WelcomeScreen');
+              debugPrint('👋 AuthGate: No teams, showing WelcomeScreen');
               return const WelcomeScreen();
             }
             
             // User has teams - show dynamic home with appropriate UI
-            print('🏠 AuthGate: Has teams, showing DynamicHomeScreen');
+            debugPrint('🏠 AuthGate: Has teams, showing DynamicHomeScreen');
             return DynamicHomeScreen(userContext: userContext);
           },
           loading: () {
-            print('⏳ AuthGate: Loading user context...');
+            debugPrint('⏳ AuthGate: Loading user context...');
             // After login, use simple spinner instead of full splash screen
             return Scaffold(
-              backgroundColor: Theme.of(context).colorScheme.background,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               body: Center(
                 child: CircularProgressIndicator(
                   color: AppColors.primary,
@@ -78,13 +78,13 @@ class AuthGate extends ConsumerWidget {
           },
           error: (error, stack) {
             // If user context fails, show welcome screen as fallback (API might not be deployed yet)
-            print('UserContext error: $error');
+            debugPrint('UserContext error: $error');
             
             // For 404 or endpoint not found errors, assume new user with no teams
             if (error.toString().contains('404') || 
                 error.toString().contains('Not Found') ||
                 error.toString().contains('endpoint')) {
-              print('Context endpoint not found - showing WelcomeScreen');
+              debugPrint('Context endpoint not found - showing WelcomeScreen');
               return const WelcomeScreen();
             }
             

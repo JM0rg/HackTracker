@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
 import 'team_providers.dart'; // Import apiServiceProvider from here
@@ -24,21 +25,21 @@ final userContextProvider = FutureProvider<UserContext>((ref) async {
 class UserContextNotifier extends AsyncNotifier<UserContext> {
   @override
   Future<UserContext> build() async {
-    print('🔄 UserContextNotifier: Building...');
+    debugPrint('🔄 UserContextNotifier: Building...');
     try {
       final apiService = ref.watch(apiServiceProvider);
       final context = await apiService.getUserContext();
-      print('✅ UserContextNotifier: Build complete');
+      debugPrint('✅ UserContextNotifier: Build complete');
       return context;
     } catch (e) {
-      print('❌ UserContextNotifier: Build failed - $e');
+      debugPrint('❌ UserContextNotifier: Build failed - $e');
       rethrow;
     }
   }
 
   /// Manually refresh the user context
   Future<void> refresh() async {
-    print('🔄 UserContextNotifier: Refreshing...');
+    debugPrint('🔄 UserContextNotifier: Refreshing...');
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final apiService = ref.watch(apiServiceProvider);

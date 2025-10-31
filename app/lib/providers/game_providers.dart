@@ -269,27 +269,15 @@ class GamesNotifier extends AsyncNotifier<List<Game>> {
 
   /// Expose the current state for GameActions
   AsyncValue<List<Game>> get currentState => state;
-}
-
-/// Actions helper for game mutations (set lineup, start game)
-class GameActions {
-  final Ref ref;
-  final String teamId;
-  final GamesNotifier notifier;
-
-  GameActions(this.ref, this.teamId, this.notifier);
-
-  ApiService get _api => ref.read(apiServiceProvider);
-
-  /// Set lineup for a game
+  
+  /// Set lineup for a game (called by GameActions)
   Future<Game?> setLineup(String gameId, List<Map<String, dynamic>> lineup) async {
-    if (notifier.currentState is! AsyncData<List<Game>>) {
+    if (state is! AsyncData<List<Game>>) {
       return null;
     }
 
-    final current = notifier.currentState.requireValue;
-    final game = current.firstWhere((g) => g.gameId == gameId, orElse: () => throw StateError('Game not found'));
-
+    final current = state.requireValue;
+    
     // Optimistic update
     final optimistic = [
       for (final g in current)
@@ -311,18 +299,19 @@ class GameActions {
         else
           g
     ];
-    notifier.state = AsyncValue.data(optimistic);
+    state = AsyncValue.data(optimistic);
 
     try {
+      final api = ref.read(apiServiceProvider);
       // Only send lineup if it's not empty
-      final updatedGame = await _api.updateGame(
+      final updatedGame = await api.updateGame(
         gameId: gameId,
         lineup: lineup.isEmpty ? null : lineup,
       );
 
       // Replace with real updated game
       final updated = [
-        for (final g in notifier.currentState.requireValue)
+        for (final g in state.requireValue)
           if (g.gameId == gameId) updatedGame else g
       ];
       // Re-sort after update
@@ -332,30 +321,29 @@ class GameActions {
         if (b.scheduledStart == null) return -1;
         return a.scheduledStart!.compareTo(b.scheduledStart!);
       });
-      notifier.state = AsyncValue.data(updated);
+      state = AsyncValue.data(updated);
       
       // Persist to cache
-      final cacheKey = 'games_cache_$teamId';
+      final cacheKey = 'games_cache_$_teamId';
       await Persistence.setJson(cacheKey, updated.map((g) => g.toJson()).toList());
 
       showSuccessToast('Lineup saved');
       return updatedGame;
     } catch (e) {
       // Rollback on error
-      notifier.state = AsyncValue.data(current);
+      state = AsyncValue.data(current);
       showErrorToast('Failed to save lineup: $e');
       return null;
     }
   }
 
-  /// Start a game (set status to IN_PROGRESS)
+  /// Start a game (called by GameActions)
   Future<Game?> startGame(String gameId) async {
-    if (notifier.currentState is! AsyncData<List<Game>>) {
+    if (state is! AsyncData<List<Game>>) {
       return null;
     }
 
-    final current = notifier.currentState.requireValue;
-    final game = current.firstWhere((g) => g.gameId == gameId, orElse: () => throw StateError('Game not found'));
+    final current = state.requireValue;
 
     // Optimistic update
     final optimistic = [
@@ -378,17 +366,18 @@ class GameActions {
         else
           g
     ];
-    notifier.state = AsyncValue.data(optimistic);
+    state = AsyncValue.data(optimistic);
 
     try {
-      final updatedGame = await _api.updateGame(
+      final api = ref.read(apiServiceProvider);
+      final updatedGame = await api.updateGame(
         gameId: gameId,
         status: 'IN_PROGRESS',
       );
 
       // Replace with real updated game
       final updated = [
-        for (final g in notifier.currentState.requireValue)
+        for (final g in state.requireValue)
           if (g.gameId == gameId) updatedGame else g
       ];
       // Re-sort after update
@@ -398,20 +387,37 @@ class GameActions {
         if (b.scheduledStart == null) return -1;
         return a.scheduledStart!.compareTo(b.scheduledStart!);
       });
-      notifier.state = AsyncValue.data(updated);
+      state = AsyncValue.data(updated);
       
       // Persist to cache
-      final cacheKey = 'games_cache_$teamId';
+      final cacheKey = 'games_cache_$_teamId';
       await Persistence.setJson(cacheKey, updated.map((g) => g.toJson()).toList());
 
       showSuccessToast('Game started');
       return updatedGame;
     } catch (e) {
       // Rollback on error
-      notifier.state = AsyncValue.data(current);
+      state = AsyncValue.data(current);
       showErrorToast('Failed to start game: $e');
       return null;
     }
+  }
+}
+
+/// Actions helper for game mutations (set lineup, start game)
+class GameActions {
+  final GamesNotifier notifier;
+
+  GameActions(this.notifier);
+
+  /// Set lineup for a game
+  Future<Game?> setLineup(String gameId, List<Map<String, dynamic>> lineup) {
+    return notifier.setLineup(gameId, lineup);
+  }
+
+  /// Start a game (set status to IN_PROGRESS)
+  Future<Game?> startGame(String gameId) {
+    return notifier.startGame(gameId);
   }
 }
 
@@ -419,7 +425,7 @@ class GameActions {
 final gameActionsProvider = Provider.family<GameActions, String>(
   (ref, teamId) {
     final notifier = ref.read(gamesProvider(teamId).notifier);
-    return GameActions(ref, teamId, notifier);
+    return GameActions(notifier);
   },
 );
 

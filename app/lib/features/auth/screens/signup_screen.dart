@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:hacktracker/theme/app_colors.dart';
 import 'package:hacktracker/theme/custom_text_styles.dart';
 import 'package:hacktracker/theme/decoration_styles.dart';

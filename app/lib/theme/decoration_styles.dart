@@ -34,9 +34,9 @@ class DecorationStyles {
   /// Error container decoration (red tinted background with red border)
   static BoxDecoration errorContainer() {
     return BoxDecoration(
-      color: Colors.red.withOpacity(0.1),
+      color: Colors.red.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.red.withOpacity(0.5)),
+      border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
     );
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:amplify_flutter/amplify_flutter.dart';
 import '../theme/app_colors.dart';
 import '../providers/team_providers.dart';
 import '../providers/user_providers.dart';
@@ -220,7 +219,7 @@ class _DrawerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
+      color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : null,
       child: ListTile(
         leading: Icon(
           icon,
@@ -246,34 +245,3 @@ class _DrawerItem extends StatelessWidget {
     );
   }
 }
-
-/// Sub-item (indented) for team management
-class _DrawerSubItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-
-  const _DrawerSubItem({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 16),
-        child: Icon(icon, color: AppColors.secondary, size: 20),
-      ),
-      title: Text(
-        title,
-        style: Theme.of(context).textTheme.labelMedium,
-      ),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-      dense: true,
-    );
-  }
-}
-

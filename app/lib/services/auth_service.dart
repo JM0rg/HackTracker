@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 
@@ -18,11 +19,7 @@ class AuthService {
       final cognitoSession = session as CognitoAuthSession;
       final tokens = cognitoSession.userPoolTokensResult.value;
       
-      if (tokens.idToken == null) {
-        return AuthStatus.invalidToken;
-      }
-
-      // 3. Check token expiration by decoding the JWT payload
+      // Check token expiration by decoding the JWT payload
       try {
         final tokenPayload = _decodeJwtPayload(tokens.idToken.raw);
         if (tokenPayload == null) {
@@ -45,7 +42,7 @@ class AuthService {
 
       return AuthStatus.valid;
     } catch (e) {
-      print('Auth validation error: $e');
+      debugPrint('Auth validation error: $e');
       return AuthStatus.error;
     }
   }
@@ -55,7 +52,7 @@ class AuthService {
     try {
       await Amplify.Auth.signOut();
     } catch (e) {
-      print('Sign out error: $e');
+      debugPrint('Sign out error: $e');
       // Even if signOut fails, we should clear local data
     }
   }
@@ -69,12 +66,10 @@ class AuthService {
       final cognitoSession = session as CognitoAuthSession;
       final tokens = cognitoSession.userPoolTokensResult.value;
       
-      if (tokens.idToken == null) return null;
-      
       final payload = _decodeJwtPayload(tokens.idToken.raw);
       return payload?['sub'] as String?;
     } catch (e) {
-      print('Get user ID error: $e');
+      debugPrint('Get user ID error: $e');
       return null;
     }
   }

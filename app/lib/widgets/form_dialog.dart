@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import 'app_input_fields.dart';
 
 /// Reusable form dialog with consistent styling and sizing
 class FormDialog extends StatelessWidget {

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../providers/player_providers.dart';
 import '../services/api_service.dart';
-import '../utils/messenger.dart';
 import 'app_input_fields.dart';
 
 class PlayerFormDialog extends ConsumerStatefulWidget {
@@ -29,7 +28,7 @@ class _PlayerFormDialogState extends ConsumerState<PlayerFormDialog> {
   late final TextEditingController _number;
   String _status = 'active';
   List<String> _selectedPositions = [];
-  List<Map<String, dynamic>> _playerQueue = [];
+  final List<Map<String, dynamic>> _playerQueue = [];
   bool _saving = false;
   
   static const List<String> _availablePositions = [
@@ -347,7 +346,7 @@ class _PlayerFormDialogState extends ConsumerState<PlayerFormDialog> {
                               label: Text(pos),
                               selected: isSelected,
                               onSelected: isDisabled ? null : (_) => _togglePosition(pos),
-                              selectedColor: AppColors.primary.withOpacity(0.2),
+                              selectedColor: AppColors.primary.withValues(alpha: 0.2),
                               checkmarkColor: AppColors.primary,
                               backgroundColor: AppColors.surface,
                               disabledColor: AppColors.border,
