@@ -156,7 +156,7 @@ module "get_game_lambda" {
 }
 
 ################################################################################
-# Update Game Lambda (API Gateway - PATCH /games/{gameId})
+# Update Game Lambda (API Gateway - PUT /games/{gameId})
 ################################################################################
 
 module "update_game_lambda" {
@@ -188,7 +188,8 @@ module "update_game_lambda" {
         Effect = "Allow"
         Action = [
           "dynamodb:GetItem",
-          "dynamodb:UpdateItem"
+          "dynamodb:UpdateItem",
+          "dynamodb:Query"
         ]
         Resource = aws_dynamodb_table.hacktracker.arn
       }

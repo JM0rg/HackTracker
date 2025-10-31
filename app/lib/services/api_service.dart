@@ -83,6 +83,12 @@ class ApiService {
         );
       case 'DELETE':
         return await http.delete(uri, headers: headers);
+      case 'PATCH':
+        return await http.patch(
+          uri,
+          headers: headers,
+          body: body != null ? jsonEncode(body) : null,
+        );
       default:
         throw ArgumentError('Unsupported HTTP method: $method');
     }

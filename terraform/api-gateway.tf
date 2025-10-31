@@ -267,7 +267,7 @@ module "api_gateway" {
     }
 
     # Update Game
-    "PATCH /games/{gameId}" = {
+    "PUT /games/{gameId}" = {
       authorization_type = "JWT"
       authorizer_key     = "cognito"
       integration = {

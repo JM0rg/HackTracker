@@ -44,8 +44,7 @@ def _validate_lineup_players_belong_to_team(table, lineup, team_id):
     # Extract all player IDs from the lineup
     lineup_player_ids = {player.get('playerId') for player in lineup if player.get('playerId')}
     
-    if not lineup_player_ids:
-        return
+    if not lineup_player_id        return
     
     # Query all players for this team
     try:
@@ -64,7 +63,21 @@ def _validate_lineup_players_belong_to_team(table, lineup, team_id):
         if invalid_players:
             raise ValueError(f'The following players are not on this team: {", ".join(invalid_players)}')
             
+    except ValueError:
+        # Re-raise ValueError as-is (from invalid players check)
+        raise
     except ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+        error_message = e.response.get('Error', {}).get('Message', str(e))
+        print(json.dumps({
+            'level': 'ERROR',
+            'message': 'Failed to validate lineup players',
+            'errorCode': error_code,
+            'errorMessage': error_message,
+            'teamId': team_id
+        }))
+        raise ValueError('Could not validate lineup players')
+    except Exception as e:
         print(json.dumps({
             'level': 'ERROR',
             'message': 'Failed to validate lineup players',
@@ -76,7 +89,7 @@ def _validate_lineup_players_belong_to_team(table, lineup, team_id):
 
 def handler(event, context):
     """
-    Lambda handler for PATCH /games/{gameId}
+    Lambda handler for PUT /games/{gameId}
     
     Allows updating: status, scheduledStart, opponentName, location, teamScore, opponentScore, lineup, seasonId
     Requires: owner, manager, or scorekeeper role
