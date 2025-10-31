@@ -59,7 +59,7 @@ test-players:
 
 test-e2e:
 	@echo "🧪 Running full end-to-end test suite..."
-	@uv run python scripts/full_e2e_test.py
+	@uv run python scripts/run_all_tests.py
 
 test-cloud:
 	@uv run python scripts/test_users.py $(filter-out $@,$(MAKECMDGOALS)) --cloud

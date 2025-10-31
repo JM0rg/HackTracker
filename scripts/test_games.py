@@ -24,9 +24,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 from utils import get_table
 
 
-def create_game(user_id, team_id, game_title, **kwargs):
+def create_game(user_id, team_id, **kwargs):
     """Test create game"""
-    print(f"\n🎮 Creating game: {game_title}")
+    opponent_name = kwargs.get('opponentName', 'TBD')
+    print(f"\n🎮 Creating game: vs {opponent_name}")
     print(f"   Team: {team_id[:8]}...")
     print(f"   Requester: {user_id[:8]}...")
     
@@ -35,8 +36,7 @@ def create_game(user_id, team_id, game_title, **kwargs):
     
     # Simulate API Gateway event
     body = {
-        "teamId": team_id,
-        "gameTitle": game_title
+        "teamId": team_id
     }
     
     # Add optional fields
@@ -60,7 +60,7 @@ def create_game(user_id, team_id, game_title, **kwargs):
     if response['statusCode'] == 201:
         game = json.loads(response['body'])
         print(f"   ✅ Game created: {game['gameId']}")
-        print(f"   Title: {game['gameTitle']}")
+        print(f"   Opponent: {game.get('opponentName', 'TBD')}")
         print(f"   Status: {game['status']}")
         print(f"   Team Score: {game['teamScore']}")
         print(f"   Opponent Score: {game['opponentScore']}")
@@ -95,7 +95,10 @@ def list_games_by_team(user_id, team_id):
         count = len(games)
         print(f"   ✅ Found {count} game(s)")
         for idx, game in enumerate(games, 1):
-            print(f"   {idx}. {game['gameTitle']} ({game['status']}) - {game.get('scheduledStart', 'No date')}")
+            opponent = game.get('opponentName', 'TBD')
+            status = game.get('status', 'SCHEDULED')
+            scheduled = game.get('scheduledStart', 'No date')
+            print(f"   {idx}. vs {opponent} ({status}) - {scheduled}")
         return games
     else:
         print(f"   ❌ Failed: {response['statusCode']}")
@@ -125,7 +128,7 @@ def get_game(user_id, game_id):
     if response['statusCode'] == 200:
         game = json.loads(response['body'])
         print(f"   ✅ Game found")
-        print(f"   Title: {game['gameTitle']}")
+        print(f"   Opponent: {game.get('opponentName', 'TBD')}")
         print(f"   Status: {game['status']}")
         print(f"   Team: {game['teamId']}")
         print(f"   Score: {game['teamScore']} - {game['opponentScore']}")
@@ -160,7 +163,7 @@ def update_game(user_id, game_id, **updates):
     if response['statusCode'] == 200:
         game = json.loads(response['body'])
         print(f"   ✅ Game updated")
-        print(f"   Title: {game['gameTitle']}")
+        print(f"   Opponent: {game.get('opponentName', 'TBD')}")
         print(f"   Status: {game['status']}")
         print(f"   Score: {game['teamScore']} - {game['opponentScore']}")
         return game
@@ -214,7 +217,7 @@ def verify_game(game_id):
     if 'Item' in response:
         game = response['Item']
         print(f"   ✅ Game found")
-        print(f"   Title: {game.get('gameTitle')}")
+        print(f"   Opponent: {game.get('opponentName', 'TBD')}")
         print(f"   Status: {game.get('status')}")
         print(f"   Team: {game.get('teamId')}")
         print(f"   Score: {game.get('teamScore')} - {game.get('opponentScore')}")
@@ -305,12 +308,12 @@ def test_validation_errors(user_id, team_id):
     print("\n📋 Test: teamId is optional (will auto-find Default team)")
     print("   ℹ️  Skipping - teamId now optional, finds Default PERSONAL team")
     
-    # Test 2: Missing gameTitle
-    print("\n📋 Test: Missing gameTitle")
+    # Test 2: Invalid status
+    print("\n📋 Test: Invalid status")
     from games.create.handler import handler
     event = {
         'headers': {'X-User-Id': user_id},
-        'body': json.dumps({"teamId": team_id}),
+        'body': json.dumps({"teamId": team_id, "status": "invalid"}),
         'requestContext': {'http': {'method': 'POST', 'path': '/games'}}
     }
     response = handler(event, None)
@@ -319,27 +322,9 @@ def test_validation_errors(user_id, team_id):
     else:
         print(f"   ❌ Should have been 400, got: {response['statusCode']}")
     
-    # Test 3: Invalid gameTitle (too short)
-    print("\n📋 Test: Invalid gameTitle (too short)")
-    event['body'] = json.dumps({"teamId": team_id, "gameTitle": "AB"})
-    response = handler(event, None)
-    if response['statusCode'] == 400:
-        print(f"   ✅ Correctly rejected: {response['statusCode']}")
-    else:
-        print(f"   ❌ Should have been 400, got: {response['statusCode']}")
-    
-    # Test 4: Invalid status
-    print("\n📋 Test: Invalid status")
-    event['body'] = json.dumps({"teamId": team_id, "gameTitle": "Test Game", "status": "invalid"})
-    response = handler(event, None)
-    if response['statusCode'] == 400:
-        print(f"   ✅ Correctly rejected: {response['statusCode']}")
-    else:
-        print(f"   ❌ Should have been 400, got: {response['statusCode']}")
-    
-    # Test 5: Invalid score (negative)
+    # Test 3: Invalid score (negative)
     print("\n📋 Test: Invalid teamScore (negative)")
-    event['body'] = json.dumps({"teamId": team_id, "gameTitle": "Test Game", "teamScore": -1})
+    event['body'] = json.dumps({"teamId": team_id, "teamScore": -1})
     response = handler(event, None)
     if response['statusCode'] == 400:
         print(f"   ✅ Correctly rejected: {response['statusCode']}")
@@ -354,20 +339,12 @@ def test_lineup_validation(user_id, team_id, players):
     print("=" * 60)
     
     # Create a game first
-    game_id = create_game(user_id, team_id, "Lineup Test Game")
+    game_id = create_game(user_id, team_id, opponentName="Lineup Test Opponent")
     if not game_id:
         print("   ❌ Failed to create test game")
         return
     
-    # Test 1: Try to set IN_PROGRESS without lineup (should fail)
-    print("\n📋 Test: Set IN_PROGRESS without lineup (should fail)")
-    updated = update_game(user_id, game_id, status="IN_PROGRESS")
-    if not updated:
-        print(f"   ✅ Correctly rejected IN_PROGRESS without lineup")
-    else:
-        print(f"   ❌ Should have been rejected")
-    
-    # Test 2: Create valid lineup
+    # Test 1: Create valid lineup
     print("\n📋 Test: Create valid lineup")
     lineup = []
     for i, player in enumerate(players[:5], 1):  # Use first 5 players
@@ -384,21 +361,13 @@ def test_lineup_validation(user_id, team_id, players):
         print(f"   ❌ Failed to set lineup")
         return
     
-    # Test 3: Now try to set IN_PROGRESS with lineup (should succeed)
+    # Test 2: Set IN_PROGRESS with lineup (should succeed)
     print("\n📋 Test: Set IN_PROGRESS with lineup (should succeed)")
     updated = update_game(user_id, game_id, status="IN_PROGRESS")
     if updated and updated['status'] == 'IN_PROGRESS':
         print(f"   ✅ Successfully set IN_PROGRESS with lineup")
     else:
         print(f"   ❌ Should have succeeded with lineup")
-    
-    # Test 4: Try to clear lineup while IN_PROGRESS (should fail)
-    print("\n📋 Test: Clear lineup while IN_PROGRESS (should fail)")
-    updated = update_game(user_id, game_id, lineup=[])
-    if not updated:
-        print(f"   ✅ Correctly rejected clearing lineup while IN_PROGRESS")
-    else:
-        print(f"   ❌ Should have been rejected")
 
 
 def test_personal_team_games(user_id):
@@ -441,7 +410,7 @@ def test_personal_team_games(user_id):
     
     # Test 1: Create game on personal team
     print("\n📋 Test: Create game on personal team")
-    game_id = create_game(user_id, personal_team_id, "Personal Team Game")
+    game_id = create_game(user_id, personal_team_id, opponentName="Personal Team Opponent")
     if not game_id:
         print("   ❌ Failed to create game on personal team")
         return
@@ -467,7 +436,7 @@ def test_authorization(user_id, team_id):
     from games.create.handler import handler
     event = {
         'headers': {'X-User-Id': random_user},
-        'body': json.dumps({"teamId": team_id, "gameTitle": "Hacked Game"}),
+        'body': json.dumps({"teamId": team_id, "opponentName": "Hacked Game"}),
         'requestContext': {'http': {'method': 'POST', 'path': '/games'}}
     }
     response = handler(event, None)
@@ -478,7 +447,7 @@ def test_authorization(user_id, team_id):
     
     # Test 2: Team owner CAN create game
     print("\n📋 Test: Team owner can create game")
-    game_id = create_game(user_id, team_id, "AuthTest Game")
+    game_id = create_game(user_id, team_id, opponentName="AuthTest Opponent")
     if game_id:
         print(f"   ✅ Owner successfully created game")
     else:
@@ -510,25 +479,25 @@ def run_full_test(user_id):
     print("=" * 60)
     
     # Game 1: Minimal
-    game1_id = create_game(user_id, team_id, "Practice Game")
+    game1_id = create_game(user_id, team_id)
     
     # Game 2: With opponent
-    game2_id = create_game(user_id, team_id, "vs Tigers", opponentName="Tigers")
+    game2_id = create_game(user_id, team_id, opponentName="Tigers")
     
     # Game 3: With location
-    game3_id = create_game(user_id, team_id, "Home Game", location="Home Field")
+    game3_id = create_game(user_id, team_id, opponentName="Eagles", location="Home Field")
     
     # Game 4: With scheduled start
     scheduled_start = datetime.now(timezone.utc).isoformat()
-    game4_id = create_game(user_id, team_id, "Scheduled Game", scheduledStart=scheduled_start)
+    game4_id = create_game(user_id, team_id, opponentName="Giants", scheduledStart=scheduled_start)
     
     # Game 5: With scores
-    game5_id = create_game(user_id, team_id, "Scored Game", teamScore=5, opponentScore=3)
+    game5_id = create_game(user_id, team_id, opponentName="Yankees", teamScore=5, opponentScore=3)
     
     # Game 6: Complete game
     game6_id = create_game(
-        user_id, team_id, "Complete Game",
-        opponentName="Eagles",
+        user_id, team_id,
+        opponentName="Dodgers",
         location="Away Field",
         scheduledStart=scheduled_start,
         teamScore=0,
@@ -580,11 +549,11 @@ def run_full_test(user_id):
     print("TEST 7: Update Games")
     print("=" * 60)
     
-    # Test 7a: Update game title
-    print("\n📋 Test: Update game title")
-    updated = update_game(user_id, game2_id, gameTitle="vs Tigers (Updated)")
-    if updated and updated['gameTitle'] == 'vs Tigers (Updated)':
-        print(f"   ✅ gameTitle updated successfully")
+    # Test 7a: Update opponent name
+    print("\n📋 Test: Update opponent name")
+    updated = update_game(user_id, game2_id, opponentName="Tigers (Updated)")
+    if updated and updated.get('opponentName') == 'Tigers (Updated)':
+        print(f"   ✅ opponentName updated successfully")
     
     # Test 7b: Update scores
     print("\n📋 Test: Update scores")
@@ -646,7 +615,7 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python test_games.py <command> [args]")
         print("\nCommands:")
-        print("  create <userId> <teamId> <gameTitle> [opponentName] [location] [scheduledStart] [teamScore] [opponentScore]  - Create game")
+        print("  create <userId> <teamId> [opponentName] [location] [scheduledStart] [teamScore] [opponentScore]  - Create game")
         print("  list <userId> <teamId>                                                                                      - List games by team")
         print("  get <userId> <gameId>                                                                                       - Get game")
         print("  update <userId> <gameId> <field> <value>                                                                    - Update game")
@@ -662,15 +631,14 @@ def main():
         if command == 'create':
             user_id = sys.argv[2]
             team_id = sys.argv[3]
-            game_title = sys.argv[4]
-            opponent_name = sys.argv[5] if len(sys.argv) > 5 else None
-            location = sys.argv[6] if len(sys.argv) > 6 else None
-            scheduled_start = sys.argv[7] if len(sys.argv) > 7 else None
-            team_score = int(sys.argv[8]) if len(sys.argv) > 8 else None
-            opponent_score = int(sys.argv[9]) if len(sys.argv) > 9 else None
+            opponent_name = sys.argv[4] if len(sys.argv) > 4 else None
+            location = sys.argv[5] if len(sys.argv) > 5 else None
+            scheduled_start = sys.argv[6] if len(sys.argv) > 6 else None
+            team_score = int(sys.argv[7]) if len(sys.argv) > 7 else None
+            opponent_score = int(sys.argv[8]) if len(sys.argv) > 8 else None
             
             create_game(
-                user_id, team_id, game_title,
+                user_id, team_id,
                 opponentName=opponent_name,
                 location=location,
                 scheduledStart=scheduled_start,

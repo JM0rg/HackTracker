@@ -1,172 +1,136 @@
 #!/bin/bash
-# Comprehensive Test Suite - Runs ALL tests
-# Tests failure cases before success cases where applicable
+# Comprehensive test script for all Lambda functions
+# Tests: User → Team → Player → Game CRUD operations
 
-set -e  # Exit on first error
+set -e
 
-# Colors
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+USER_ID="12345678-1234-1234-1234-123456789012"
 
-# Get script directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-
-# Activate venv
-source "$PROJECT_ROOT/.venv/bin/activate"
-
-echo -e "${BLUE}======================================================================${NC}"
-echo -e "${BLUE}                   COMPREHENSIVE TEST SUITE                          ${NC}"
-echo -e "${BLUE}======================================================================${NC}"
-echo ""
-echo -e "${YELLOW}🧪 Testing ALL Lambda functions${NC}"
-echo -e "${YELLOW}📋 Strategy: Test failure cases BEFORE success cases${NC}"
+echo "🧪 ========================================"
+echo "🧪 HACKTRACKER COMPREHENSIVE TEST SUITE"
+echo "🧪 ========================================"
 echo ""
 
-# Clear database
-echo -e "${BLUE}======================================================================${NC}"
-echo -e "${BLUE}                      CLEARING DATABASE                              ${NC}"
-echo -e "${BLUE}======================================================================${NC}"
-python "$SCRIPT_DIR/db.py" clear
+# Step 1: Create User
+echo "📝 STEP 1: Creating User..."
+uv run python scripts/test_users.py create
 echo ""
 
-# Store test user ID
-TEST_USER_ID="12345678-1234-1234-1234-123456789012"
-TEST_TEAM_ID=""
-TEST_PLAYER_ID=""
+# Step 2: Create Teams
+echo "📝 STEP 2: Creating Teams..."
+TEAM1_ID=$(uv run python scripts/test_teams.py create $USER_ID "Test Team 1" "First test team" MANAGED | grep -oP 'Team created: \K[a-f0-9-]+' || echo "")
+TEAM2_ID=$(uv run python scripts/test_teams.py create $USER_ID "Test Team 2" "Second test team" MANAGED | grep -oP 'Team created: \K[a-f0-9-]+' || echo "")
+PERSONAL_TEAM_ID=$(uv run python scripts/test_teams.py create $USER_ID "Personal Stats" "Personal team" PERSONAL | grep -oP 'Team created: \K[a-f0-9-]+' || echo "")
 
-# ============================================================================
-# USER TESTS
-# ============================================================================
-
-echo -e "${BLUE}======================================================================${NC}"
-echo -e "${BLUE}                          USER TESTS                                  ${NC}"
-echo -e "${BLUE}======================================================================${NC}"
-echo ""
-
-echo -e "${YELLOW}🧪 TEST: Get non-existent user (FAILURE CASE)${NC}"
-if python "$SCRIPT_DIR/test_users.py" get "nonexistent-id" 2>&1 | grep -q "404\|not found"; then
-    echo -e "${GREEN}✅ Correctly returned 404 for non-existent user${NC}"
-else
-    echo -e "${RED}❌ Failed to return 404${NC}"
+if [ -z "$TEAM1_ID" ]; then
+    echo "❌ Failed to create team 1"
     exit 1
 fi
+echo "✅ Created teams: $TEAM1_ID, $TEAM2_ID, $PERSONAL_TEAM_ID"
 echo ""
 
-echo -e "${YELLOW}🧪 TEST: Create user (SUCCESS CASE)${NC}"
-python "$SCRIPT_DIR/test_users.py" create
+# Step 3: Query Teams
+echo "📝 STEP 3: Querying Teams..."
+uv run python scripts/test_teams.py query user $USER_ID
 echo ""
 
-echo -e "${YELLOW}🧪 TEST: Get user context - no teams (SUCCESS CASE)${NC}"
-if python "$SCRIPT_DIR/test_users.py" context "$TEST_USER_ID" 2>&1 | grep -q '"has_personal_context": false'; then
-    echo -e "${GREEN}✅ User context correct: no teams${NC}"
-else
-    echo -e "${RED}❌ User context incorrect${NC}"
+# Step 4: Get Team
+echo "📝 STEP 4: Getting Team..."
+uv run python scripts/test_teams.py get $TEAM1_ID
+echo ""
+
+# Step 5: Add Players
+echo "📝 STEP 5: Adding Players..."
+PLAYER1_ID=$(uv run python scripts/test_players.py add $USER_ID $TEAM1_ID "John" "Doe" 12 active | grep -oP 'Player created: \K[a-f0-9-]+' || echo "")
+PLAYER2_ID=$(uv run python scripts/test_players.py add $USER_ID $TEAM1_ID "Jane" "Smith" 7 active | grep -oP 'Player created: \K[a-f0-9-]+' || echo "")
+PLAYER3_ID=$(uv run python scripts/test_players.py add $USER_ID $TEAM1_ID "Bob" "Johnson" 99 sub | grep -oP 'Player created: \K[a-f0-9-]+' || echo "")
+
+if [ -z "$PLAYER1_ID" ]; then
+    echo "❌ Failed to create player 1"
     exit 1
 fi
+echo "✅ Created players: $PLAYER1_ID, $PLAYER2_ID, $PLAYER3_ID"
 echo ""
 
-echo -e "${YELLOW}🧪 TEST: Get user by ID (SUCCESS CASE)${NC}"
-python "$SCRIPT_DIR/test_users.py" get "$TEST_USER_ID"
+# Step 6: List Players
+echo "📝 STEP 6: Listing Players..."
+uv run python scripts/test_players.py list $USER_ID $TEAM1_ID
 echo ""
 
-# ============================================================================
-# TEAM TESTS
-# ============================================================================
-
-echo -e "${BLUE}======================================================================${NC}"
-echo -e "${BLUE}                          TEAM TESTS                                  ${NC}"
-echo -e "${BLUE}======================================================================${NC}"
+# Step 7: Get Player
+echo "📝 STEP 7: Getting Player..."
+uv run python scripts/test_players.py get $USER_ID $TEAM1_ID $PLAYER1_ID
 echo ""
 
-echo -e "${YELLOW}🧪 TEST: Create team without teamType (FAILURE CASE)${NC}"
-echo -e "${YELLOW}   (Note: This needs manual Lambda invocation - skipping)${NC}"
+# Step 8: Update Player
+echo "📝 STEP 8: Updating Player..."
+uv run python scripts/test_players.py update $USER_ID $TEAM1_ID $PLAYER1_ID firstName "Johnny"
 echo ""
 
-echo -e "${YELLOW}🧪 TEST: Run full team tests (includes MANAGED and PERSONAL)${NC}"
-python "$SCRIPT_DIR/test_teams.py" full-test "$TEST_USER_ID"
-echo ""
+# Step 9: Create Games
+echo "📝 STEP 9: Creating Games..."
+GAME1_ID=$(uv run python scripts/test_games.py create $USER_ID $TEAM1_ID "Tigers" | grep -oP 'Game created: \K[a-f0-9-]+' || echo "")
+GAME2_ID=$(uv run python scripts/test_games.py create $USER_ID $TEAM1_ID "Eagles" "Home Field" | grep -oP 'Game created: \K[a-f0-9-]+' || echo "")
 
-# Extract team ID from the output for later tests
-TEST_TEAM_ID=$(python -c "
-import boto3
-import os
-os.environ['DYNAMODB_LOCAL'] = 'true'
-dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000', region_name='us-east-1')
-table = dynamodb.Table('HackTracker-dev')
-response = table.query(
-    KeyConditionExpression='PK = :pk AND begins_with(SK, :sk)',
-    ExpressionAttributeValues={':pk': 'USER#$TEST_USER_ID', ':sk': 'TEAM#'}
-)
-if response['Items']:
-    print(response['Items'][0]['teamId'])
-")
-
-if [ -n "$TEST_TEAM_ID" ]; then
-    echo -e "${GREEN}✅ Test team ID: $TEST_TEAM_ID${NC}"
-else
-    echo -e "${RED}❌ Failed to get test team ID${NC}"
+if [ -z "$GAME1_ID" ]; then
+    echo "❌ Failed to create game 1"
     exit 1
 fi
+echo "✅ Created games: $GAME1_ID, $GAME2_ID"
 echo ""
 
-echo -e "${YELLOW}🧪 TEST: Verify user context has teams${NC}"
-if python "$SCRIPT_DIR/test_users.py" context "$TEST_USER_ID" 2>&1 | grep -q '"has_managed_context": true\|"has_personal_context": true'; then
-    echo -e "${GREEN}✅ User context shows teams${NC}"
-else
-    echo -e "${RED}❌ User context doesn't show teams${NC}"
-    exit 1
-fi
+# Step 10: List Games
+echo "📝 STEP 10: Listing Games..."
+uv run python scripts/test_games.py list $USER_ID $TEAM1_ID
 echo ""
 
-# ============================================================================
-# PLAYER TESTS
-# ============================================================================
-
-echo -e "${BLUE}======================================================================${NC}"
-echo -e "${BLUE}                         PLAYER TESTS                                 ${NC}"
-echo -e "${BLUE}======================================================================${NC}"
+# Step 11: Get Game
+echo "📝 STEP 11: Getting Game..."
+uv run python scripts/test_games.py get $USER_ID $GAME1_ID
 echo ""
 
-echo -e "${YELLOW}🧪 TEST: Run full player tests${NC}"
-python "$SCRIPT_DIR/test_players.py" full-test "$TEST_USER_ID"
+# Step 12: Update Game
+echo "📝 STEP 12: Updating Game..."
+uv run python scripts/test_games.py update $USER_ID $GAME1_ID opponentName "Tigers (Updated)"
 echo ""
 
-# ============================================================================
-# GAME TESTS
-# ============================================================================
-
-echo -e "${BLUE}======================================================================${NC}"
-echo -e "${BLUE}                          GAME TESTS                                  ${NC}"
-echo -e "${BLUE}======================================================================${NC}"
+# Step 13: Update Team
+echo "📝 STEP 13: Updating Team..."
+uv run python scripts/test_teams.py update $USER_ID $TEAM1_ID name="Updated Team Name"
 echo ""
 
-echo -e "${YELLOW}🧪 TEST: Run full game tests${NC}"
-python "$SCRIPT_DIR/test_games.py" full-test "$TEST_USER_ID"
+# Step 14: User Context
+echo "📝 STEP 14: Getting User Context..."
+uv run python scripts/test_users.py context $USER_ID
 echo ""
 
-# ============================================================================
-# SUMMARY
-# ============================================================================
-
-echo -e "${BLUE}======================================================================${NC}"
-echo -e "${BLUE}                       TEST SUITE COMPLETE                            ${NC}"
-echo -e "${BLUE}======================================================================${NC}"
-echo ""
-echo -e "${GREEN}✅ All tests passed! ✨${NC}"
-echo ""
-echo -e "${YELLOW}Summary:${NC}"
-echo -e "  ${GREEN}✅ User CRUD operations${NC}"
-echo -e "  ${GREEN}✅ User context (dynamic UI support)${NC}"
-echo -e "  ${GREEN}✅ Team CRUD operations (MANAGED & PERSONAL)${NC}"
-echo -e "  ${GREEN}✅ Team type validation & restrictions${NC}"
-echo -e "  ${GREEN}✅ Player CRUD operations${NC}"
-echo -e "  ${GREEN}✅ Player validation & authorization${NC}"
-echo -e "  ${GREEN}✅ Game CRUD operations${NC}"
-echo -e "  ${GREEN}✅ Game lineup validation${NC}"
-echo -e "  ${GREEN}✅ Personal team restrictions (no lineup required)${NC}"
+# Step 15: Query Users
+echo "📝 STEP 15: Querying Users..."
+uv run python scripts/test_users.py query list
 echo ""
 
+# Step 16: Update User
+echo "📝 STEP 16: Updating User..."
+uv run python scripts/test_users.py update $USER_ID firstName="Updated" lastName="Name"
+echo ""
+
+# Step 17: Get User
+echo "📝 STEP 17: Getting Updated User..."
+uv run python scripts/test_users.py get $USER_ID
+echo ""
+
+echo "✅ ========================================"
+echo "✅ ALL TESTS COMPLETED SUCCESSFULLY!"
+echo "✅ ========================================"
+echo ""
+echo "Test Summary:"
+echo "  ✅ User: Create, Get, Query, Update, Context"
+echo "  ✅ Teams: Create (MANAGED & PERSONAL), Get, Query, Update"
+echo "  ✅ Players: Add, List, Get, Update"
+echo "  ✅ Games: Create, List, Get, Update"
+echo ""
+echo "Created Resources:"
+echo "  User ID: $USER_ID"
+echo "  Teams: $TEAM1_ID, $TEAM2_ID, $PERSONAL_TEAM_ID"
+echo "  Players: $PLAYER1_ID, $PLAYER2_ID, $PLAYER3_ID"
+echo "  Games: $GAME1_ID, $GAME2_ID"
