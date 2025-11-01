@@ -1447,6 +1447,395 @@ When adding new UI code, ensure:
 
 ---
 
+## Scoring Widgets
+
+### FieldDiagram
+
+**File:** `lib/features/scoring/widgets/field_diagram.dart`
+
+**Purpose:** Interactive softball field diagram with hit location selection
+
+**Props:**
+- `onTap` - `void Function(double x, double y)` - Callback with normalized coordinates (0.0-1.0)
+- `onLongPress` - `VoidCallback` - Callback when field is held for 2 seconds
+- `hitLocation` - `Map<String, double>?` - Current hit location to display (normalized 0.0-1.0)
+
+**Hit Location Coordinate System:**
+
+The `FieldDiagram` widget implements a **normalized coordinate system** for cross-device consistency:
+
+**Capture (Normalization):**
+```dart
+void _handleTap(TapDownDetails details) {
+  final RenderBox box = context.findRenderObject() as RenderBox;
+  final localPosition = details.localPosition;
+  final size = box.size;
+
+  // Normalize to 0.0-1.0 range
+  final normalizedX = (localPosition.dx / size.width).clamp(0.0, 1.0);
+  final normalizedY = (localPosition.dy / size.height).clamp(0.0, 1.0);
+
+  widget.onTap(normalizedX, normalizedY);
+}
+```
+
+**Display (Denormalization):**
+```dart
+if (widget.hitLocation != null) {
+  displayLocation = Offset(
+    widget.hitLocation!['x']! * constraints.maxWidth,
+    widget.hitLocation!['y']! * constraints.maxHeight,
+  );
+}
+```
+
+**Key Principles:**
+1. **Normalized Storage**: Coordinates stored as percentages (0.0-1.0) in DynamoDB
+2. **Device Independence**: Same relative position on iPhone, iPad, and Web
+3. **Proportional Scaling**: Hit markers scale with field size
+4. **SVG Compatibility**: Field SVG uses `BoxFit.fitWidth` to maintain proportions
+
+**Visual Feedback:**
+- Green trajectory arc from home plate to hit location
+- Green dot marker at landing point
+- Glow effect for visibility
+
+**Usage:**
+```dart
+FieldDiagram(
+  onTap: (x, y) {
+    // x and y are normalized 0.0-1.0
+    setState(() {
+      _hitLocation = {'x': x, 'y': y};
+    });
+  },
+  onLongPress: () {
+    setState(() {
+      _hitLocation = null;
+    });
+  },
+  hitLocation: _hitLocation,
+)
+```
+
+**Features:**
+- SVG-based field rendering (`softball_field.svg`)
+- Long-press to clear hit location
+- Automatic coordinate normalization
+- Visual arc trajectory from home plate
+
+---
+
+### ActionArea
+
+**File:** `lib/features/scoring/widgets/action_area.dart`
+
+**Purpose:** Dynamic button area for at-bat entry based on current state
+
+**Props:**
+- `step` - `EntryStep` enum (`initial`, `outcome`)
+- `hitType` - `String?` - Optional selected hit type
+- `finalBaseReached` - `int?` - Optional final base (not currently used)
+- `selectedResult` - `String?` - Selected at-bat result
+- `onResultSelect` - `void Function(String result)` - Callback for result selection
+- `onHitTypeTap` - `void Function(String type)` - Callback for hit type selection
+- `onFinalBaseTap` - `void Function(int base)` - Callback for base selection (not used)
+- `onSubmit` - `VoidCallback` - Callback to submit at-bat
+
+**Button States:**
+
+**Initial State:**
+- Circular buttons: K (Strikeout), BB (Walk), FO (Flyout)
+- Small subtitle text below each button
+- All buttons grey by default, green when selected
+
+**Outcome State (after field tap):**
+- Circular buttons: 1B, 2B, 3B, HR, OUT, E
+- Single row layout with even spacing
+- All buttons grey by default, green when selected
+
+**Submit Button:**
+- Always visible at bottom
+- Grey/outlined when invalid (no result selected)
+- Green/filled when valid (result + optional hit location)
+
+**Usage:**
+```dart
+ActionArea(
+  step: _step,
+  selectedResult: _selectedResult,
+  onResultSelect: (result) {
+    setState(() => _selectedResult = result);
+  },
+  onSubmit: () => _saveAtBat(_selectedResult!, currentBatter),
+)
+```
+
+**Features:**
+- State-aware button rendering
+- Circular button design with selection state
+- Conditional submit button styling
+- Horizontal scrolling for outcome buttons
+
+---
+
+## Authentication Widgets (Glassmorphism)
+
+### GlassContainer
+
+**File:** `lib/features/auth/widgets/glass_container.dart`
+
+**Purpose:** Frosted glass container with backdrop blur for iOS liquid glass aesthetic
+
+**Props:**
+- `child` - Widget to display inside container
+- `width` - Optional container width
+- `height` - Optional container height
+- `padding` - Optional padding for content
+- `borderRadius` - Border radius (default: 24.0)
+- `blurSigma` - Blur intensity (default: 10.0)
+
+**Usage:**
+```dart
+GlassContainer(
+  padding: const EdgeInsets.all(24),
+  borderRadius: 24.0,
+  blurSigma: 10.0,
+  child: Column(
+    children: [
+      Text('Glass Content'),
+    ],
+  ),
+)
+```
+
+**Features:**
+- Backdrop blur effect using `BackdropFilter`
+- Gradient background with semi-transparent surface
+- Customizable border radius and blur intensity
+- Subtle shadows for depth
+- Fully integrated with `GlassTheme` constants
+
+### GlassButton
+
+**File:** `lib/features/auth/widgets/glass_button.dart`
+
+**Purpose:** Elevated button with glassmorphism styling
+
+**Props:**
+- `text` - Button text (automatically uppercase)
+- `onPressed` - Callback when button is pressed
+- `isLoading` - Show loading spinner (default: false)
+- `height` - Button height (default: 56)
+- `icon` - Optional leading icon
+
+**Usage:**
+```dart
+GlassButton(
+  text: 'LOG IN',
+  onPressed: () => _handleLogin(),
+  isLoading: false,
+  icon: Icons.login,
+  height: 48,
+)
+```
+
+**Features:**
+- Gradient background (primary → secondary colors)
+- Elevated shadow effect
+- Loading state with centered spinner
+- Optional icon support
+- Disabled state styling (greyed out)
+- Automatic text uppercase transformation
+
+### StatusIndicator
+
+**File:** `lib/features/auth/widgets/status_indicator.dart`
+
+**Purpose:** Reusable status indicator with glowing dot
+
+**Props:**
+- `text` - Status text (automatically uppercase)
+- `dotSize` - Dot size (default: 8.0)
+
+**Usage:**
+```dart
+StatusIndicator(
+  text: 'LOG IN',
+  dotSize: 8.0,
+)
+```
+
+**Features:**
+- Glowing dot with shadow effect
+- Uppercase text with letter spacing
+- Consistent styling via `GlassTheme` constants
+
+### AuthTitleHeader
+
+**File:** `lib/features/auth/widgets/auth_title_header.dart`
+
+**Purpose:** Title header for authentication screens
+
+**Props:**
+- No props (static content)
+
+**Usage:**
+```dart
+AuthTitleHeader()
+```
+
+**Features:**
+- "HACKTRACKER" title with primary color
+- "Slowpitch Stats Tracking" subtitle
+- Glass container wrapper
+- Consistent across all auth screens
+
+### AuthGlassField
+
+**File:** `lib/features/auth/widgets/auth_glass_field.dart`
+
+**Purpose:** Glass-styled text input field for auth forms
+
+**Props:**
+- `controller` - Text editing controller
+- `labelText` - Label text (automatically uppercase)
+- `icon` - Leading icon
+- `obscureText` - Hide text (default: false)
+- `keyboardType` - Keyboard type (default: TextInputType.text)
+- `autocorrect` - Enable autocorrect (default: true)
+- `textCapitalization` - Text capitalization (default: none)
+
+**Usage:**
+```dart
+AuthGlassField(
+  controller: _emailController,
+  labelText: 'EMAIL',
+  icon: Icons.email_outlined,
+  keyboardType: TextInputType.emailAddress,
+  autocorrect: false,
+)
+```
+
+**Features:**
+- Glassmorphism input decoration
+- Semi-transparent background
+- Primary color border with opacity
+- Enhanced focus border
+- Uppercase label styling with letter spacing
+
+### AuthErrorMessage
+
+**File:** `lib/features/auth/widgets/auth_error_message.dart`
+
+**Purpose:** Error message display for auth forms
+
+**Props:**
+- `message` - Error message text
+
+**Usage:**
+```dart
+AuthErrorMessage(message: 'Invalid email or password')
+```
+
+**Features:**
+- Glass container with error icon
+- Compact, readable layout
+- Consistent error styling
+
+### AuthDivider
+
+**File:** `lib/features/auth/widgets/auth_divider.dart`
+
+**Purpose:** "OR" divider for auth forms
+
+**Props:**
+- No props (static content)
+
+**Usage:**
+```dart
+AuthDivider()
+```
+
+**Features:**
+- Horizontal divider with "OR" text
+- Consistent styling with glass theme
+
+### AuthFormLink
+
+**File:** `lib/features/auth/widgets/auth_form_link.dart`
+
+**Purpose:** Navigation link between auth forms
+
+**Props:**
+- `text` - Link text (automatically uppercase)
+- `onPressed` - Callback when link is pressed
+
+**Usage:**
+```dart
+AuthFormLink(
+  text: 'CREATE ACCOUNT',
+  onPressed: () => _switchFormMode(AuthFormMode.signup),
+)
+```
+
+**Features:**
+- Uppercase text with letter spacing
+- Primary color styling
+- Consistent link appearance
+
+### AuthInfoBox
+
+**File:** `lib/features/auth/widgets/auth_info_box.dart`
+
+**Purpose:** Informational message box for auth forms
+
+**Props:**
+- `message` - Info message text
+- `icon` - Icon (default: Icons.info_outline)
+
+**Usage:**
+```dart
+AuthInfoBox(
+  message: 'Check your email for the reset code.',
+  icon: Icons.check_circle_outline,
+)
+```
+
+**Features:**
+- Glass container with icon
+- Compact, readable layout
+- Consistent info styling
+
+### AuthSuccessDialog
+
+**File:** `lib/features/auth/widgets/auth_success_dialog.dart`
+
+**Purpose:** Success message dialog for auth operations
+
+**Props:**
+- `title` - Dialog title
+- `message` - Success message
+- `onOkPressed` - Callback when OK is pressed
+
+**Usage:**
+```dart
+AuthSuccessDialog.show(
+  context,
+  title: 'Success',
+  message: 'Account created!',
+  onOkPressed: () => Navigator.pop(context),
+)
+```
+
+**Features:**
+- Static `show()` method for easy display
+- Glass container styling
+- Check icon and success message
+- Non-dismissible by default
+
+---
+
 ## Summary
 
 HackTracker's widget library provides:
@@ -1455,13 +1844,15 @@ HackTracker's widget library provides:
 - **Input Widgets** - AppTextField, AppPasswordField, AppEmailField, AppDropdownFormField
 - **Dialog Widgets** - FormDialog, ConfirmDialog, PlayerFormDialog for modal interactions
 - **Display Widgets** - StatusChip, StatusBadge, GameStatusBadge, SectionHeader, PlayerNumberAvatar, LoadingIndicator
+- **Authentication Widgets** - GlassContainer, GlassButton, StatusIndicator, AuthTitleHeader, AuthGlassField, AuthErrorMessage, AuthDivider, AuthFormLink, AuthInfoBox, AuthSuccessDialog (glassmorphism theme)
 - **List Widgets** - ListItemCard for consistent list item styling
 - **Layout Widgets** - ResponsiveContainer, ResponsiveRow for responsive layouts
 - **Utility Helpers** - showSuccess(), showError(), showLoadingDialog()
-- **Consistent Styling** - All widgets use AppColors and DecorationStyles
+- **Consistent Styling** - All widgets use AppColors, DecorationStyles, and GlassTheme
 - **Form Integration** - Built-in validation and form handling
 - **Accessibility** - Proper semantics and keyboard navigation
 - **Testing Support** - Widget testing patterns and examples
 - **Code Reusability** - Centralized components eliminate duplication
+- **Glassmorphism Theme** - iOS liquid glass aesthetic for authentication screens
 
-The widget library provides a **comprehensive set of reusable components** that maintain **consistent design** and **behavior** across the application while **eliminating code duplication** and supporting **customization** and **responsive design**.
+The widget library provides a **comprehensive set of reusable components** that maintain **consistent design** and **behavior** across the application while **eliminating code duplication** and supporting **customization**, **responsive design**, and **modern glassmorphism aesthetics**.

@@ -516,6 +516,115 @@ class DecorationStyles {
       border: Border.all(color: AppColors.border),
     );
   }
+
+  // Glassmorphism container decoration (iOS liquid glass effect)
+  // Use with BackdropFilter for full frosted glass effect
+  static BoxDecoration glassContainer({
+    double borderRadius = 24.0,
+    Color? borderColor,
+    double borderWidth = 1.5,
+  }) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: borderColor ?? AppColors.primary.withOpacity(0.3),
+        width: borderWidth,
+      ),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          AppColors.surface.withOpacity(0.7),
+          AppColors.surface.withOpacity(0.5),
+        ],
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.3),
+          blurRadius: 20,
+          offset: const Offset(0, 10),
+        ),
+        BoxShadow(
+          color: AppColors.primary.withOpacity(0.1),
+          blurRadius: 40,
+          offset: const Offset(0, 20),
+        ),
+      ],
+    );
+  }
+
+  // Glassmorphism button decoration (for elevated buttons)
+  static BoxDecoration glassButton({bool isEnabled = true}) {
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isEnabled
+            ? [
+                AppColors.primary.withOpacity(0.9),
+                AppColors.secondary.withOpacity(0.9),
+              ]
+            : [
+                AppColors.border.withOpacity(0.3),
+                AppColors.border.withOpacity(0.3),
+              ],
+      ),
+      boxShadow: isEnabled
+          ? [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.4),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ]
+          : [],
+    );
+  }
+
+  // Glassmorphism input field decoration
+  static InputDecoration glassInputDecoration({
+    required String labelText,
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: AppColors.surface.withOpacity(0.4),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: AppColors.primary.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: AppColors.border.withOpacity(0.5),
+          width: 1.5,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: AppColors.primary.withOpacity(0.8),
+          width: 2,
+        ),
+      ),
+      labelStyle: TextStyle(
+        color: AppColors.textSecondary.withOpacity(0.8),
+        letterSpacing: 1.2,
+      ),
+      floatingLabelStyle: TextStyle(
+        color: AppColors.primary,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
 }
 ```
 
@@ -845,6 +954,205 @@ grep -r "Color(0x" app/lib
 4. **Replace colors** - Use `AppColors.*` constants
 5. **Remove unused imports** - Remove `google_fonts` imports where no longer needed
 6. **Test visual consistency** - Verify UI looks identical after migration
+
+---
+
+## Glassmorphism Theme (iOS Liquid Glass Aesthetic)
+
+### Overview
+
+HackTracker uses a **glassmorphism design system** for authentication screens, creating an iOS-inspired liquid glass aesthetic with frosted glass effects, gradient backgrounds, and subtle shadows.
+
+### GlassTheme Constants
+
+```dart
+// app/lib/theme/glass_theme.dart
+class GlassTheme {
+  GlassTheme._(); // Private constructor
+
+  // Background gradient for auth screens
+  static BoxDecoration get backgroundGradient => BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        AppColors.background,
+        AppColors.background.withOpacity(0.95),
+        AppColors.surface.withOpacity(0.8),
+      ],
+      stops: const [0.0, 0.5, 1.0],
+    ),
+  );
+
+  // Default blur sigma for glass containers
+  static const double defaultBlurSigma = 10.0;
+
+  // Default border radius for glass containers
+  static const double defaultBorderRadius = 24.0;
+
+  // Default button border radius
+  static const double defaultButtonRadius = 16.0;
+
+  // Primary icon color with opacity
+  static Color get primaryIconColor => AppColors.primary.withOpacity(0.8);
+
+  // Primary text color with opacity
+  static Color get primaryTextColor => AppColors.primary.withOpacity(0.9);
+
+  // Secondary text color with opacity
+  static Color get secondaryTextColor => AppColors.textSecondary.withOpacity(0.9);
+
+  // Border color with opacity for dividers
+  static Color get dividerColor => AppColors.border.withOpacity(0.3);
+}
+```
+
+### Glassmorphism Widgets
+
+#### GlassContainer
+
+Frosted glass container with backdrop blur effect:
+
+```dart
+import 'dart:ui';
+import 'package:hacktracker/features/auth/widgets/glass_container.dart';
+
+GlassContainer(
+  padding: const EdgeInsets.all(24),
+  borderRadius: 24.0,
+  blurSigma: 10.0,
+  child: YourContent(),
+)
+```
+
+**Features:**
+- Backdrop blur using `BackdropFilter`
+- Gradient background with semi-transparent surface
+- Customizable border radius and blur intensity
+- Subtle shadows for depth
+
+#### GlassButton
+
+Elevated button with glassmorphism styling:
+
+```dart
+import 'package:hacktracker/features/auth/widgets/glass_button.dart';
+
+GlassButton(
+  text: 'LOG IN',
+  onPressed: () => _handleLogin(),
+  isLoading: false,
+  icon: Icons.login,
+  height: 56,
+)
+```
+
+**Features:**
+- Gradient background (primary → secondary)
+- Elevated shadow effect
+- Loading state with spinner
+- Optional icon support
+- Disabled state styling
+
+### Glassmorphism Usage Patterns
+
+#### Authentication Screens
+
+All authentication screens (Login, Signup, Forgot Password) use glassmorphism:
+
+```dart
+Scaffold(
+  body: Container(
+    decoration: GlassTheme.backgroundGradient,
+    child: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // Title header (always visible)
+            AuthTitleHeader(),
+            
+            // Form container (animated fade transition)
+            Expanded(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: GlassContainer(
+                  padding: const EdgeInsets.all(16),
+                  child: _buildForm(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+)
+```
+
+#### Form Input Fields
+
+Glass-styled input fields with glassmorphism decoration:
+
+```dart
+TextField(
+  controller: _emailController,
+  decoration: DecorationStyles.glassInputDecoration(
+    labelText: 'EMAIL',
+    prefixIcon: Icon(Icons.email_outlined),
+  ),
+)
+```
+
+**Features:**
+- Semi-transparent background
+- Primary color border with opacity
+- Enhanced focus border
+- Uppercase label styling with letter spacing
+
+### Glassmorphism Best Practices
+
+1. **Use BackdropFilter for True Glass Effect**
+   ```dart
+   BackdropFilter(
+     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+     child: Container(/* ... */),
+   )
+   ```
+
+2. **Layer Opacity for Depth**
+   - Background: 0.7-0.8 opacity
+   - Borders: 0.3-0.5 opacity
+   - Text: 0.8-0.9 opacity
+
+3. **Subtle Shadows for Elevation**
+   ```dart
+   boxShadow: [
+     BoxShadow(
+       color: Colors.black.withOpacity(0.3),
+       blurRadius: 20,
+       offset: const Offset(0, 10),
+     ),
+   ]
+   ```
+
+4. **Consistent Border Radius**
+   - Containers: 24px
+   - Buttons: 16px
+   - Inputs: 16px
+
+5. **Gradient Backgrounds**
+   - Use multi-stop gradients for smooth transitions
+   - Combine background and surface colors with varying opacity
+
+### Theme Integration
+
+Glassmorphism is fully integrated with the existing theme system:
+
+- **Colors**: Uses `AppColors` constants
+- **Text Styles**: Uses Material 3 text theme
+- **Constants**: Centralized in `GlassTheme`
+- **Decorations**: Extends `DecorationStyles` with glass methods
 
 ---
 

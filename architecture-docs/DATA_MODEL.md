@@ -11,12 +11,12 @@ This document provides a quick reference snapshot of HackTracker's current imple
 
 | Metric | Count |
 |--------|-------|
-| **Lambda Functions** | 21 |
-| **Implemented Entities** | 4 (User, Team, Player, Game) |
-| **API Routes** | 21 |
-| **DynamoDB GSIs** | 5 (3 active, 2 reserved) |
+| **Lambda Functions** | 26 |
+| **Implemented Entities** | 5 (User, Team, Player, Game, AtBat) |
+| **API Routes** | 26 |
+| **DynamoDB GSIs** | 5 (4 active, 1 reserved) |
 | **Test Coverage** | 72% |
-| **Frontend Screens** | 8 |
+| **Frontend Screens** | 9 |
 
 ---
 
@@ -52,6 +52,15 @@ This document provides a quick reference snapshot of HackTracker's current imple
 - **Operations:** Create, List (by team), Get, Update, Delete
 - **Status Values:** `SCHEDULED`, `IN_PROGRESS`, `FINAL`, `POSTPONED`
 - **Frontend:** Schedule tab, game forms, game cards
+
+### AtBat
+- **Storage:** `GAME#<gameId>` → `ATBAT#<atBatId>`
+- **Attributes:** atBatId, gameId, playerId, teamId, result, inning, outs, battingOrder, hitLocation (normalized 0.0-1.0), hitType, rbis, createdAt
+- **Operations:** Create, List (by game), Get, Update, Delete
+- **Result Values:** `K` (Strikeout), `BB` (Walk), `FO` (Flyout), `1B`, `2B`, `3B`, `HR`, `OUT`, `E` (Error)
+- **Hit Location:** Normalized coordinates `{x: 0.0-1.0, y: 0.0-1.0}` for cross-device consistency
+- **GSI5:** `GSI5PK = PLAYER#<playerId>`, `GSI5SK = ATBAT#<createdAt>` for player stat aggregation
+- **Frontend:** Scoring screen with interactive field diagram
 
 ---
 
@@ -100,8 +109,15 @@ This document provides a quick reference snapshot of HackTracker's current imple
 17. **create-game** - POST /games
 18. **list-games** - GET /teams/{teamId}/games
 19. **get-game** - GET /games/{gameId}
-20. **update-game** - PATCH /games/{gameId}
+20. **update-game** - PUT /games/{gameId}
 21. **delete-game** - DELETE /games/{gameId}
+
+### AtBats (5 functions)
+22. **create-atbat** - POST /games/{gameId}/atbats
+23. **list-atbats** - GET /games/{gameId}/atbats
+24. **get-atbat** - GET /games/{gameId}/atbats/{atBatId}
+25. **update-atbat** - PUT /games/{gameId}/atbats/{atBatId}
+26. **delete-atbat** - DELETE /games/{gameId}/atbats/{atBatId}
 
 ---
 
@@ -132,9 +148,9 @@ This document provides a quick reference snapshot of HackTracker's current imple
 - Status: Defined but not populated
 
 **GSI5: Player Stats**
-- Purpose: At-bat aggregation
-- Keys: `GSI5PK = PLAYER#<playerId>`, `GSI5SK = ATBAT#<atBatId>`
-- Status: Defined but not populated
+- Purpose: At-bat aggregation by player
+- Keys: `GSI5PK = PLAYER#<playerId>`, `GSI5SK = ATBAT#<createdAt>`
+- Status: ✅ Active - Used to query all at-bats for a player (sorted by date)
 
 ---
 
@@ -153,6 +169,7 @@ This document provides a quick reference snapshot of HackTracker's current imple
 8. **Profile Screen** - User profile management
 9. **Recruiter Screen** - (Placeholder)
 10. **Team Creation Screen** - Create new team
+11. **Scoring Screen** - Fast at-bat entry with interactive field diagram
 
 ---
 
@@ -165,6 +182,7 @@ This document provides a quick reference snapshot of HackTracker's current imple
 - `selectedTeamProvider` - Currently selected team
 - `rosterProvider` - Team roster with roles
 - `gamesProvider` - Games by team with SWR caching
+- `atBatsProvider` - At-bats by game with SWR caching
 - `currentUserProvider` - Current user profile
 - `userContextProvider` - UI context (teams, permissions)
 
@@ -180,6 +198,7 @@ POLICY_MAP = {
     'manage_team': ['owner', 'manager'],
     'delete_team': ['owner'],
     'manage_games': ['owner', 'manager', 'scorekeeper'],
+    'manage_atbats': ['owner', 'manager', 'scorekeeper'],
 }
 ```
 
@@ -212,7 +231,6 @@ The following entities are planned but not yet implemented:
 
 - **League**: Multi-team organization
 - **Season**: Group of games (team or league level)
-- **AtBat**: Individual play event (stat tracking)
 - **FreeAgent**: Player availability listing
 - **Invite**: Team invitation system
 
@@ -267,5 +285,5 @@ The following entities are planned but not yet implemented:
 
 ---
 
-**Current Status:** MVP complete with Users, Teams, Players, and Games fully functional. Ready for at-bat stat tracking implementation.
+**Current Status:** MVP complete with Users, Teams, Players, Games, and AtBats fully functional. Hit location coordinate system implemented with normalized 0.0-1.0 values for cross-device consistency. Ready for stat aggregation and season management.
 

@@ -17,181 +17,234 @@ This document provides comprehensive documentation for all screens in the HackTr
 
 ## Authentication Screens
 
-### LoginScreen
+### LoginScreen (Unified Authentication)
 
 **File:** `lib/features/auth/screens/login_screen.dart`
 
-**Purpose:** Primary authentication entry point for existing users
+**Purpose:** Unified authentication screen handling login, signup, and forgot password with iOS liquid glass aesthetic
+
+**Design Theme:**
+- **Glassmorphism** - Frosted glass effect with backdrop blur
+- **Single Screen** - All auth forms on one page with animated transitions
+- **No Scrolling** - Forms fit on one screen without keyboard overflow
 
 **Widget Tree Structure:**
 ```
 LoginScreen
 ├── Scaffold
-│   ├── AppBar (title: "Sign In")
-│   └── Body
-│       ├── Container (header decoration)
-│       │   └── Text ("HACKTRACKER")
-│       ├── Form
-│       │   ├── AppEmailField
-│       │   ├── AppPasswordField
-│       │   └── ElevatedButton ("Sign In")
-│       ├── Row (navigation links)
-│       │   ├── TextButton ("Sign Up")
-│       │   └── TextButton ("Forgot Password?")
-│       └── Error Container (conditional)
-```
-
-**Props and Callbacks:**
-- No external props (stateless screen)
-- Internal callbacks:
-  - `_signIn()` - Authenticate user
-  - `_navigateToSignUp()` - Navigate to signup
-  - `_navigateToForgotPassword()` - Navigate to password reset
-
-**State Dependencies:**
-- `authStatusProvider` - Authentication state management
-- `AuthService.signIn()` - Cognito authentication
-- Form validation state (local)
-
-**Navigation Patterns:**
-- Success → `HomeScreen` (via `AuthGate`)
-- Sign Up → `SignUpScreen`
-- Forgot Password → `ForgotPasswordScreen`
-- Error → Stay on screen with error message
-
-**Code Example:**
-```dart
-class LoginScreen extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  
-  Future<void> _signIn() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        await AuthService.signIn(
-          _emailController.text,
-          _passwordController.text,
-        );
-        // Navigation handled by AuthGate
-      } catch (e) {
-        setState(() => _errorMessage = e.toString());
-      }
-    }
-  }
-}
-```
-
-### SignUpScreen
-
-**File:** `lib/features/auth/screens/signup_screen.dart`
-
-**Purpose:** New user registration with password requirements
-
-**Widget Tree Structure:**
-```
-SignUpScreen
-├── Scaffold
-│   ├── AppBar (title: "Create Account")
-│   └── Body
-│       ├── Container (header decoration)
-│       │   └── Text ("JOIN HACKTRACKER")
-│       ├── Form
-│       │   ├── AppEmailField
-│       │   ├── AppPasswordField
-│       │   ├── AppPasswordField (confirmation)
-│       │   └── ElevatedButton ("Create Account")
-│       ├── Password Requirements Container
-│       │   └── Column (requirement items)
-│       ├── Row (navigation links)
-│       │   └── TextButton ("Already have an account? Sign In")
-│       └── Error Container (conditional)
+│   └── Container (GlassTheme.backgroundGradient)
+│       └── SafeArea
+│           └── Padding
+│               ├── AuthTitleHeader (always visible)
+│               └── Expanded
+│                   └── FadeTransition (form animation)
+│                       └── SingleChildScrollView
+│                           └── GlassContainer
+│                               └── Switch (_formMode)
+│                                   ├── AuthFormMode.login
+│                                   │   ├── StatusIndicator ("LOG IN")
+│                                   │   ├── AuthGlassField (Email)
+│                                   │   ├── AuthGlassField (Password)
+│                                   │   ├── TextButton ("FORGOT PASSWORD?")
+│                                   │   ├── AuthErrorMessage (conditional)
+│                                   │   ├── GlassButton ("LOG IN")
+│                                   │   ├── AuthDivider ("OR")
+│                                   │   └── AuthFormLink ("CREATE ACCOUNT")
+│                                   ├── AuthFormMode.signup
+│                                   │   ├── StatusIndicator ("SIGN UP")
+│                                   │   ├── AuthGlassField (First Name)
+│                                   │   ├── AuthGlassField (Last Name)
+│                                   │   ├── AuthGlassField (Email)
+│                                   │   ├── AuthGlassField (Password)
+│                                   │   ├── AuthGlassField (Confirm Password)
+│                                   │   ├── Text ("Minimum 8 characters")
+│                                   │   ├── AuthErrorMessage (conditional)
+│                                   │   ├── GlassButton ("SIGN UP")
+│                                   │   ├── AuthDivider ("OR")
+│                                   │   └── AuthFormLink ("SIGN IN")
+│                                   └── AuthFormMode.forgotPassword
+│                                       ├── StatusIndicator ("RESET PASSWORD")
+│                                       ├── if (!_codeSent)
+│                                       │   ├── AuthGlassField (Email)
+│                                       │   └── AuthInfoBox (instructions)
+│                                       ├── else
+│                                       │   ├── AuthGlassField (Reset Code)
+│                                       │   ├── AuthGlassField (New Password)
+│                                       │   ├── AuthGlassField (Confirm Password)
+│                                       │   └── AuthInfoBox ("Check your email")
+│                                       ├── AuthErrorMessage (conditional)
+│                                       ├── GlassButton ("SEND CODE" / "RESET PASSWORD")
+│                                       ├── AuthDivider ("OR")
+│                                       └── AuthFormLink ("GO BACK")
 ```
 
 **Props and Callbacks:**
 - No external props
 - Internal callbacks:
-  - `_signUp()` - Register new user
-  - `_navigateToLogin()` - Navigate to login
+  - `_handleSignIn()` - Authenticate user with Cognito
+  - `_handleSignUp()` - Register new user
+  - `_sendResetCode()` - Send password reset code
+  - `_confirmReset()` - Confirm password reset with code
+  - `_switchFormMode()` - Animate between forms
+
+**State Management:**
+- `_formMode` - `AuthFormMode` enum (`login`, `signup`, `forgotPassword`)
+- `_isLoading` - Loading state for async operations
+- `_codeSent` - Track forgot password flow state
+- `_errorMessage` - Error message display (null when no error)
+- `_animationController` - Controls fade transition animation
+
+**Form Controllers:**
+- Login: `_emailController`, `_passwordController`
+- Signup: `_firstNameController`, `_lastNameController`, `_signupEmailController`, `_signupPasswordController`, `_confirmPasswordController`
+- Forgot Password: `_forgotPasswordEmailController`, `_codeController`, `_newPasswordController`, `_confirmNewPasswordController`
 
 **State Dependencies:**
-- `authStatusProvider` - Authentication state
-- `AuthService.signUp()` - Cognito registration
-- Form validation state (local)
+- `Amplify.Auth.signIn()` - Cognito authentication
+- `Amplify.Auth.signUp()` - Cognito registration
+- `Amplify.Auth.resetPassword()` - Send reset code
+- `Amplify.Auth.confirmResetPassword()` - Confirm password reset
 
 **Navigation Patterns:**
-- Success → `LoginScreen` (confirmation required)
-- Login → `LoginScreen`
+- Success (Login) → `HomeScreen` (via `AuthGate`)
+- Success (Signup) → Success dialog → Stay on screen
+- Success (Forgot Password) → Success dialog → Return to login form
+- Form Switch → Animated fade transition (no page navigation)
 - Error → Stay on screen with error message
+
+**Key Features:**
+1. **Unified Screen** - All authentication flows on one page
+2. **Animated Transitions** - `FadeTransition` for smooth form switching
+3. **Keyboard Handling** - Forms scroll naturally when keyboard appears
+4. **Glassmorphism Design** - Frosted glass containers and buttons
+5. **Consistent Sizing** - All form containers have same height
+6. **No Navigation Stack** - Forms switch in-place (better UX)
 
 **Code Example:**
 ```dart
-Future<void> _signUp() async {
-  if (_formKey.currentState!.validate()) {
-    if (_passwordController.text != _confirmPasswordController.text) {
-      setState(() => _errorMessage = 'Passwords do not match');
+enum AuthFormMode { login, signup, forgotPassword }
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  AuthFormMode _formMode = AuthFormMode.login;
+  bool _isLoading = false;
+  bool _codeSent = false;
+  String? _errorMessage;
+  
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+    _animationController.forward();
+  }
+
+  void _switchFormMode(AuthFormMode mode) {
+    if (_formMode == mode) return;
+
+    setState(() {
+      _formMode = mode;
+      _errorMessage = null;
+      if (mode != AuthFormMode.forgotPassword) {
+        _codeSent = false;
+      }
+      _animationController.reset();
+      _animationController.forward();
+    });
+  }
+
+  Future<void> _handleSignIn() async {
+    if (_emailController.text.trim().isEmpty || 
+        _passwordController.text.isEmpty) {
+      setState(() => _errorMessage = 'Please enter email and password');
       return;
     }
-    
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
-      await AuthService.signUp(
-        _emailController.text,
-        _passwordController.text,
+      await Amplify.Auth.signIn(
+        username: _emailController.text.trim(),
+        password: _passwordController.text,
       );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    } catch (e) {
-      setState(() => _errorMessage = e.toString());
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AuthGate()),
+        );
+      }
+    } on AuthException catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.message;
+      });
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: GlassTheme.backgroundGradient,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              children: [
+                const AuthTitleHeader(),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SingleChildScrollView(
+                      child: GlassContainer(
+                        padding: const EdgeInsets.all(16),
+                        child: _formMode == AuthFormMode.login
+                            ? _buildLoginForm()
+                            : _formMode == AuthFormMode.signup
+                                ? _buildSignupForm()
+                                : _buildForgotPasswordForm(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 ```
 
-### ForgotPasswordScreen
+### Removed Screens
 
-**File:** `lib/features/auth/screens/forgot_password_screen.dart`
+The following screens were consolidated into `LoginScreen`:
 
-**Purpose:** Password reset initiation
+- **SignUpScreen** - Functionality merged into `LoginScreen` with `AuthFormMode.signup`
+- **ForgotPasswordScreen** - Functionality merged into `LoginScreen` with `AuthFormMode.forgotPassword`
 
-**Widget Tree Structure:**
-```
-ForgotPasswordScreen
-├── Scaffold
-│   ├── AppBar (title: "Reset Password")
-│   └── Body
-│       ├── Container (header decoration)
-│       │   └── Text ("RESET PASSWORD")
-│       ├── Container (info box)
-│       │   └── Text (instructions)
-│       ├── Form
-│       │   ├── AppEmailField
-│       │   └── ElevatedButton ("Send Reset Code")
-│       ├── Row (navigation links)
-│       │   └── TextButton ("Back to Sign In")
-│       └── Error Container (conditional)
-```
-
-**Props and Callbacks:**
-- No external props
-- Internal callbacks:
-  - `_resetPassword()` - Send reset code
-  - `_navigateToLogin()` - Navigate to login
-
-**State Dependencies:**
-- `AuthService.resetPassword()` - Cognito password reset
-- Form validation state (local)
-
-**Navigation Patterns:**
-- Success → `LoginScreen` (with success message)
-- Back to Sign In → `LoginScreen`
-- Error → Stay on screen with error message
+Both screens have been deleted and are no longer in the codebase.
 
 ### AuthGate
 
@@ -732,6 +785,7 @@ User Action
 | HomeTabView | - | - | - |
 | PlayerViewScreen | currentUserProvider, teamsProvider | - | User, Team |
 | TeamViewScreen | teamsProvider, selectedTeamProvider, playersProvider | ApiService | Team, Player |
+| ScoringScreen | gamesProvider, rosterProvider, atBatsProvider | ApiService | Game, Player, AtBat |
 | ProfileScreen | currentUserProvider | AuthService | User |
 | RecruiterScreen | - | - | - |
 
@@ -747,6 +801,7 @@ User Action
 | HomeTabView | PlayerViewScreen, TeamViewScreen | HomeScreen |
 | PlayerViewScreen | TeamViewScreen | HomeTabView |
 | TeamViewScreen | RecruiterScreen | HomeTabView |
+| ScoringScreen | TeamViewScreen (game schedule) | GameCard (Start Game button) |
 | ProfileScreen | LoginScreen | HomeScreen |
 | RecruiterScreen | - | HomeScreen |
 
@@ -796,15 +851,121 @@ testWidgets('Complete team creation flow', (tester) async {
 
 ---
 
+### ScoringScreen
+
+**File:** `lib/features/scoring/screens/scoring_screen.dart`
+
+**Purpose:** Fast at-bat entry with interactive field diagram for hit location selection
+
+**Widget Tree Structure:**
+```
+ScoringScreen
+├── Scaffold
+│   ├── AppBar (game info, back button)
+│   └── Body
+│       └── Consumer (game data)
+│           └── Column
+│               ├── _buildGameStateHeader
+│               │   ├── Row (Inning / Outs)
+│               │   └── Row (Up to Bat: Player Name #Number)
+│               ├── Container (Spray Chart title + instructions)
+│               ├── Expanded
+│               │   └── AspectRatio (FieldDiagram)
+│               │       ├── Container (background)
+│               │       └── Stack
+│               │           ├── SvgPicture (softball field)
+│               │           └── CustomPaint (hit location arc)
+│               └── ActionArea
+│                   ├── Row (initial buttons: K, BB, FO)
+│                   ├── Row (outcome buttons: 1B, 2B, 3B, HR, OUT, E)
+│                   └── ElevatedButton (Submit At-Bat)
+```
+
+**Props:**
+- `gameId` - Game UUID (required)
+- `teamId` - Team UUID (required)
+
+**State Management:**
+- `_step` - EntryStep enum (`initial`, `outcome`)
+- `_hitLocation` - Map<String, double>? (normalized 0.0-1.0 coordinates)
+- `_hitType` - String? (optional hit type)
+- `_selectedResult` - String? (selected at-bat result)
+- `_currentInning` - int (current inning)
+- `_currentOuts` - int (current outs, 0-2)
+- `_currentBatterIndex` - int (position in lineup)
+
+**Hit Location Coordinate System:**
+- Coordinates captured as normalized 0.0-1.0 values (percentage-based)
+- Tap position divided by field size: `normalizedX = tapX / fieldWidth`
+- Stored in DynamoDB as Decimal types (not float)
+- Scales proportionally when rendering on any device size
+- See [FieldDiagram Widget](#fielddiagram) for detailed coordinate system
+
+**User Flows:**
+1. **Quick Entry (1 tap)**: Tap K, BB, or FO → Submit (no field interaction)
+2. **Hit with Location (2 taps)**: Tap field → Select outcome (1B, 2B, etc.) → Submit
+3. **Advanced Entry (3+ taps)**: Tap field → Optional hit type/hit details → Select outcome → Submit
+
+**Navigation Patterns:**
+- Back → Previous screen (game schedule)
+- Submit → Auto-advance to next batter in lineup
+- Long press field → Clear hit location and reset to initial state
+
+**Code Example:**
+```dart
+class ScoringScreen extends ConsumerStatefulWidget {
+  final String gameId;
+  final String teamId;
+
+  const ScoringScreen({
+    super.key,
+    required this.gameId,
+    required this.teamId,
+  });
+
+  @override
+  ConsumerState<ScoringScreen> createState() => _ScoringScreenState();
+}
+
+class _ScoringScreenState extends ConsumerState<ScoringScreen> {
+  EntryStep _step = EntryStep.initial;
+  Map<String, double>? _hitLocation;
+  String? _selectedResult;
+  int _currentInning = 1;
+  int _currentOuts = 0;
+
+  void _handleFieldTap(double x, double y) {
+    setState(() {
+      _hitLocation = {'x': x, 'y': y};
+      _step = EntryStep.outcome;
+    });
+  }
+
+  Future<void> _saveAtBat(String result, Map<String, dynamic> batter) async {
+    await ref.read(atBatActionsProvider(widget.gameId)).recordAtBat(
+      playerId: batter['playerId'],
+      result: result,
+      inning: _currentInning,
+      outs: _currentOuts,
+      battingOrder: batter['battingOrder'],
+      hitLocation: _hitLocation,
+    );
+    _advanceToNextBatter(result);
+    _resetState();
+  }
+}
+```
+
+---
+
 ## Future Screen Additions
 
 ### Planned Screens
 
-1. **GameRecordingScreen** - Record at-bats and game stats
-2. **PlayerStatsScreen** - Detailed player statistics
-3. **TeamStatsScreen** - Team performance analytics
-4. **FreeAgentScreen** - Browse and recruit free agents
-5. **SettingsScreen** - App configuration and preferences
+1. **PlayerStatsScreen** - Detailed player statistics
+2. **TeamStatsScreen** - Team performance analytics
+3. **FreeAgentScreen** - Browse and recruit free agents
+4. **SettingsScreen** - App configuration and preferences
 
 ### Screen Patterns for Future Features
 

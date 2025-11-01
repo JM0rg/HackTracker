@@ -12,6 +12,10 @@ class AppColors {
   // Backgrounds
   static const background = Color(0xFF0F172A); // Dark slate
   static const surface = Color(0xFF1E293B); // Slate
+  static const cardBackground = Color(0xFF1E293B); // Same as surface
+
+  // Accent color (alias for primary for compatibility)
+  static const accent = primary;
 
   // Borders & dividers
   static const border = Color(0xFF334155);

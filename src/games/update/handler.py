@@ -44,7 +44,8 @@ def _validate_lineup_players_belong_to_team(table, lineup, team_id):
     # Extract all player IDs from the lineup
     lineup_player_ids = {player.get('playerId') for player in lineup if player.get('playerId')}
     
-    if not lineup_player_id        return
+    if not lineup_player_ids:
+        return
     
     # Query all players for this team
     try:

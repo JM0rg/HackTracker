@@ -287,6 +287,61 @@ module "api_gateway" {
         timeout_milliseconds   = 10000
       }
     }
+
+    # Create AtBat
+    "POST /games/{gameId}/atbats" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.create_atbat_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # List AtBats for Game
+    "GET /games/{gameId}/atbats" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.list_atbats_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 30000
+      }
+    }
+
+    # Get AtBat by ID
+    "GET /games/{gameId}/atbats/{atBatId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.get_atbat_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Update AtBat
+    "PUT /games/{gameId}/atbats/{atBatId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.update_atbat_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
+
+    # Delete AtBat
+    "DELETE /games/{gameId}/atbats/{atBatId}" = {
+      authorization_type = "JWT"
+      authorizer_key     = "cognito"
+      integration = {
+        uri                    = module.delete_atbat_lambda.lambda_function_invoke_arn
+        payload_format_version = "2.0"
+        timeout_milliseconds   = 10000
+      }
+    }
   }
 
   tags = merge(local.common_tags, {
@@ -474,6 +529,51 @@ resource "aws_lambda_permission" "api_gateway_delete_game" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = module.delete_game_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Create AtBat Lambda
+resource "aws_lambda_permission" "api_gateway_create_atbat" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.create_atbat_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke List AtBats Lambda
+resource "aws_lambda_permission" "api_gateway_list_atbats" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.list_atbats_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Get AtBat Lambda
+resource "aws_lambda_permission" "api_gateway_get_atbat" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.get_atbat_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Update AtBat Lambda
+resource "aws_lambda_permission" "api_gateway_update_atbat" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.update_atbat_lambda.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
+}
+
+# Allow API Gateway to invoke Delete AtBat Lambda
+resource "aws_lambda_permission" "api_gateway_delete_atbat" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = module.delete_atbat_lambda.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${module.api_gateway.api_execution_arn}/*/*"
 }

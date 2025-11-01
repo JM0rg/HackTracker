@@ -5,6 +5,7 @@ Provides shared validation functions for team names, descriptions, etc.
 """
 
 import re
+from decimal import Decimal
 
 
 def validate_team_name(name):
@@ -420,4 +421,232 @@ def validate_lineup(lineup):
         })
     
     return validated_lineup
+
+
+def validate_atbat_result(result):
+    """
+    Validate at-bat result
+    
+    Rules:
+    - Must be one of the valid result codes
+    - Case-insensitive but returned in uppercase
+    
+    Valid results:
+    - K (Strikeout)
+    - BB (Walk)
+    - HBP (Hit By Pitch)
+    - 1B (Single)
+    - 2B (Double)
+    - 3B (Triple)
+    - HR (Home Run)
+    - OUT (Generic out)
+    - SAC (Sacrifice)
+    - FC (Fielder's Choice)
+    - E (Error/Reached on Error)
+    
+    Args:
+        result (str): At-bat result to validate
+        
+    Returns:
+        str: Validated result (uppercase)
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if not result or not isinstance(result, str):
+        raise ValueError("result is required and must be a string")
+    
+    # Normalize to uppercase
+    result = result.strip().upper()
+    
+    # Check valid values
+    valid_results = ['K', 'BB', 'HBP', '1B', '2B', '3B', 'HR', 'OUT', 'SAC', 'FC', 'E']
+    if result not in valid_results:
+        raise ValueError(f"result must be one of: {', '.join(valid_results)}")
+    
+    return result
+
+
+def validate_hit_location(hit_location):
+    """
+    Validate hit location coordinates
+    
+    Rules:
+    - Must be a dict with 'x' and 'y' keys
+    - Both values must be floats between 0.0 and 1.0 (normalized coordinates)
+    - Returns Decimal types for DynamoDB compatibility
+    - Optional field (can be None)
+    
+    Args:
+        hit_location (dict or None): Hit location to validate
+        
+    Returns:
+        dict or None: Validated hit location with Decimal values or None
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if hit_location is None:
+        return None
+    
+    if not isinstance(hit_location, dict):
+        raise ValueError("hitLocation must be a dictionary")
+    
+    # Check required keys
+    if 'x' not in hit_location or 'y' not in hit_location:
+        raise ValueError("hitLocation must contain 'x' and 'y' keys")
+    
+    # Validate x coordinate
+    try:
+        x = float(hit_location['x'])
+    except (TypeError, ValueError):
+        raise ValueError("hitLocation 'x' must be a number")
+    
+    if x < 0.0 or x > 1.0:
+        raise ValueError("hitLocation 'x' must be between 0.0 and 1.0")
+    
+    # Validate y coordinate
+    try:
+        y = float(hit_location['y'])
+    except (TypeError, ValueError):
+        raise ValueError("hitLocation 'y' must be a number")
+    
+    if y < 0.0 or y > 1.0:
+        raise ValueError("hitLocation 'y' must be between 0.0 and 1.0")
+    
+    # Convert to Decimal for DynamoDB compatibility
+    return {'x': Decimal(str(x)), 'y': Decimal(str(y))}
+
+
+def validate_hit_type(hit_type):
+    """
+    Validate hit type
+    
+    Rules:
+    - Must be one of the valid hit types
+    - Case-insensitive but returned in lowercase with underscores
+    - Optional field (can be None)
+    
+    Valid types:
+    - fly_ball
+    - ground_out
+    - line_drive
+    - pop_up
+    - bunt
+    
+    Args:
+        hit_type (str or None): Hit type to validate
+        
+    Returns:
+        str or None: Validated hit type or None
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if hit_type is None or hit_type == '':
+        return None
+    
+    if not isinstance(hit_type, str):
+        raise ValueError("hitType must be a string")
+    
+    # Normalize to lowercase
+    hit_type = hit_type.strip().lower()
+    
+    # Check valid values
+    valid_types = ['fly_ball', 'ground_out', 'line_drive', 'pop_up', 'bunt']
+    if hit_type not in valid_types:
+        raise ValueError(f"hitType must be one of: {', '.join(valid_types)}")
+    
+    return hit_type
+
+
+def validate_inning(inning):
+    """
+    Validate inning number
+    
+    Rules:
+    - Must be integer >= 1
+    
+    Args:
+        inning (int or str): Inning number to validate
+        
+    Returns:
+        int: Validated inning number
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    # Try to convert to int if string
+    try:
+        inning = int(inning)
+    except (TypeError, ValueError):
+        raise ValueError("inning must be a valid integer")
+    
+    # Check range
+    if inning < 1:
+        raise ValueError("inning must be 1 or greater")
+    
+    return inning
+
+
+def validate_outs(outs):
+    """
+    Validate outs count
+    
+    Rules:
+    - Must be integer between 0 and 2
+    
+    Args:
+        outs (int or str): Outs count to validate
+        
+    Returns:
+        int: Validated outs count
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    # Try to convert to int if string
+    try:
+        outs = int(outs)
+    except (TypeError, ValueError):
+        raise ValueError("outs must be a valid integer")
+    
+    # Check range
+    if outs < 0 or outs > 2:
+        raise ValueError("outs must be between 0 and 2")
+    
+    return outs
+
+
+def validate_rbis(rbis):
+    """
+    Validate RBIs count
+    
+    Rules:
+    - Must be integer >= 0
+    - Optional field (can be None)
+    
+    Args:
+        rbis (int or str or None): RBIs count to validate
+        
+    Returns:
+        int or None: Validated RBIs count or None
+        
+    Raises:
+        ValueError: If validation fails
+    """
+    if rbis is None:
+        return None
+    
+    # Try to convert to int if string
+    try:
+        rbis = int(rbis)
+    except (TypeError, ValueError):
+        raise ValueError("rbis must be a valid integer")
+    
+    # Check range
+    if rbis < 0:
+        raise ValueError("rbis must be 0 or greater")
+    
+    return rbis
 

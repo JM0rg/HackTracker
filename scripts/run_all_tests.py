@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 Comprehensive test script for all Lambda functions
-Tests: User → Team → Player → Game CRUD operations
+Tests: User → Team → Player → Game → Lineup → AtBat CRUD operations
 """
 
+import json
 import subprocess
 import sys
 import re
@@ -166,61 +167,145 @@ def main():
         "STEP 11: Getting Game"
     )
     
-    # Step 12: Update Game
-    run_command(
-        f'uv run python scripts/test_games.py update {USER_ID} {game1_id} opponentName "Tigers (Updated)"',
-        "STEP 12: Updating Game"
-    )
-    
-    # Step 13: Update Team
-    run_command(
-        f'uv run python scripts/test_teams.py update {USER_ID} {team1_id} name="Updated Team Name"',
-        "STEP 13: Updating Team"
-    )
-    
-    # Step 14: User Context
-    run_command(
-        f"uv run python scripts/test_users.py context {USER_ID}",
-        "STEP 14: Getting User Context"
-    )
-    
-    # Step 15: Query Users
-    run_command(
-        "uv run python scripts/test_users.py query list",
-        "STEP 15: Querying Users"
-    )
-    
-    # Step 16: Update User
-    run_command(
-        f"uv run python scripts/test_users.py update {USER_ID} firstName=Updated lastName=Name",
-        "STEP 16: Updating User"
-    )
-    
-    # Step 17: Get User
-    run_command(
-        f"uv run python scripts/test_users.py get {USER_ID}",
-        "STEP 17: Getting Updated User"
-    )
-    
-    # Step 18: Delete Operations
-    print("\n📝 STEP 18: Testing Delete Operations...")
+    # Step 12: Set Game Lineup
+    print("\n📝 STEP 12: Setting Game Lineup...")
     print("=" * 60)
     
-    # Test 18a: Delete Game
+    lineup_json = json.dumps([
+        {"playerId": player1_id, "battingOrder": 1},
+        {"playerId": player2_id, "battingOrder": 2},
+        {"playerId": player3_id, "battingOrder": 3}
+    ])
+    
+    run_command(
+        f'uv run python scripts/test_games.py update {USER_ID} {game1_id} lineup \'{lineup_json}\'',
+        "Setting lineup for game 1"
+    )
+    
+    # Step 13: Start Game (Set to IN_PROGRESS)
+    run_command(
+        f'uv run python scripts/test_games.py update {USER_ID} {game1_id} status IN_PROGRESS',
+        "STEP 13: Starting Game (IN_PROGRESS)"
+    )
+    
+    # Step 14: Create At-Bats
+    print("\n📝 STEP 14: Creating At-Bats...")
+    print("=" * 60)
+    
+    # Strikeout
+    success, output = run_command(
+        f'uv run python scripts/test_atbats.py create {USER_ID} {game1_id} {player1_id} K 1 0 1',
+        "At-bat 1: Strikeout"
+    )
+    atbat1_id = extract_id(output, r'At-bat created: ([a-f0-9-]+)')
+    
+    # Single with hit location
+    success, output = run_command(
+        f'uv run python scripts/test_atbats.py create {USER_ID} {game1_id} {player2_id} 1B 1 1 2 0.6 0.4 line_drive 1',
+        "At-bat 2: Single (line drive, 1 RBI)"
+    )
+    atbat2_id = extract_id(output, r'At-bat created: ([a-f0-9-]+)')
+    
+    # Home run
+    success, output = run_command(
+        f'uv run python scripts/test_atbats.py create {USER_ID} {game1_id} {player3_id} HR 1 2 3 0.5 0.8 fly_ball 2',
+        "At-bat 3: Home Run (2 RBIs)"
+    )
+    atbat3_id = extract_id(output, r'At-bat created: ([a-f0-9-]+)')
+    
+    # Walk
+    success, output = run_command(
+        f'uv run python scripts/test_atbats.py create {USER_ID} {game1_id} {player1_id} BB 2 0 1',
+        "At-bat 4: Walk"
+    )
+    atbat4_id = extract_id(output, r'At-bat created: ([a-f0-9-]+)')
+    
+    if atbat1_id:
+        print(f"✅ Created at-bats: {atbat1_id[:8]}..., {atbat2_id[:8] if atbat2_id else 'N/A'}..., {atbat3_id[:8] if atbat3_id else 'N/A'}...")
+    
+    # Step 15: List At-Bats
+    run_command(
+        f"uv run python scripts/test_atbats.py list {USER_ID} {game1_id}",
+        "STEP 15: Listing At-Bats"
+    )
+    
+    # Step 16: Get At-Bat
+    if atbat1_id:
+        run_command(
+            f"uv run python scripts/test_atbats.py get {USER_ID} {game1_id} {atbat1_id}",
+            "STEP 16: Getting At-Bat"
+        )
+    
+    # Step 17: Update At-Bat
+    if atbat2_id:
+        run_command(
+            f'uv run python scripts/test_atbats.py update {USER_ID} {game1_id} {atbat2_id} rbis 2',
+            "STEP 17: Updating At-Bat RBIs"
+        )
+    
+    # Step 18: Update Game
+    run_command(
+        f'uv run python scripts/test_games.py update {USER_ID} {game1_id} opponentName "Tigers (Updated)"',
+        "STEP 18: Updating Game"
+    )
+    
+    # Step 19: Update Team
+    run_command(
+        f'uv run python scripts/test_teams.py update {USER_ID} {team1_id} name="Updated Team Name"',
+        "STEP 19: Updating Team"
+    )
+    
+    # Step 20: User Context
+    run_command(
+        f"uv run python scripts/test_users.py context {USER_ID}",
+        "STEP 20: Getting User Context"
+    )
+    
+    # Step 21: Query Users
+    run_command(
+        "uv run python scripts/test_users.py query list",
+        "STEP 21: Querying Users"
+    )
+    
+    # Step 22: Update User
+    run_command(
+        f"uv run python scripts/test_users.py update {USER_ID} firstName=Updated lastName=Name",
+        "STEP 22: Updating User"
+    )
+    
+    # Step 23: Get User
+    run_command(
+        f"uv run python scripts/test_users.py get {USER_ID}",
+        "STEP 23: Getting Updated User"
+    )
+    
+    # Step 24: Delete Operations
+    print("\n📝 STEP 24: Testing Delete Operations...")
+    print("=" * 60)
+    
+    # Test 24a: Delete At-Bat
+    if atbat4_id:
+        print("\n📝 Testing: Delete At-Bat")
+        run_command(
+            f"uv run python scripts/test_atbats.py delete {USER_ID} {game1_id} {atbat4_id}",
+            "Delete At-Bat"
+        )
+    
+    # Test 24b: Delete Game
     print("\n📝 Testing: Delete Game")
     run_command(
         f"uv run python scripts/test_games.py delete {USER_ID} {game2_id}",
         "Delete Game"
     )
     
-    # Test 18b: Remove Player
+    # Test 24c: Remove Player
     print("\n📝 Testing: Remove Player")
     run_command(
         f"uv run python scripts/test_players.py remove {USER_ID} {team1_id} {player3_id}",
         "Remove Player"
     )
     
-    # Test 18c: Delete Team (MANAGED only)
+    # Test 24d: Delete Team (MANAGED only)
     print("\n📝 Testing: Delete Team (MANAGED)")
     run_command(
         f"uv run python scripts/test_teams.py delete {USER_ID} {team2_id}",
@@ -229,8 +314,8 @@ def main():
     
     # Note: User delete not tested here (would require recreating user)
     
-    # Step 19: PERSONAL Team Restrictions
-    print("\n📝 STEP 19: Testing PERSONAL Team Restrictions...")
+    # Step 25: PERSONAL Team Restrictions
+    print("\n📝 STEP 25: Testing PERSONAL Team Restrictions...")
     print("=" * 60)
     
     # Test 19a: Personal team filtered from public list
@@ -286,8 +371,8 @@ def main():
     if success and ("Found" in output or "player" in output.lower()):
         print("✅ Personal team players listed successfully")
     
-    # Step 20: Test includeRoles parameter
-    print("\n📝 STEP 20: Testing includeRoles Parameter...")
+    # Step 26: Test includeRoles parameter
+    print("\n📝 STEP 26: Testing includeRoles Parameter...")
     print("=" * 60)
     
     print("\n📝 Testing: List players with includeRoles=true")
@@ -307,6 +392,8 @@ def main():
     print("  ✅ Teams: Create (MANAGED & PERSONAL), Get, Query, Update, Delete")
     print("  ✅ Players: Add, List, Get, Update, Remove")
     print("  ✅ Games: Create, List, Get, Update, Delete")
+    print("  ✅ Lineups: Set, Update (with validation)")
+    print("  ✅ AtBats: Create, List, Get, Update, Delete")
     print("  ✅ PERSONAL Team Restrictions: Delete blocked, Update blocked, Add player blocked")
     print("  ✅ PERSONAL Team Filtering: Filtered from public lists")
     print(f"\nCreated Resources:")
@@ -314,6 +401,8 @@ def main():
     print(f"  Teams: {team1_id}, {team2_id}, {personal_team_id}")
     print(f"  Players: {player1_id}, {player2_id}, {player3_id}")
     print(f"  Games: {game1_id}, {game2_id}")
+    if atbat1_id:
+        print(f"  At-Bats: {atbat1_id[:8] if atbat1_id else 'N/A'}..., {atbat2_id[:8] if atbat2_id else 'N/A'}..., {atbat3_id[:8] if atbat3_id else 'N/A'}...")
 
 if __name__ == '__main__':
     main()
