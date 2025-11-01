@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/api_service.dart';
+import '../../../models/team.dart';
 import '../../../theme/app_colors.dart';
 
 /// Chat Tab - Placeholder for future chat feature

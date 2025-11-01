@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/api_service.dart';
+import '../models/user_context.dart';
 import '../screens/player_view_screen.dart';
 import '../screens/team_view_screen.dart';
 import '../screens/profile_screen.dart';

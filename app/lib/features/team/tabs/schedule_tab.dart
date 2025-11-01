@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../services/api_service.dart';
+import '../../../models/team.dart';
 import '../../../theme/app_colors.dart';
 import '../../../providers/game_providers.dart';
 import '../../../widgets/game_form_dialog.dart';

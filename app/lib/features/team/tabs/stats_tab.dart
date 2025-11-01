@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../services/api_service.dart';
+import '../../../models/team.dart';
 import '../widgets/placeholder_card.dart';
 
 /// Stats Tab - Toggle between My Stats and Team Stats

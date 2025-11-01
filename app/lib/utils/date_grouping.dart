@@ -1,4 +1,4 @@
-import '../services/api_service.dart';
+import '../models/game.dart';
 
 /// Groups games by date ranges: This Week, Next Week, Later
 Map<String, List<Game>> groupGamesByDateRange(List<Game> games) {

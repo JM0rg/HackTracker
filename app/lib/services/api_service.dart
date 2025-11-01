@@ -4,6 +4,12 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart';
+import '../models/team.dart';
+import '../models/player.dart';
+import '../models/game.dart';
+import '../models/atbat.dart';
+import '../models/user_context.dart';
+import '../models/api_exception.dart' as models;
 
 /// API Service for HackTracker backend
 /// 
@@ -20,7 +26,7 @@ class ApiService {
       // Validate authentication first
       final authStatus = await AuthService.validateAuth();
       if (!authStatus.isValid) {
-        throw ApiException(
+        throw models.ApiException(
           statusCode: 401,
           message: 'Authentication required: ${authStatus.message}',
           errorType: 'Unauthorized',
@@ -33,11 +39,11 @@ class ApiService {
       
       return tokens.idToken.raw;
     } catch (e) {
-      if (e is ApiException) rethrow;
+      if (e is models.ApiException) rethrow;
       
       // If it's an auth error, sign out and throw proper exception
       await AuthService.signOut();
-      throw ApiException(
+      throw models.ApiException(
         statusCode: 401,
         message: 'Authentication failed: $e',
         errorType: 'Unauthorized',
@@ -88,7 +94,7 @@ class ApiService {
   }
 
   /// Handle API response and decode JSON
-  dynamic _handleResponse(http.Response response) {
+  Future<dynamic> _handleResponse(http.Response response) async {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;
       return jsonDecode(response.body);
@@ -103,16 +109,16 @@ class ApiService {
 
       // Handle authentication errors specially
       if (response.statusCode == 401) {
-        // Sign out user on authentication failure
-        AuthService.signOut();
-        throw ApiException(
+        // Sign out user on authentication failure (await to ensure completion)
+        await AuthService.signOut();
+        throw models.ApiException(
           statusCode: response.statusCode,
           message: 'Session expired. Please sign in again.',
           errorType: 'Unauthorized',
         );
       }
 
-      throw ApiException(
+      throw models.ApiException(
         statusCode: response.statusCode,
         message: errorBody['error'] ?? 'Unknown error',
         errorType: errorBody['errorType'],
@@ -135,7 +141,7 @@ class ApiService {
       path: '/teams?userId=$userId',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     final teams = (data['teams'] as List)
         .map((json) => Team.fromJson(json))
         .toList();
@@ -156,7 +162,7 @@ class ApiService {
       path: '/teams?userId=$userId',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     final teams = (data['teams'] as List)
         .map((json) => Team.fromJson(json))
         .where((team) => team.isPersonal) // Only get personal team
@@ -187,7 +193,7 @@ class ApiService {
       body: body,
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Team.fromJson(data);
   }
 
@@ -198,7 +204,7 @@ class ApiService {
       path: '/teams/${Uri.encodeComponent(teamId)}',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Team.fromJson(data);
   }
 
@@ -218,7 +224,7 @@ class ApiService {
       body: body,
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Team.fromJson(data);
   }
 
@@ -229,7 +235,7 @@ class ApiService {
       path: '/teams/${Uri.encodeComponent(teamId)}',
     );
 
-    _handleResponse(response);
+    await _handleResponse(response);
   }
 
   // ========== PLAYERS ENDPOINTS ==========
@@ -261,7 +267,7 @@ class ApiService {
       path: '/teams/${Uri.encodeComponent(teamId)}/players$queryString',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     final players = (data['players'] as List)
         .map((json) => Player.fromJson(json as Map<String, dynamic>))
         .toList();
@@ -276,7 +282,7 @@ class ApiService {
       path: '/teams/${Uri.encodeComponent(teamId)}/players/${Uri.encodeComponent(playerId)}',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Player.fromJson(data as Map<String, dynamic>);
   }
 
@@ -301,7 +307,7 @@ class ApiService {
       body: body,
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Player.fromJson(data as Map<String, dynamic>);
   }
 
@@ -328,7 +334,7 @@ class ApiService {
       body: body,
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Player.fromJson(data as Map<String, dynamic>);
   }
 
@@ -339,7 +345,7 @@ class ApiService {
       path: '/teams/${Uri.encodeComponent(teamId)}/players/${Uri.encodeComponent(playerId)}',
     );
 
-    _handleResponse(response);
+    await _handleResponse(response);
   }
 
   // ========== GAMES ENDPOINTS ==========
@@ -351,7 +357,7 @@ class ApiService {
       path: '/teams/${Uri.encodeComponent(teamId)}/games',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     // Response is an array directly
     final games = (data as List)
         .map((json) => Game.fromJson(json as Map<String, dynamic>))
@@ -367,7 +373,7 @@ class ApiService {
       path: '/games/${Uri.encodeComponent(gameId)}',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Game.fromJson(data as Map<String, dynamic>);
   }
 
@@ -401,7 +407,7 @@ class ApiService {
       body: body,
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Game.fromJson(data as Map<String, dynamic>);
   }
 
@@ -434,7 +440,7 @@ class ApiService {
       body: body,
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return Game.fromJson(data as Map<String, dynamic>);
   }
 
@@ -445,7 +451,7 @@ class ApiService {
       path: '/games/${Uri.encodeComponent(gameId)}',
     );
 
-    _handleResponse(response);
+    await _handleResponse(response);
   }
 
   // ==================== AtBat API Methods ====================
@@ -480,7 +486,7 @@ class ApiService {
       body: body,
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return AtBat.fromJson(data as Map<String, dynamic>);
   }
 
@@ -491,7 +497,7 @@ class ApiService {
       path: '/games/${Uri.encodeComponent(gameId)}/atbats',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return (data as List).map((json) => AtBat.fromJson(json as Map<String, dynamic>)).toList();
   }
 
@@ -502,7 +508,7 @@ class ApiService {
       path: '/games/${Uri.encodeComponent(gameId)}/atbats/${Uri.encodeComponent(atBatId)}',
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return AtBat.fromJson(data as Map<String, dynamic>);
   }
 
@@ -532,7 +538,7 @@ class ApiService {
       body: body,
     );
 
-    final data = _handleResponse(response);
+    final data = await _handleResponse(response);
     return AtBat.fromJson(data as Map<String, dynamic>);
   }
 
@@ -543,7 +549,7 @@ class ApiService {
       path: '/games/${Uri.encodeComponent(gameId)}/atbats/${Uri.encodeComponent(atBatId)}',
     );
 
-    _handleResponse(response);
+    await _handleResponse(response);
   }
 
   /// Get user's team context for dynamic UI rendering
@@ -561,7 +567,7 @@ class ApiService {
 
       debugPrint('✅ API: /users/context returned ${response.statusCode}');
       
-      final data = _handleResponse(response);
+      final data = await _handleResponse(response);
       final context = UserContext.fromJson(data as Map<String, dynamic>);
       
       debugPrint('📊 UserContext: has_personal=${context.hasPersonalContext}, has_managed=${context.hasManagedContext}');
@@ -573,373 +579,3 @@ class ApiService {
     }
   }
 }
-
-/// Team model
-class Team {
-  final String teamId;
-  final String name;
-  final String description;
-  final String role;
-  final int memberCount;
-  final DateTime joinedAt;
-  final DateTime createdAt;
-  final bool isPersonal;
-
-  Team({
-    required this.teamId,
-    required this.name,
-    required this.description,
-    required this.role,
-    required this.memberCount,
-    required this.joinedAt,
-    required this.createdAt,
-    this.isPersonal = false,
-  });
-
-  factory Team.fromJson(Map<String, dynamic> json) {
-    return Team(
-      teamId: json['teamId'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String? ?? '',
-      role: json['role'] as String? ?? 'player', // Can be null for listTeams()
-      memberCount: json['memberCount'] as int? ?? 1,
-      joinedAt: json['joinedAt'] != null 
-          ? DateTime.parse(json['joinedAt'] as String)
-          : DateTime.now(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      isPersonal: json['isPersonal'] as bool? ?? false,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'teamId': teamId,
-      'name': name,
-      'description': description,
-      'role': role,
-      'memberCount': memberCount,
-      'joinedAt': joinedAt.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
-      'isPersonal': isPersonal,
-    };
-  }
-
-  bool get isOwner => role == 'owner';
-  bool get isManager => role == 'manager';
-  bool get isPlayer => role == 'player';
-  bool get isMember => role == 'player'; // Keep for backwards compatibility
-  bool get canManageRoster => isOwner || isManager;
-  
-  String get displayRole {
-    switch (role) {
-      case 'owner':
-        return 'Owner';
-      case 'manager':
-        return 'Manager';
-      case 'player':
-        return 'Player';
-      default:
-        return 'Player';
-    }
-  }
-}
-
-/// Player model
-class Player {
-  final String playerId;
-  final String teamId;
-  final String firstName;
-  final String? lastName;
-  final int? playerNumber;
-  final String status;
-  final List<String>? positions;
-  final bool isGhost;
-  final String? userId;
-  final String? linkedAt;
-  final String? role; // owner, manager, player
-  final String createdAt;
-  final String updatedAt;
-
-  Player({
-    required this.playerId,
-    required this.teamId,
-    required this.firstName,
-    required this.lastName,
-    required this.playerNumber,
-    required this.status,
-    this.positions,
-    required this.isGhost,
-    required this.userId,
-    required this.linkedAt,
-    this.role,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-
-  factory Player.fromJson(Map<String, dynamic> json) {
-    return Player(
-      playerId: json['playerId'] as String,
-      teamId: json['teamId'] as String,
-      firstName: json['firstName'] as String,
-      lastName: json['lastName'] as String?,
-      playerNumber: json['playerNumber'] == null ? null : (json['playerNumber'] as num).toInt(),
-      status: json['status'] as String,
-      positions: json['positions'] == null ? null : List<String>.from(json['positions'] as List),
-      isGhost: (json['isGhost'] as bool?) ?? false,
-      userId: json['userId'] as String?,
-      linkedAt: json['linkedAt'] as String?,
-      role: json['role'] as String?,
-      createdAt: json['createdAt'] as String,
-      updatedAt: json['updatedAt'] as String,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'playerId': playerId,
-      'teamId': teamId,
-      'firstName': firstName,
-      'lastName': lastName,
-      'playerNumber': playerNumber,
-      'status': status,
-      'positions': positions,
-      'isGhost': isGhost,
-      'userId': userId,
-      'linkedAt': linkedAt,
-      'role': role,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
-    };
-  }
-
-  String get fullName => (lastName != null && lastName!.isNotEmpty) ? '$firstName $lastName' : firstName;
-  String get displayNumber => playerNumber?.toString() ?? '--';
-  bool get isActive => status == 'active';
-  String get displayRole {
-    if (role == null) return 'Player';
-    switch (role) {
-      case 'owner':
-        return 'Owner';
-      case 'manager':
-        return 'Manager';
-      case 'player':
-        return 'Player';
-      default:
-        return 'Player';
-    }
-  }
-}
-
-/// Game model
-class Game {
-  final String gameId;
-  final String teamId;
-  final String status; // SCHEDULED, IN_PROGRESS, FINAL, POSTPONED
-  final int teamScore;
-  final int opponentScore;
-  final List<dynamic>? lineup;
-  final DateTime? scheduledStart;
-  final String? opponentName;
-  final String? location;
-  final String? seasonId;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  Game({
-    required this.gameId,
-    required this.teamId,
-    required this.status,
-    required this.teamScore,
-    required this.opponentScore,
-    this.lineup,
-    this.scheduledStart,
-    this.opponentName,
-    this.location,
-    this.seasonId,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-
-  factory Game.fromJson(Map<String, dynamic> json) {
-    return Game(
-      gameId: json['gameId'] as String,
-      teamId: json['teamId'] as String,
-      status: json['status'] as String,
-      teamScore: (json['teamScore'] as num?)?.toInt() ?? 0,
-      opponentScore: (json['opponentScore'] as num?)?.toInt() ?? 0,
-      lineup: json['lineup'] as List<dynamic>?,
-      scheduledStart: json['scheduledStart'] != null
-          ? DateTime.parse(json['scheduledStart'] as String)
-          : null,
-      opponentName: json['opponentName'] as String?,
-      location: json['location'] as String?,
-      seasonId: json['seasonId'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'gameId': gameId,
-      'teamId': teamId,
-      'status': status,
-      'teamScore': teamScore,
-      'opponentScore': opponentScore,
-      'lineup': lineup,
-      'scheduledStart': scheduledStart?.toIso8601String(),
-      'opponentName': opponentName,
-      'location': location,
-      'seasonId': seasonId,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-    };
-  }
-
-  bool get isScheduled => status == 'SCHEDULED';
-  bool get isInProgress => status == 'IN_PROGRESS';
-  bool get isFinal => status == 'FINAL';
-  bool get isPostponed => status == 'POSTPONED';
-  bool get isCompleted => status == 'FINAL';
-  bool get isUpcoming => status == 'SCHEDULED' && (scheduledStart == null || scheduledStart!.isAfter(DateTime.now()));
-}
-
-/// AtBat model
-class AtBat {
-  final String atBatId;
-  final String gameId;
-  final String teamId;
-  final String playerId;
-  final String result; // K, BB, HBP, 1B, 2B, 3B, HR, OUT, SAC, FC, E
-  final int inning;
-  final int outs; // 0, 1, or 2
-  final int? battingOrder; // Position in lineup
-  final Map<String, double>? hitLocation; // {x: 0.0-1.0, y: 0.0-1.0}
-  final String? hitType; // fly_ball, ground_out, line_drive, pop_up, bunt
-  final int? rbis;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  AtBat({
-    required this.atBatId,
-    required this.gameId,
-    required this.teamId,
-    required this.playerId,
-    required this.result,
-    required this.inning,
-    required this.outs,
-    this.battingOrder,
-    this.hitLocation,
-    this.hitType,
-    this.rbis,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-
-  factory AtBat.fromJson(Map<String, dynamic> json) {
-    return AtBat(
-      atBatId: json['atBatId'] as String,
-      gameId: json['gameId'] as String,
-      teamId: json['teamId'] as String,
-      playerId: json['playerId'] as String,
-      result: json['result'] as String,
-      inning: (json['inning'] as num).toInt(),
-      outs: (json['outs'] as num).toInt(),
-      battingOrder: (json['battingOrder'] as num?)?.toInt(),
-      hitLocation: json['hitLocation'] != null
-          ? {
-              'x': (json['hitLocation']['x'] as num).toDouble(),
-              'y': (json['hitLocation']['y'] as num).toDouble(),
-            }
-          : null,
-      hitType: json['hitType'] as String?,
-      rbis: (json['rbis'] as num?)?.toInt(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'atBatId': atBatId,
-      'gameId': gameId,
-      'teamId': teamId,
-      'playerId': playerId,
-      'result': result,
-      'inning': inning,
-      'outs': outs,
-      'battingOrder': battingOrder,
-      'hitLocation': hitLocation,
-      'hitType': hitType,
-      'rbis': rbis,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-    };
-  }
-
-  // Helper getters
-  bool get isHit => ['1B', '2B', '3B', 'HR'].contains(result);
-  bool get isOut => ['K', 'OUT'].contains(result);
-  bool get isWalk => result == 'BB';
-  bool get isStrikeout => result == 'K';
-  bool get isHomeRun => result == 'HR';
-}
-
-/// User Context model for dynamic UI rendering
-class UserContext {
-  final bool hasPersonalContext;
-  final bool hasManagedContext;
-
-  UserContext({
-    required this.hasPersonalContext,
-    required this.hasManagedContext,
-  });
-
-  factory UserContext.fromJson(Map<String, dynamic> json) {
-    return UserContext(
-      hasPersonalContext: json['has_personal_context'] as bool,
-      hasManagedContext: json['has_managed_context'] as bool,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'has_personal_context': hasPersonalContext,
-      'has_managed_context': hasManagedContext,
-    };
-  }
-
-  /// Determine which view to show based on team context
-  /// - Both contexts: Show both views (tabs visible)
-  /// - Personal only: Show player view only (tabs hidden)
-  /// - Managed only: Show team view only (tabs hidden)
-  /// - Neither: Show welcome screen
-  bool get shouldShowTabs => hasPersonalContext && hasManagedContext;
-  bool get shouldShowPlayerViewOnly => hasPersonalContext && !hasManagedContext;
-  bool get shouldShowTeamViewOnly => !hasPersonalContext && hasManagedContext;
-  bool get shouldShowWelcome => !hasPersonalContext && !hasManagedContext;
-}
-
-class ApiException implements Exception {
-  final int statusCode;
-  final String message;
-  final String? errorType;
-
-  ApiException({
-    required this.statusCode,
-    required this.message,
-    this.errorType,
-  });
-
-  @override
-  String toString() {
-    return 'ApiException($statusCode): $message${errorType != null ? ' ($errorType)' : ''}';
-  }
-
-  bool get isUnauthorized => statusCode == 401;
-  bool get isForbidden => statusCode == 403;
-  bool get isNotFound => statusCode == 404;
-  bool get isValidationError => statusCode == 400;
-  bool get isServerError => statusCode >= 500;
-}
-

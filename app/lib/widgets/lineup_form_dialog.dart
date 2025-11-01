@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../providers/player_providers.dart';
 import '../providers/game_providers.dart';
-import '../services/api_service.dart';
+import '../models/game.dart';
+import '../models/player.dart';
 import '../utils/messenger.dart';
 
 class LineupFormDialog extends ConsumerStatefulWidget {

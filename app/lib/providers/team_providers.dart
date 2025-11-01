@@ -1,16 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:riverpod/legacy.dart' show StateProvider;
 import '../services/api_service.dart';
-import '../config/app_config.dart';
+import '../models/team.dart';
 import '../utils/persistence.dart';
 import 'user_context_provider.dart';
-
-/// Provider for the ApiService instance
-final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService(
-    baseUrl: Environment.apiBaseUrl,
-  );
-});
+import 'api_provider.dart';
 
 /// Provider for teams list with automatic caching
 /// 

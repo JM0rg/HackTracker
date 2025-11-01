@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/api_service.dart';
-import 'team_providers.dart';
+import '../models/game.dart';
+import 'api_provider.dart';
 import '../utils/persistence.dart';
 import '../utils/messenger.dart';
 

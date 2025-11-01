@@ -14,7 +14,7 @@ import '../screens/login_screen.dart';
 /// 1. Validate authentication
 /// 2. If authenticated, check user context (teams)
 /// 3. Route to appropriate screen:
-///    - No teams: WelcomeScreenz
+///    - No teams: WelcomeScreen
 ///    - Has teams: DynamicHomeScreen (with context)
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
@@ -25,6 +25,7 @@ class AuthGate extends ConsumerWidget {
       await AuthService.signOut();
     } catch (e) {
       // Ignore sign out errors, just proceed to login
+      debugPrint('Error during sign out in AuthGate: $e');
     }
   }
 

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../theme/app_colors.dart';
-import '../../../services/api_service.dart';
+import '../../../models/player.dart';
 import '../../../providers/atbat_providers.dart';
 import '../../../providers/game_providers.dart';
 import '../../../providers/player_providers.dart';
-import '../../../utils/messenger.dart';
 import '../widgets/field_diagram.dart';
 import '../widgets/action_area.dart';
 
@@ -49,6 +48,11 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   int _currentInning = 1;
   int _currentOuts = 0;
   int _currentBatterIndex = 0;
+  
+  // Store previous state for rollback on error
+  int? _previousInning;
+  int? _previousOuts;
+  int? _previousBatterIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -339,27 +343,71 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     });
   }
 
-  /// Save at-bat and reset state
+  /// Save at-bat with optimistic UI updates
+  /// 
+  /// Implements optimistic UI pattern:
+  /// 1. Store current state for potential rollback
+  /// 2. Store at-bat data before resetting UI
+  /// 3. Immediately advance to next batter (optimistic)
+  /// 4. Provider handles optimistic at-bat list update
+  /// 5. If error, rollback UI state (provider handles its own rollback)
   Future<void> _saveAtBat(String result, Map<String, dynamic> batter) async {
     final playerId = batter['playerId'] as String;
     final battingOrder = batter['battingOrder'] as int;
 
-    // Build at-bat payload
-    final atBat = await ref.read(atBatActionsProvider(widget.gameId)).recordAtBat(
-      playerId: playerId,
-      result: result,
-      inning: _currentInning,
-      outs: _currentOuts,
-      battingOrder: battingOrder,
-      hitLocation: _hitLocation,
-      hitType: _hitType,
-      rbis: null, // Could be calculated or entered
-    );
+    // Store current state for potential rollback
+    _previousInning = _currentInning;
+    _previousOuts = _currentOuts;
+    _previousBatterIndex = _currentBatterIndex;
+    
+    // Store at-bat data before resetting UI state
+    final hitLocation = _hitLocation;
+    final hitType = _hitType;
 
-    if (atBat != null) {
-      // Successfully recorded at-bat
-      _advanceToNextBatter(result);
-      _resetState();
+    // Optimistically advance UI immediately (don't wait for API)
+    _advanceToNextBatter(result);
+    _resetState();
+
+    // Submit at-bat (provider handles its own optimistic update and rollback)
+    try {
+      final atBat = await ref.read(atBatActionsProvider(widget.gameId)).recordAtBat(
+        playerId: playerId,
+        result: result,
+        inning: _previousInning!, // Use previous inning/outs (when at-bat occurred)
+        outs: _previousOuts!,
+        battingOrder: battingOrder,
+        hitLocation: hitLocation,
+        hitType: hitType,
+        rbis: null, // Could be calculated or entered
+      );
+
+      if (atBat == null) {
+        // Provider already handled error and rollback, but we need to rollback UI state
+        _rollbackUIState();
+      }
+      // Success - UI state is already advanced, provider handles at-bat list update
+    } catch (e) {
+      // Provider already rolled back at-bat list, rollback UI state
+      _rollbackUIState();
+      // Error message already shown by provider
+    }
+  }
+
+  /// Rollback UI state to previous values
+  void _rollbackUIState() {
+    if (_previousInning != null && 
+        _previousOuts != null && 
+        _previousBatterIndex != null) {
+      setState(() {
+        _currentInning = _previousInning!;
+        _currentOuts = _previousOuts!;
+        _currentBatterIndex = _previousBatterIndex!;
+        
+        // Clear stored state
+        _previousInning = null;
+        _previousOuts = null;
+        _previousBatterIndex = null;
+      });
     }
   }
 

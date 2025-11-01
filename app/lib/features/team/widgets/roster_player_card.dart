@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/api_service.dart';
+import '../../../models/player.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/decoration_styles.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/api_service.dart';
-import 'team_providers.dart'; // Import apiServiceProvider from here
+import '../models/user_context.dart';
+import 'api_provider.dart';
 
 /// Provider for user's team context
 /// 

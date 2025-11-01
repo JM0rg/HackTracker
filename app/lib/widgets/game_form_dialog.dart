@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/api_service.dart';
+import '../models/game.dart';
 import '../providers/game_providers.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_input_fields.dart';

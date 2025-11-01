@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../providers/player_providers.dart';
-import '../services/api_service.dart';
+import '../models/player.dart';
 import 'app_input_fields.dart';
 
 class PlayerFormDialog extends ConsumerStatefulWidget {

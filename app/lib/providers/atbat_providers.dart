@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/api_service.dart';
+import '../models/atbat.dart';
 import '../utils/persistence.dart';
 import '../utils/messenger.dart';
-import 'team_providers.dart'; // For apiServiceProvider
+import 'api_provider.dart';
 
 /// Provider for at-bats list with automatic caching (per game)
 /// 
@@ -21,9 +21,8 @@ class AtBatsNotifier extends AsyncNotifier<List<AtBat>> {
 
   @override
   Future<List<AtBat>> build() async {
-    final cacheKey = 'atbats_cache_$_gameId';
     final cached = await Persistence.getJson<List<AtBat>>(
-      cacheKey,
+      CacheKeys.atBats(_gameId),
       (obj) => (obj as List).map((e) => AtBat.fromJson(e as Map<String, dynamic>)).toList(),
     );
     
@@ -36,7 +35,7 @@ class AtBatsNotifier extends AsyncNotifier<List<AtBat>> {
           // Sort at-bats by creation time (chronological)
           fresh.sort((a, b) => a.createdAt.compareTo(b.createdAt));
           state = AsyncValue.data(fresh);
-          await Persistence.setJson(cacheKey, fresh.map((ab) => ab.toJson()).toList());
+          await Persistence.setJson(CacheKeys.atBats(_gameId), fresh.map((ab) => ab.toJson()).toList());
         } catch (_) {}
       });
       return cached;
@@ -46,14 +45,13 @@ class AtBatsNotifier extends AsyncNotifier<List<AtBat>> {
     final atBats = await api.listAtBats(_gameId);
     // Sort at-bats by creation time (chronological)
     atBats.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    await Persistence.setJson(cacheKey, atBats.map((ab) => ab.toJson()).toList());
+    await Persistence.setJson(CacheKeys.atBats(_gameId), atBats.map((ab) => ab.toJson()).toList());
     return atBats;
   }
 
   /// Refresh the at-bats list (for pull-to-refresh)
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    final cacheKey = 'atbats_cache_$_gameId';
     
     try {
       final api = ref.read(apiServiceProvider);
@@ -61,7 +59,7 @@ class AtBatsNotifier extends AsyncNotifier<List<AtBat>> {
       // Sort at-bats by creation time (chronological)
       atBats.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       state = AsyncValue.data(atBats);
-      await Persistence.setJson(cacheKey, atBats.map((ab) => ab.toJson()).toList());
+      await Persistence.setJson(CacheKeys.atBats(_gameId), atBats.map((ab) => ab.toJson()).toList());
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -120,7 +118,7 @@ class AtBatsNotifier extends AsyncNotifier<List<AtBat>> {
       finalList.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       
       state = AsyncValue.data(finalList);
-      await Persistence.setJson('atbats_cache_$_gameId', finalList.map((ab) => ab.toJson()).toList());
+      await Persistence.setJson(CacheKeys.atBats(_gameId), finalList.map((ab) => ab.toJson()).toList());
 
       showSuccessToast('At-bat recorded successfully');
       return created;
@@ -191,7 +189,7 @@ class AtBatsNotifier extends AsyncNotifier<List<AtBat>> {
       finalList[index] = serverUpdated;
       
       state = AsyncValue.data(finalList);
-      await Persistence.setJson('atbats_cache_$_gameId', finalList.map((ab) => ab.toJson()).toList());
+      await Persistence.setJson(CacheKeys.atBats(_gameId), finalList.map((ab) => ab.toJson()).toList());
 
       showSuccessToast('At-bat updated successfully');
       return serverUpdated;
@@ -213,8 +211,6 @@ class AtBatsNotifier extends AsyncNotifier<List<AtBat>> {
       return false;
     }
 
-    final removed = current[index];
-    
     // Optimistically remove at-bat
     final updated = current.where((ab) => ab.atBatId != atBatId).toList();
     state = AsyncValue.data(updated);
@@ -223,7 +219,7 @@ class AtBatsNotifier extends AsyncNotifier<List<AtBat>> {
       final api = ref.read(apiServiceProvider);
       await api.deleteAtBat(_gameId, atBatId);
       
-      await Persistence.setJson('atbats_cache_$_gameId', updated.map((ab) => ab.toJson()).toList());
+      await Persistence.setJson(CacheKeys.atBats(_gameId), updated.map((ab) => ab.toJson()).toList());
       
       showSuccessToast('At-bat deleted successfully');
       return true;
