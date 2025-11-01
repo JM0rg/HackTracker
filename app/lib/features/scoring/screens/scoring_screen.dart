@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../theme/app_colors.dart';
 import '../../../models/player.dart';
-import '../../../providers/atbat_providers.dart';
+import '../../../models/game.dart';
 import '../../../providers/game_providers.dart';
 import '../../../providers/player_providers.dart';
+import '../state/game_state_provider.dart';
+import '../state/game_state.dart';
 import '../widgets/field_diagram.dart';
 import '../widgets/action_area.dart';
 
@@ -45,19 +47,15 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   String? _hitType;
   int? _finalBaseReached;
   String? _selectedResult; // Track selected result before submitting
-  int _currentInning = 1;
-  int _currentOuts = 0;
-  int _currentBatterIndex = 0;
-  
-  // Store previous state for rollback on error
-  int? _previousInning;
-  int? _previousOuts;
-  int? _previousBatterIndex;
 
   @override
   Widget build(BuildContext context) {
     final gameAsync = ref.watch(gamesProvider(widget.teamId));
     final playersAsync = ref.watch(rosterProvider(widget.teamId));
+    final gameStateAsync = ref.watch(gameStateProvider(GameStateParams(
+      gameId: widget.gameId,
+      teamId: widget.teamId,
+    )));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -77,114 +75,155 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             return _buildNoLineupView();
           }
 
-          final currentBatter = _getCurrentBatter(game.lineup!);
-
-          // Get player name from roster
-          final players = playersAsync.hasValue ? playersAsync.value! : <Player>[];
-          final player = players.firstWhere(
-            (p) => p.playerId == currentBatter['playerId'],
-            orElse: () => Player(
-              playerId: currentBatter['playerId'],
-              teamId: widget.teamId,
-              firstName: 'Unknown',
-              lastName: 'Player',
-              playerNumber: null,
-              positions: [],
-              status: 'active',
-              isGhost: true,
-              userId: null,
-              linkedAt: null,
-              createdAt: DateTime.now().toIso8601String(),
-              updatedAt: DateTime.now().toIso8601String(),
-            ),
-          );
-
-          return Column(
-            children: [
-              // Current batter and game state display
-              _buildGameStateHeader(player, currentBatter['battingOrder']),
+          // Get game state from provider
+          return gameStateAsync.when(
+            data: (gameState) {
+              final currentBatter = _getCurrentBatter(game.lineup!, gameState.currentBatterIndex);
               
-              // Spray Chart title and instructions
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                  children: [
-                    Text(
-                      'Spray Chart',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Select hit location. Hold to clear.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ],
+              // Get player name from roster
+              final players = playersAsync.hasValue ? playersAsync.value! : <Player>[];
+              final player = players.firstWhere(
+                (p) => p.playerId == currentBatter['playerId'],
+                orElse: () => Player(
+                  playerId: currentBatter['playerId'],
+                  teamId: widget.teamId,
+                  firstName: 'Unknown',
+                  lastName: 'Player',
+                  playerNumber: null,
+                  positions: [],
+                  status: 'active',
+                  isGhost: true,
+                  userId: null,
+                  linkedAt: null,
+                  createdAt: DateTime.now().toIso8601String(),
+                  updatedAt: DateTime.now().toIso8601String(),
                 ),
-              ),
-              
-              // Field Diagram
-              Expanded(
-                child: Center(
-                  child: AspectRatio(
-                      aspectRatio: 1.1, // Wider than tall to reduce vertical space
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 0),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+              );
+
+              return Column(
+                children: [
+                  // Current batter and game state display
+                  _buildGameStateHeader(player, gameState),
+                  
+                  // Spray Chart title and instructions
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Spray Chart',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
                           ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: FieldDiagram(
-                          onTap: _handleFieldTap,
-                          onLongPress: _clearHitLocation,
-                          hitLocation: _hitLocation,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Select hit location. Hold to clear.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Field Diagram
+                  Expanded(
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: 1.1, // Wider than tall to reduce vertical space
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 0),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: FieldDiagram(
+                              onTap: _handleFieldTap,
+                              onLongPress: _clearHitLocation,
+                              hitLocation: _hitLocation,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  
+                  // Action Area (fixed height)
+                  SizedBox(
+                    height: 220,
+                    child: ActionArea(
+                      step: _step,
+                      hitType: _hitType,
+                      finalBaseReached: _finalBaseReached,
+                      selectedResult: _selectedResult,
+                      onResultSelect: _handleResultSelect,
+                      onHitTypeTap: _handleHitTypeTap,
+                      onFinalBaseTap: _handleFinalBaseTap,
+                      onSubmit: () => _saveAtBat(_selectedResult!, currentBatter),
+                    ),
+                  ),
+                ],
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Failed to load game state',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    error.toString(),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              
-              // Action Area (fixed height)
-              SizedBox(
-                height: 220,
-                child: ActionArea(
-                  step: _step,
-                  hitType: _hitType,
-                  finalBaseReached: _finalBaseReached,
-                  selectedResult: _selectedResult,
-                  onResultSelect: _handleResultSelect,
-                  onHitTypeTap: _handleHitTypeTap,
-                  onFinalBaseTap: _handleFinalBaseTap,
-                  onSubmit: () => _saveAtBat(_selectedResult!, currentBatter),
-                ),
-              ),
-            ],
+            ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(
-          child: Text('Error loading game: $e'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: AppColors.error),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load game',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   /// Build game state header with current batter and inning/outs
-  Widget _buildGameStateHeader(Player player, int battingOrder) {
+  Widget _buildGameStateHeader(Player player, InGameState gameState) {
     // Build player name (first name + last name if available)
     final firstName = player.firstName;
     final lastName = (player.lastName?.isNotEmpty ?? false) ? player.lastName : null;
@@ -209,7 +248,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Inning $_currentInning',
+                'Inning ${gameState.inning}',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
@@ -222,7 +261,7 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                 ),
               ),
               Text(
-                '$_currentOuts Out${_currentOuts != 1 ? 's' : ''}',
+                '${gameState.outs} Out${gameState.outs != 1 ? 's' : ''}',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
@@ -294,13 +333,13 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   }
 
   /// Get current batter from lineup
-  Map<String, dynamic> _getCurrentBatter(List<dynamic> lineup) {
+  Map<String, dynamic> _getCurrentBatter(List<dynamic> lineup, int batterIndex) {
     // Sort lineup by batting order
     final sortedLineup = List<Map<String, dynamic>>.from(lineup)
       ..sort((a, b) => (a['battingOrder'] as int).compareTo(b['battingOrder'] as int));
 
     // Return current batter (cycling through lineup)
-    return sortedLineup[_currentBatterIndex % sortedLineup.length];
+    return sortedLineup[batterIndex % sortedLineup.length];
   }
 
   /// Handle field tap
@@ -345,89 +384,38 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
   /// Save at-bat with optimistic UI updates
   /// 
-  /// Implements optimistic UI pattern:
-  /// 1. Store current state for potential rollback
-  /// 2. Store at-bat data before resetting UI
-  /// 3. Immediately advance to next batter (optimistic)
-  /// 4. Provider handles optimistic at-bat list update
-  /// 5. If error, rollback UI state (provider handles its own rollback)
+  /// Uses the gameStateProvider which handles:
+  /// 1. Optimistic updates to at-bat list
+  /// 2. Automatic state recalculation from AtBats
+  /// 3. Rollback on error
   Future<void> _saveAtBat(String result, Map<String, dynamic> batter) async {
     final playerId = batter['playerId'] as String;
     final battingOrder = batter['battingOrder'] as int;
-
-    // Store current state for potential rollback
-    _previousInning = _currentInning;
-    _previousOuts = _currentOuts;
-    _previousBatterIndex = _currentBatterIndex;
     
     // Store at-bat data before resetting UI state
     final hitLocation = _hitLocation;
     final hitType = _hitType;
-
-    // Optimistically advance UI immediately (don't wait for API)
-    _advanceToNextBatter(result);
+    
+    // Reset UI state immediately (optimistic)
     _resetState();
-
-    // Submit at-bat (provider handles its own optimistic update and rollback)
-    try {
-      final atBat = await ref.read(atBatActionsProvider(widget.gameId)).recordAtBat(
-        playerId: playerId,
-        result: result,
-        inning: _previousInning!, // Use previous inning/outs (when at-bat occurred)
-        outs: _previousOuts!,
-        battingOrder: battingOrder,
-        hitLocation: hitLocation,
-        hitType: hitType,
-        rbis: null, // Could be calculated or entered
-      );
-
-      if (atBat == null) {
-        // Provider already handled error and rollback, but we need to rollback UI state
-        _rollbackUIState();
-      }
-      // Success - UI state is already advanced, provider handles at-bat list update
-    } catch (e) {
-      // Provider already rolled back at-bat list, rollback UI state
-      _rollbackUIState();
-      // Error message already shown by provider
-    }
-  }
-
-  /// Rollback UI state to previous values
-  void _rollbackUIState() {
-    if (_previousInning != null && 
-        _previousOuts != null && 
-        _previousBatterIndex != null) {
-      setState(() {
-        _currentInning = _previousInning!;
-        _currentOuts = _previousOuts!;
-        _currentBatterIndex = _previousBatterIndex!;
-        
-        // Clear stored state
-        _previousInning = null;
-        _previousOuts = null;
-        _previousBatterIndex = null;
-      });
-    }
-  }
-
-  /// Advance to next batter in lineup
-  void _advanceToNextBatter(String result) {
-    setState(() {
-      // Increment outs if applicable
-      if (['K', 'OUT'].contains(result)) {
-        _currentOuts++;
-        
-        if (_currentOuts >= 3) {
-          // End of inning
-          _currentOuts = 0;
-          _currentInning++;
-        }
-      }
-
-      // Move to next batter
-      _currentBatterIndex++;
-    });
+    
+    // Submit at-bat via provider (handles optimistic updates and rollback)
+    final params = GameStateParams(
+      gameId: widget.gameId,
+      teamId: widget.teamId,
+    );
+    
+    await ref.read(gameStateProvider(params).notifier).recordAtBat(
+      playerId: playerId,
+      result: result,
+      battingOrder: battingOrder,
+      hitLocation: hitLocation,
+      hitType: hitType,
+      rbis: null, // Could be calculated or entered
+    );
+    
+    // State will automatically update via provider's listener
+    // No need to manually advance - provider recalculates from AtBats
   }
 
   /// Reset state after recording at-bat
