@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
@@ -74,6 +75,53 @@ class DecorationStyles {
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: AppColors.border),
+    );
+  }
+
+  /// Liquid glass decoration - iOS-inspired frosted glass effect
+  /// Uses semi-transparent background with blur
+  static BoxDecoration liquidGlass() {
+    return BoxDecoration(
+      color: AppColors.surface.withValues(alpha: 0.7),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: AppColors.primary.withValues(alpha: 0.3),
+        width: 1.5,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          blurRadius: 20,
+          spreadRadius: 0,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
+
+  /// Liquid glass decoration with accent - Enhanced version with stronger glow
+  static BoxDecoration liquidGlassAccent() {
+    return BoxDecoration(
+      color: AppColors.surface.withValues(alpha: 0.75),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(
+        color: AppColors.primary.withValues(alpha: 0.4),
+        width: 2,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: 0.15),
+          blurRadius: 24,
+          spreadRadius: 2,
+          offset: const Offset(0, 6),
+        ),
+        BoxShadow(
+          color: AppColors.primary.withValues(alpha: 0.05),
+          blurRadius: 40,
+          spreadRadius: -4,
+          offset: const Offset(0, 12),
+        ),
+      ],
     );
   }
 }
