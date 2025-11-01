@@ -1,13 +1,13 @@
 # Lambda Functions Catalog
 
-Complete reference for all 21 implemented Lambda functions in HackTracker.
+Complete reference for all 26 implemented Lambda functions in HackTracker.
 
 ---
 
 ## Overview
 
-**Total Functions:** 21  
-**Domains:** Users (6), Teams (5), Players (5), Games (5)  
+**Total Functions:** 26  
+**Domains:** Users (6), Teams (5), Players (5), Games (5), AtBats (5)  
 **Runtime:** Python 3.13  
 **Architecture:** ARM64  
 **Authorization:** JWT (Cognito) + Role-Based Access Control
@@ -20,8 +20,9 @@ Complete reference for all 21 implemented Lambda functions in HackTracker.
 2. [Team Management (5 functions)](#team-management)
 3. [Player Management (5 functions)](#player-management)
 4. [Game Management (5 functions)](#game-management)
-5. [Common Patterns](#common-patterns)
-6. [Error Codes](#error-codes)
+5. [AtBat Management (5 functions)](#atbat-management)
+6. [Common Patterns](#common-patterns)
+7. [Error Codes](#error-codes)
 
 ---
 
@@ -641,7 +642,7 @@ Complete reference for all 21 implemented Lambda functions in HackTracker.
 ### 4. Update Game
 
 **Handler:** `src/games/update/handler.py`  
-**Route:** `PATCH /games/{gameId}`  
+**Route:** `PUT /games/{gameId}`  
 **Authorization:** owner, manager, or scorekeeper role
 
 **Path Parameters:**
@@ -685,6 +686,175 @@ Complete reference for all 21 implemented Lambda functions in HackTracker.
 **Error Codes:**
 - `403`: Insufficient permissions
 - `404`: Game not found
+
+---
+
+## AtBat Management
+
+### 1. Create AtBat
+
+**Handler:** `src/atbats/create/handler.py`  
+**Route:** `POST /games/{gameId}/atbats`  
+**Authorization:** owner, manager, or scorekeeper role
+
+**Path Parameters:**
+- `gameId` (required): Game UUID
+
+**Request Body:**
+```json
+{
+  "playerId": "...",
+  "result": "1B",
+  "inning": 1,
+  "outs": 0,
+  "battingOrder": 1,
+  "hitLocation": {"x": 0.45, "y": 0.32},
+  "hitType": "line_drive",
+  "rbis": 0
+}
+```
+
+**Hit Location:**
+- Normalized coordinates: `{x: 0.0-1.0, y: 0.0-1.0}`
+- Stored as Decimal types for DynamoDB compatibility
+- Cross-device consistent (scales to any screen size)
+
+**Result Values:** `K`, `BB`, `FO`, `1B`, `2B`, `3B`, `HR`, `OUT`, `E`
+
+**Response (201):**
+```json
+{
+  "atBatId": "...",
+  "gameId": "...",
+  "playerId": "...",
+  "teamId": "...",
+  "result": "1B",
+  "inning": 1,
+  "outs": 0,
+  "battingOrder": 1,
+  "hitLocation": {"x": "0.45", "y": "0.32"},
+  "hitType": "line_drive",
+  "rbis": 0,
+  "createdAt": "...",
+  "updatedAt": "..."
+}
+```
+
+**Validation:**
+- Game must be `IN_PROGRESS`
+- MANAGED teams require lineup to be set
+- Player must be in lineup (if lineup exists)
+- Hit location coordinates must be between 0.0-1.0
+
+**Error Codes:**
+- `400`: Invalid request, game not IN_PROGRESS, lineup not set, player not in lineup
+- `403`: Insufficient permissions
+- `404`: Game or player not found
+
+---
+
+### 2. List AtBats
+
+**Handler:** `src/atbats/list/handler.py`  
+**Route:** `GET /games/{gameId}/atbats`  
+**Authorization:** Must be member of game's team
+
+**Path Parameters:**
+- `gameId` (required): Game UUID
+
+**Response (200):**
+```json
+[
+  {
+    "atBatId": "...",
+    "gameId": "...",
+    "playerId": "...",
+    "result": "1B",
+    "inning": 1,
+    "outs": 0,
+    "battingOrder": 1,
+    "hitLocation": {"x": "0.45", "y": "0.32"},
+    "hitType": "line_drive",
+    "rbis": 0,
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+]
+```
+
+**Error Codes:**
+- `403`: Not a team member
+- `404`: Game not found
+
+---
+
+### 3. Get AtBat
+
+**Handler:** `src/atbats/get/handler.py`  
+**Route:** `GET /games/{gameId}/atbats/{atBatId}`  
+**Authorization:** Must be member of game's team
+
+**Path Parameters:**
+- `gameId` (required): Game UUID
+- `atBatId` (required): AtBat UUID
+
+**Response (200):** Single at-bat object
+
+**Error Codes:**
+- `403`: Not a team member
+- `404`: AtBat or game not found
+
+---
+
+### 4. Update AtBat
+
+**Handler:** `src/atbats/update/handler.py`  
+**Route:** `PUT /games/{gameId}/atbats/{atBatId}`  
+**Authorization:** owner, manager, or scorekeeper role
+
+**Path Parameters:**
+- `gameId` (required): Game UUID
+- `atBatId` (required): AtBat UUID
+
+**Request Body:**
+```json
+{
+  "result": "2B",
+  "hitLocation": {"x": 0.50, "y": 0.35},
+  "hitType": "fly_ball",
+  "rbis": 1,
+  "inning": 2,
+  "outs": 1
+}
+```
+
+**Allowed Fields:** `result`, `hitLocation`, `hitType`, `rbis`, `inning`, `outs`  
+**Read-Only Fields:** `atBatId`, `gameId`, `playerId`, `teamId`, `createdAt`
+
+**Response (200):** Updated at-bat object
+
+**Error Codes:**
+- `400`: Invalid fields or values
+- `403`: Insufficient permissions
+- `404`: AtBat or game not found
+
+---
+
+### 5. Delete AtBat
+
+**Handler:** `src/atbats/delete/handler.py`  
+**Route:** `DELETE /games/{gameId}/atbats/{atBatId}`  
+**Authorization:** owner, manager, or scorekeeper role
+
+**Path Parameters:**
+- `gameId` (required): Game UUID
+- `atBatId` (required): AtBat UUID
+
+**Response (204):** No content
+
+**Error Codes:**
+- `403`: Insufficient permissions
+- `404`: AtBat or game not found
 
 ---
 

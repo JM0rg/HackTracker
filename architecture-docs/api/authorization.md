@@ -195,6 +195,7 @@ MANAGE_ROSTER_ROLES = ['owner', 'manager']
 MANAGE_TEAM_ROLES = ['owner', 'manager']
 DELETE_TEAM_ROLES = ['owner']
 MANAGE_GAMES_ROLES = ['owner', 'manager', 'scorekeeper']
+MANAGE_ATBATS_ROLES = ['owner', 'manager', 'scorekeeper']
 
 # Central policy map: action → required roles
 POLICY_MAP = {
@@ -202,6 +203,7 @@ POLICY_MAP = {
     'manage_team': MANAGE_TEAM_ROLES,
     'delete_team': DELETE_TEAM_ROLES,
     'manage_games': MANAGE_GAMES_ROLES,
+    'manage_atbats': MANAGE_ATBATS_ROLES,
 }
 
 # Private helper (used by authorize())
@@ -252,6 +254,11 @@ _check_team_role(table, user_id, team_id, required_roles)
 - `src/games/create/handler.py` → `authorize(..., action='manage_games')`
 - `src/games/update/handler.py` → `authorize(..., action='manage_games')`
 - `src/games/delete/handler.py` → `authorize(..., action='manage_games')`
+
+**AtBat Management:**
+- `src/atbats/create/handler.py` → `authorize(..., action='manage_atbats')`
+- `src/atbats/update/handler.py` → `authorize(..., action='manage_atbats')`
+- `src/atbats/delete/handler.py` → `authorize(..., action='manage_atbats')`
 
 ---
 

@@ -6,7 +6,7 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/decoration_styles.dart';
 import '../../../providers/game_providers.dart';
 import '../../../widgets/lineup_form_dialog.dart';
-import '../../../screens/scoring_screen.dart';
+import '../../scoring/screens/scoring_screen.dart';
 import 'lineup_section.dart';
 
 /// Expandable game card with lineup management
@@ -237,7 +237,7 @@ class _GameCardState extends ConsumerState<GameCard> with SingleTickerProviderSt
                             return Text(
                               'IN PROGRESS',
                               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Colors.red.withValues(alpha: 0.5),
+                                color: Colors.red.withValues(alpha: 0.75),
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
                                 shadows: [

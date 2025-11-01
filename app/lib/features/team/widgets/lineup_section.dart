@@ -113,12 +113,12 @@ class LineupSection extends ConsumerWidget {
               orElse: () => throw StateError('Player ${entry.key} not found in roster'),
             );
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 4),
               child: Row(
                 children: [
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
@@ -126,22 +126,23 @@ class LineupSection extends ConsumerWidget {
                     alignment: Alignment.center,
                     child: Text(
                       entry.value.toString(),
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       player.fullName,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
                   Text(
                     '#${player.displayNumber}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    style: const TextStyle(
+                      fontSize: 11,
                       color: AppColors.textSecondary,
                     ),
                   ),

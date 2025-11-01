@@ -448,6 +448,104 @@ class ApiService {
     _handleResponse(response);
   }
 
+  // ==================== AtBat API Methods ====================
+
+  /// Create a new at-bat for a game
+  Future<AtBat> createAtBat({
+    required String gameId,
+    required String playerId,
+    required String result,
+    required int inning,
+    required int outs,
+    required int battingOrder,
+    Map<String, double>? hitLocation,
+    String? hitType,
+    int? rbis,
+  }) async {
+    final body = <String, dynamic>{
+      'playerId': playerId,
+      'result': result,
+      'inning': inning,
+      'outs': outs,
+      'battingOrder': battingOrder,
+    };
+
+    if (hitLocation != null) body['hitLocation'] = hitLocation;
+    if (hitType != null) body['hitType'] = hitType;
+    if (rbis != null) body['rbis'] = rbis;
+
+    final response = await _authenticatedRequest(
+      method: 'POST',
+      path: '/games/${Uri.encodeComponent(gameId)}/atbats',
+      body: body,
+    );
+
+    final data = _handleResponse(response);
+    return AtBat.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// List all at-bats for a game
+  Future<List<AtBat>> listAtBats(String gameId) async {
+    final response = await _authenticatedRequest(
+      method: 'GET',
+      path: '/games/${Uri.encodeComponent(gameId)}/atbats',
+    );
+
+    final data = _handleResponse(response);
+    return (data as List).map((json) => AtBat.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  /// Get a specific at-bat
+  Future<AtBat> getAtBat(String gameId, String atBatId) async {
+    final response = await _authenticatedRequest(
+      method: 'GET',
+      path: '/games/${Uri.encodeComponent(gameId)}/atbats/${Uri.encodeComponent(atBatId)}',
+    );
+
+    final data = _handleResponse(response);
+    return AtBat.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Update an existing at-bat
+  Future<AtBat> updateAtBat({
+    required String gameId,
+    required String atBatId,
+    String? result,
+    Map<String, double>? hitLocation,
+    String? hitType,
+    int? rbis,
+    int? inning,
+    int? outs,
+  }) async {
+    final body = <String, dynamic>{};
+
+    if (result != null) body['result'] = result;
+    if (hitLocation != null) body['hitLocation'] = hitLocation;
+    if (hitType != null) body['hitType'] = hitType;
+    if (rbis != null) body['rbis'] = rbis;
+    if (inning != null) body['inning'] = inning;
+    if (outs != null) body['outs'] = outs;
+
+    final response = await _authenticatedRequest(
+      method: 'PUT',
+      path: '/games/${Uri.encodeComponent(gameId)}/atbats/${Uri.encodeComponent(atBatId)}',
+      body: body,
+    );
+
+    final data = _handleResponse(response);
+    return AtBat.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Delete an at-bat
+  Future<void> deleteAtBat(String gameId, String atBatId) async {
+    final response = await _authenticatedRequest(
+      method: 'DELETE',
+      path: '/games/${Uri.encodeComponent(gameId)}/atbats/${Uri.encodeComponent(atBatId)}',
+    );
+
+    _handleResponse(response);
+  }
+
   /// Get user's team context for dynamic UI rendering
   ///
   /// Returns: UserContext with has_personal_context and has_managed_context flags
@@ -704,6 +802,87 @@ class Game {
   bool get isPostponed => status == 'POSTPONED';
   bool get isCompleted => status == 'FINAL';
   bool get isUpcoming => status == 'SCHEDULED' && (scheduledStart == null || scheduledStart!.isAfter(DateTime.now()));
+}
+
+/// AtBat model
+class AtBat {
+  final String atBatId;
+  final String gameId;
+  final String teamId;
+  final String playerId;
+  final String result; // K, BB, HBP, 1B, 2B, 3B, HR, OUT, SAC, FC, E
+  final int inning;
+  final int outs; // 0, 1, or 2
+  final int? battingOrder; // Position in lineup
+  final Map<String, double>? hitLocation; // {x: 0.0-1.0, y: 0.0-1.0}
+  final String? hitType; // fly_ball, ground_out, line_drive, pop_up, bunt
+  final int? rbis;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  AtBat({
+    required this.atBatId,
+    required this.gameId,
+    required this.teamId,
+    required this.playerId,
+    required this.result,
+    required this.inning,
+    required this.outs,
+    this.battingOrder,
+    this.hitLocation,
+    this.hitType,
+    this.rbis,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory AtBat.fromJson(Map<String, dynamic> json) {
+    return AtBat(
+      atBatId: json['atBatId'] as String,
+      gameId: json['gameId'] as String,
+      teamId: json['teamId'] as String,
+      playerId: json['playerId'] as String,
+      result: json['result'] as String,
+      inning: (json['inning'] as num).toInt(),
+      outs: (json['outs'] as num).toInt(),
+      battingOrder: (json['battingOrder'] as num?)?.toInt(),
+      hitLocation: json['hitLocation'] != null
+          ? {
+              'x': (json['hitLocation']['x'] as num).toDouble(),
+              'y': (json['hitLocation']['y'] as num).toDouble(),
+            }
+          : null,
+      hitType: json['hitType'] as String?,
+      rbis: (json['rbis'] as num?)?.toInt(),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'atBatId': atBatId,
+      'gameId': gameId,
+      'teamId': teamId,
+      'playerId': playerId,
+      'result': result,
+      'inning': inning,
+      'outs': outs,
+      'battingOrder': battingOrder,
+      'hitLocation': hitLocation,
+      'hitType': hitType,
+      'rbis': rbis,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  // Helper getters
+  bool get isHit => ['1B', '2B', '3B', 'HR'].contains(result);
+  bool get isOut => ['K', 'OUT'].contains(result);
+  bool get isWalk => result == 'BB';
+  bool get isStrikeout => result == 'K';
+  bool get isHomeRun => result == 'HR';
 }
 
 /// User Context model for dynamic UI rendering

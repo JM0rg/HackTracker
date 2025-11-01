@@ -21,6 +21,7 @@ HackTracker uses a single DynamoDB table for all entities, following AWS best pr
 | `TEAM#<teamId>` | `METADATA` | Team Profile |
 | `TEAM#<teamId>` | `PLAYER#<playerId>` | Player Roster Record |
 | `GAME#<gameId>` | `METADATA` | Game Info |
+| `GAME#<gameId>` | `ATBAT#<atBatId>` | AtBat Record |
 
 ---
 
@@ -129,19 +130,19 @@ response = table.query(
 
 ---
 
-### GSI5: Player Stats (Reserved for Future)
+### GSI5: Player Stats ✅
 
-**Purpose:** Query all at-bats for a player
+**Purpose:** Query all at-bats for a player (sorted by creation date)
 
 **Keys:**
 - `GSI5PK`: `PLAYER#<playerId>`
-- `GSI5SK`: `ATBAT#<atBatId>`
+- `GSI5SK`: `ATBAT#<createdAt>` (ISO 8601 timestamp for chronological sorting)
 
-**Use Case:** Player dashboard, stat aggregation
+**Use Case:** Player dashboard, stat aggregation, spray charts
 
-**Status:** Defined but not yet populated (future feature)
+**Status:** ✅ Active - Populated by all at-bat records
 
-**Why Planned:** Player stat aggregation (hot path)
+**Why Essential:** Efficient querying of player stats without scanning games
 
 ---
 
@@ -342,7 +343,55 @@ All entities include:
 - `opponentName` (optional): Name of opponent team
 - `location` (optional): Game location
 - `seasonId` (optional): Associated season (future feature)
-- `lineup` (optional): Array of player IDs in batting order
+- `lineup` (optional): Array of `{playerId, battingOrder}` objects in batting order
+
+---
+
+### AtBat
+
+```json
+{
+  "PK": "GAME#c8d39946-9264-6038-c6f5-d4405gh72c2b",
+  "SK": "ATBAT#d9e4aa57-a375-7149-d7g6-e5516hi83d3c",
+  "atBatId": "d9e4aa57-a375-7149-d7g6-e5516hi83d3c",
+  "gameId": "c8d39946-9264-6038-c6f5-d4405gh72c2b",
+  "playerId": "b7e38835-8153-5927-a5e4-b3294fg61b1a",
+  "teamId": "a6f27724-7042-4816-94d3-a2183ef50a09",
+  "result": "1B",
+  "inning": 1,
+  "outs": 0,
+  "battingOrder": 1,
+  "hitLocation": {"x": "0.45", "y": "0.32"},
+  "hitType": "line_drive",
+  "rbis": 0,
+  "createdAt": "2025-11-01T14:00:00.000Z",
+  "updatedAt": "2025-11-01T14:00:00.000Z",
+  "GSI5PK": "PLAYER#b7e38835-8153-5927-a5e4-b3294fg61b1a",
+  "GSI5SK": "ATBAT#2025-11-01T14:00:00.000Z"
+}
+```
+
+**AtBat Fields:**
+- `result`: At-bat outcome (`K`, `BB`, `FO`, `1B`, `2B`, `3B`, `HR`, `OUT`, `E`)
+- `inning`: Inning number (1-9+)
+- `outs`: Number of outs (0, 1, or 2)
+- `battingOrder`: Position in lineup (1-9+)
+- `hitLocation` (optional): Normalized coordinates `{x: Decimal, y: Decimal}` where values are 0.0-1.0
+- `hitType` (optional): Type of hit (`ground_ball`, `fly_ball`, `line_drive`, `pop_up`, `bunt`)
+- `rbis` (optional): Runs batted in (integer)
+
+**Hit Location Coordinate System:**
+- Coordinates are normalized to 0.0-1.0 range (percentage-based)
+- Stored as Decimal types in DynamoDB (not float)
+- Represents position as percentage: x = distance from left (0.0 = left edge, 1.0 = right edge)
+- Represents position as percentage: y = distance from top (0.0 = top edge, 1.0 = bottom edge)
+- Scales proportionally across devices (iPhone, iPad, Web)
+- Field SVG scales with `BoxFit.fitWidth` maintaining proportions
+
+**GSI5 (Player Stats):**
+- Purpose: Query all at-bats for a specific player (sorted by date)
+- Keys: `GSI5PK = PLAYER#<playerId>`, `GSI5SK = ATBAT#<createdAt>`
+- Used for: Player stat aggregation, spray charts, performance analysis
 
 ---
 

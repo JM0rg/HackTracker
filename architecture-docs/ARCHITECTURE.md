@@ -93,6 +93,7 @@ Aggregation Lambdas (Future)
 | **Player**    | Roster slot on a team - can be "ghost" (unlinked) or linked to a User     |
 | **Team**      | Collection of players, schedule, stats - owned by a User. Can be MANAGED (full roster) or PERSONAL (stat filtering label) |
 | **Game**      | Individual match with scheduledStart, opponent, location, scores, and lineup |
+| **AtBat**     | Single play event (atomic unit of stat tracking) - always linked to Player and Game, with normalized hit location coordinates |
 
 ### Future Features (Planned, Not Yet Implemented)
 
@@ -100,7 +101,6 @@ Aggregation Lambdas (Future)
 | ------------- | -------------------------------------------------------------------------- |
 | **League**    | Organizer of multiple teams, seasons, and tournaments                      |
 | **Season**    | Group of games belonging to either a team or league                        |
-| **AtBat**     | Single play event (atomic unit of stat tracking) - always linked to Player |
 | **FreeAgent** | Player advertising availability to teams                                   |
 | **Invite**    | Pending invitation to join a team (email-based, 1 week expiration)         |
 
@@ -187,7 +187,7 @@ All entities stored in one DynamoDB table for optimal performance and cost effic
 2. **GSI2** - Entity listing (generic queries for users, teams, games)
 3. **GSI3** - Games by team (team schedule and game history) ✅
 4. **GSI4** - User's players (cross-team stats) - Reserved for future
-5. **GSI5** - Player's at-bats (stat aggregation) - Reserved for future
+5. **GSI5** - Player's at-bats (stat aggregation) ✅ Active - Queries at-bats by player for stats
 
 **Key Principles:**
 - Most queries use PK/SK directly (no GSI needed)
@@ -347,7 +347,7 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 
 ## ⚙️ 10. Lambda Functions
 
-### Implemented ✅ (21 functions)
+### Implemented ✅ (26 functions)
 
 **User Management (6):**
 - `create-user` - Cognito post-confirmation trigger
@@ -375,8 +375,15 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 - `create-game` - Create game for team
 - `list-games` - List games by team
 - `get-game` - Retrieve game by ID
-- `update-game` - Update game details
+- `update-game` - Update game details (lineup support)
 - `delete-game` - Delete game
+
+**AtBat Management (5):**
+- `create-atbat` - Record new at-bat with hit location
+- `list-atbats` - List all at-bats for a game
+- `get-atbat` - Retrieve at-bat by ID
+- `update-atbat` - Update at-bat details
+- `delete-atbat` - Delete at-bat
 
 ### Planned (Future)
 
@@ -387,7 +394,6 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 **Seasons & Stats:**
 - `create-season` - Create season (team or league context)
 - `update-season` - Update season metadata
-- `record-atbat` - Record individual play event
 - `aggregate-stats` - Compute averages, slugging, etc.
 - `get-dashboard` - Fetch stats for user/team/league
 
@@ -437,10 +443,15 @@ Every major entity (Season, Game, Tournament) has a single **owner**:
 - [x] Centralized styling system (Material 3)
 - [x] Dynamic team view with tabs (Stats, Schedule, Roster, Chat)
 
-**Next Up (Phase 2):**
+**Completed (Phase 2 - In Progress):**
+- [x] At-bat tracking (5 Lambda functions)
+- [x] Hit location coordinate system (normalized 0.0-1.0)
+- [x] Scoring screen with interactive field diagram
+- [x] Lineup management for games
+
+**Next Up (Phase 2 - Remaining):**
 - [ ] Player invitations and linking
 - [ ] Season management
-- [ ] At-bat tracking
 - [ ] Basic stat aggregation
 
 ---
