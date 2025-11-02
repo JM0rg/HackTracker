@@ -182,7 +182,36 @@ def handler(event, context):
         
         # CRITICAL VALIDATION: Check lineup requirement for real teams transitioning to IN_PROGRESS
         if 'status' in body and body['status'] == 'IN_PROGRESS':
-            # Fetch team record to check if it's a personal team
+            # VALIDATION 1: Check if another game is already in progress for this team
+            # Query GSI3 to find all games for this team
+            games_response = table.query(
+                IndexName='GSI3',
+                KeyConditionExpression='GSI3PK = :pk AND begins_with(GSI3SK, :sk_prefix)',
+                ExpressionAttributeValues={
+                    ':pk': f'TEAM#{team_id}',
+                    ':sk_prefix': 'GAME#'
+                }
+            )
+            
+            existing_in_progress_games = [
+                g for g in games_response.get('Items', [])
+                if g.get('status') == 'IN_PROGRESS' and g.get('gameId') != game_id
+            ]
+            
+            if existing_in_progress_games:
+                existing_game_id = existing_in_progress_games[0].get('gameId')
+                print(json.dumps({
+                    'level': 'WARN',
+                    'message': 'Another game is already in progress for this team',
+                    'gameId': game_id,
+                    'teamId': team_id,
+                    'existingGameId': existing_game_id
+                }))
+                return create_response(400, {
+                    'error': 'A game is already in progress. Please finish the current game before starting another.'
+                })
+            
+            # VALIDATION 2: Fetch team record to check if it's a personal team
             team_response = table.get_item(
                 Key={
                     'PK': f'TEAM#{team_id}',

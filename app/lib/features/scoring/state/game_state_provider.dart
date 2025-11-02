@@ -167,5 +167,40 @@ class GameStateNotifier extends AsyncNotifier<InGameState> {
     return atBat;
   }
   
+  /// Get the last recorded at-bat for editing
+  AtBat? getLastAtBat() {
+    final atBatsAsync = ref.read(atBatsProvider(_params.gameId));
+    if (!atBatsAsync.hasValue) return null;
+    
+    final atBats = atBatsAsync.value!;
+    if (atBats.isEmpty) return null;
+    
+    // Sort by createdAt and get the most recent
+    final sorted = List<AtBat>.from(atBats)
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    
+    return sorted.first;
+  }
+
+  /// Update an existing at-bat
+  Future<AtBat?> updateAtBatRecord({
+    required String atBatId,
+    String? result,
+    Map<String, double>? hitLocation,
+    String? hitType,
+    int? rbis,
+  }) async {
+    // Delegate to atBatsProvider (which handles optimistic updates and rollback)
+    final atBat = await ref.read(atBatsProvider(_params.gameId).notifier).updateAtBat(
+      atBatId: atBatId,
+      result: result,
+      hitLocation: hitLocation,
+      hitType: hitType,
+      rbis: rbis,
+    );
+    
+    // State will automatically recompute via the listener
+    return atBat;
+  }
 }
 

@@ -7,7 +7,7 @@ import '../../../theme/app_colors.dart';
 import '../../../theme/decoration_styles.dart';
 import '../../../providers/game_providers.dart';
 import '../../../widgets/lineup_form_dialog.dart';
-import '../../scoring/screens/scoring_screen.dart';
+import '../../scoring/screens/scoring_flow_screen.dart';
 import 'lineup_section.dart';
 
 /// Expandable game card with lineup management
@@ -109,14 +109,12 @@ class _GameCardState extends ConsumerState<GameCard> with SingleTickerProviderSt
     final updatedGame = await actions.startGame(widget.game.gameId);
     
     if (updatedGame != null && mounted) {
-      // Navigate to scoring screen
+      // Navigate to scoring flow screen as full-screen modal
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => ScoringScreen(
-            gameId: widget.game.gameId,
-            teamId: widget.team.teamId,
-          ),
+        _buildScoringModalRoute(
+          widget.game.gameId,
+          widget.team.teamId,
         ),
       );
     }
@@ -125,11 +123,31 @@ class _GameCardState extends ConsumerState<GameCard> with SingleTickerProviderSt
   void _navigateToScoring() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ScoringScreen(
-          gameId: widget.game.gameId,
-          teamId: widget.team.teamId,
-        ),
+      _buildScoringModalRoute(
+        widget.game.gameId,
+        widget.team.teamId,
+      ),
+    );
+  }
+
+  /// Build full-screen modal route for ScoringFlowScreen with slide-up transition
+  Route _buildScoringModalRoute(String gameId, String teamId) {
+    return PageRouteBuilder(
+      opaque: true,
+      barrierDismissible: false,
+      pageBuilder: (_, __, ___) => ScoringFlowScreen(
+        gameId: gameId,
+        teamId: teamId,
+      ),
+      transitionsBuilder: (_, anim, __, child) => SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: anim,
+          curve: Curves.easeOutCubic,
+        )),
+        child: child,
       ),
     );
   }

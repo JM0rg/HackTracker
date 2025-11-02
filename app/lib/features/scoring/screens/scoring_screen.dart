@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../theme/app_colors.dart';
 import '../../../models/player.dart';
-import '../../../models/game.dart';
 import '../../../providers/game_providers.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/atbat_providers.dart';
 import '../state/game_state_provider.dart';
 import '../state/game_state.dart';
 import '../widgets/field_diagram.dart';
@@ -27,11 +27,19 @@ import '../widgets/action_area.dart';
 class ScoringScreen extends ConsumerStatefulWidget {
   final String gameId;
   final String teamId;
+  final String? editingAtBatId;
+  final bool returnToListOnSubmit;
+  final bool hideAppBar;
+  final bool hideGameStateHeader;
 
   const ScoringScreen({
     super.key,
     required this.gameId,
     required this.teamId,
+    this.editingAtBatId,
+    this.returnToListOnSubmit = false,
+    this.hideAppBar = false,
+    this.hideGameStateHeader = false,
   });
 
   @override
@@ -49,6 +57,35 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   String? _selectedResult; // Track selected result before submitting
 
   @override
+  void initState() {
+    super.initState();
+    // If editing an at-bat, load its data after the first frame
+    if (widget.editingAtBatId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadAtBatForEditing(widget.editingAtBatId!);
+      });
+    }
+  }
+
+  /// Load at-bat data for editing
+  void _loadAtBatForEditing(String atBatId) {
+    final atBatsAsync = ref.read(atBatsProvider(widget.gameId));
+    if (!atBatsAsync.hasValue) return;
+    
+    final atBat = atBatsAsync.value!.firstWhere(
+      (ab) => ab.atBatId == atBatId,
+      orElse: () => throw StateError('At-bat not found: $atBatId'),
+    );
+    
+    setState(() {
+      _selectedResult = atBat.result;
+      _hitLocation = atBat.hitLocation;
+      _hitType = atBat.hitType;
+      _step = atBat.hitLocation != null ? EntryStep.outcome : EntryStep.initial;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final gameAsync = ref.watch(gamesProvider(widget.teamId));
     final playersAsync = ref.watch(rosterProvider(widget.teamId));
@@ -59,11 +96,13 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Score Game'),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-      ),
+      appBar: widget.hideAppBar
+          ? null
+          : AppBar(
+              title: Text(widget.editingAtBatId != null ? 'Edit At-Bat' : 'Score Game'),
+              backgroundColor: AppColors.background,
+              elevation: 0,
+            ),
       body: gameAsync.when(
         data: (games) {
           final game = games.firstWhere(
@@ -78,11 +117,61 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
           // Get game state from provider
           return gameStateAsync.when(
             data: (gameState) {
-              final currentBatter = _getCurrentBatter(game.lineup!, gameState.currentBatterIndex);
-              
-              // Get player name from roster
               final players = playersAsync.hasValue ? playersAsync.value! : <Player>[];
-              final player = players.firstWhere(
+              
+              // If editing, get the player from the at-bat being edited
+              Player? editingPlayer;
+              int? editingBattingOrder;
+              if (widget.editingAtBatId != null) {
+                final atBatsAsync = ref.read(atBatsProvider(widget.gameId));
+                if (atBatsAsync.hasValue) {
+                  final atBat = atBatsAsync.value!.firstWhere(
+                    (ab) => ab.atBatId == widget.editingAtBatId,
+                    orElse: () => throw StateError('At-bat not found'),
+                  );
+                  editingPlayer = players.firstWhere(
+                    (p) => p.playerId == atBat.playerId,
+                    orElse: () => Player(
+                      playerId: atBat.playerId,
+                      teamId: widget.teamId,
+                      firstName: 'Unknown',
+                      lastName: 'Player',
+                      playerNumber: null,
+                      positions: [],
+                      status: 'active',
+                      isGhost: true,
+                      userId: null,
+                      linkedAt: null,
+                      createdAt: DateTime.now().toIso8601String(),
+                      updatedAt: DateTime.now().toIso8601String(),
+                    ),
+                  );
+                  editingBattingOrder = atBat.battingOrder;
+                }
+              }
+              
+              // Get current batter (for new entries) or editing batter info
+              // Convert lineup to Map if it's a List
+              final lineupList = game.lineup ?? [];
+              final lineupMap = lineupList is Map<String, dynamic>
+                  ? lineupList as Map<String, dynamic>
+                  : Map<String, dynamic>.fromEntries(
+                      (lineupList as List).asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final item = entry.value;
+                        return MapEntry(
+                          (i + 1).toString(),
+                          item is Map<String, dynamic>
+                              ? item['playerId'] as String
+                              : item.toString(),
+                        );
+                      }),
+                    );
+              final currentBatter = widget.editingAtBatId != null && editingPlayer != null && editingBattingOrder != null
+                  ? {'playerId': editingPlayer.playerId, 'battingOrder': editingBattingOrder!}
+                  : _getCurrentBatter(lineupMap, gameState.currentBatterIndex);
+              
+              final player = editingPlayer ?? players.firstWhere(
                 (p) => p.playerId == currentBatter['playerId'],
                 orElse: () => Player(
                   playerId: currentBatter['playerId'],
@@ -102,8 +191,9 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
 
               return Column(
                 children: [
-                  // Current batter and game state display
-                  _buildGameStateHeader(player, gameState),
+                  // Current batter and game state display (only if not hidden by parent)
+                  if (!widget.hideGameStateHeader)
+                    _buildGameStateHeader(player, gameState),
                   
                   // Spray Chart title and instructions
                   Container(
@@ -130,30 +220,25 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                   
                   // Field Diagram
                   Expanded(
-                    child: Center(
-                      child: AspectRatio(
-                        aspectRatio: 1.1, // Wider than tall to reduce vertical space
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 0),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 0),
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: FieldDiagram(
-                              onTap: _handleFieldTap,
-                              onLongPress: _clearHitLocation,
-                              hitLocation: _hitLocation,
-                            ),
-                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: FieldDiagram(
+                          onTap: _handleFieldTap,
+                          onLongPress: _clearHitLocation,
+                          hitLocation: _hitLocation,
                         ),
                       ),
                     ),
@@ -161,16 +246,15 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
                   
                   // Action Area (fixed height)
                   SizedBox(
-                    height: 220,
+                    height: 180,
                     child: ActionArea(
                       step: _step,
                       hitType: _hitType,
                       finalBaseReached: _finalBaseReached,
                       selectedResult: _selectedResult,
-                      onResultSelect: _handleResultSelect,
+                      onResultSelect: (result) => _handleResultSelectAndSubmit(result, currentBatter),
                       onHitTypeTap: _handleHitTypeTap,
                       onFinalBaseTap: _handleFinalBaseTap,
-                      onSubmit: () => _saveAtBat(_selectedResult!, currentBatter),
                     ),
                   ),
                 ],
@@ -333,13 +417,14 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
   }
 
   /// Get current batter from lineup
-  Map<String, dynamic> _getCurrentBatter(List<dynamic> lineup, int batterIndex) {
-    // Sort lineup by batting order
-    final sortedLineup = List<Map<String, dynamic>>.from(lineup)
-      ..sort((a, b) => (a['battingOrder'] as int).compareTo(b['battingOrder'] as int));
-
-    // Return current batter (cycling through lineup)
-    return sortedLineup[batterIndex % sortedLineup.length];
+  Map<String, dynamic> _getCurrentBatter(Map<String, dynamic> lineup, int batterIndex) {
+    final battingOrder = (batterIndex % lineup.length) + 1;
+    final playerId = lineup[battingOrder.toString()];
+    
+    return {
+      'playerId': playerId,
+      'battingOrder': battingOrder,
+    };
   }
 
   /// Handle field tap
@@ -364,11 +449,14 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     });
   }
 
-  /// Handle result selection
-  void _handleResultSelect(String result) {
+  /// Handle result selection and immediately submit
+  void _handleResultSelectAndSubmit(String result, Map<String, dynamic> batter) {
+    // Set result and submit immediately
     setState(() {
       _selectedResult = result;
     });
+    // Submit immediately - no need for separate submit button
+    _saveAtBat(result, batter);
   }
 
   /// Clear hit location and reset to initial state
@@ -382,12 +470,15 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     });
   }
 
+
   /// Save at-bat with optimistic UI updates
   /// 
   /// Uses the gameStateProvider which handles:
   /// 1. Optimistic updates to at-bat list
   /// 2. Automatic state recalculation from AtBats
   /// 3. Rollback on error
+  /// 
+  /// If widget.editingAtBatId is set, updates the existing at-bat instead of creating a new one.
   Future<void> _saveAtBat(String result, Map<String, dynamic> batter) async {
     final playerId = batter['playerId'] as String;
     final battingOrder = batter['battingOrder'] as int;
@@ -405,17 +496,36 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
       teamId: widget.teamId,
     );
     
-    await ref.read(gameStateProvider(params).notifier).recordAtBat(
-      playerId: playerId,
-      result: result,
-      battingOrder: battingOrder,
-      hitLocation: hitLocation,
-      hitType: hitType,
-      rbis: null, // Could be calculated or entered
-    );
-    
-    // State will automatically update via provider's listener
-    // No need to manually advance - provider recalculates from AtBats
+    // Check if we're editing an existing at-bat
+    if (widget.editingAtBatId != null) {
+      // Update existing at-bat
+      await ref.read(gameStateProvider(params).notifier).updateAtBatRecord(
+        atBatId: widget.editingAtBatId!,
+        result: result,
+        hitLocation: hitLocation,
+        hitType: hitType,
+        rbis: null, // Could be calculated or entered
+      );
+      
+      // If returnToListOnSubmit is true, navigate back to list
+      if (widget.returnToListOnSubmit && mounted) {
+        Navigator.pop(context, true);
+        return;
+      }
+    } else {
+      // Create new at-bat
+      await ref.read(gameStateProvider(params).notifier).recordAtBat(
+        playerId: playerId,
+        result: result,
+        battingOrder: battingOrder,
+        hitLocation: hitLocation,
+        hitType: hitType,
+        rbis: null, // Could be calculated or entered
+      );
+      
+      // For new at-bats, stay on scoring screen and advance to next batter
+      // State will automatically update via provider's listener
+    }
   }
 
   /// Reset state after recording at-bat

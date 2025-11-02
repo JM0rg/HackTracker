@@ -33,7 +33,7 @@ class _DynamicHomeScreenState extends ConsumerState<DynamicHomeScreen> {
 
   void _navigateToRecruiter() {
     setState(() {
-      _bottomNavIndex = 2; // Recruiter tab
+      _bottomNavIndex = 1; // Recruiter tab (now index 1 after removing Record tab)
     });
   }
 
@@ -64,10 +64,6 @@ class _DynamicHomeScreenState extends ConsumerState<DynamicHomeScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.sports_baseball),
-            label: 'Record',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.people),
             label: 'Recruiter',
           ),
@@ -81,9 +77,8 @@ class _DynamicHomeScreenState extends ConsumerState<DynamicHomeScreen> {
   }
 
   String _getAppBarTitle() {
-    if (_bottomNavIndex == 1) return 'Record At-Bat';
-    if (_bottomNavIndex == 2) return 'Recruiter';
-    if (_bottomNavIndex == 3) return 'Profile';
+    if (_bottomNavIndex == 1) return 'Recruiter';
+    if (_bottomNavIndex == 2) return 'Profile';
     
     // Home tab title depends on context
     if (widget.userContext.shouldShowPlayerViewOnly) {
@@ -102,10 +97,8 @@ class _DynamicHomeScreenState extends ConsumerState<DynamicHomeScreen> {
       case 0:
         return _buildHomeTab();
       case 1:
-        return const Center(child: Text('RECORD AT-BAT (Coming Soon)'));
-      case 2:
         return const RecruiterScreen();
-      case 3:
+      case 2:
         return const ProfileScreen();
       default:
         return _buildHomeTab();

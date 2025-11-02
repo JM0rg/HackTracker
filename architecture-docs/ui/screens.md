@@ -728,16 +728,18 @@ HomeScreen
 ### Main App Flow
 
 ```
-HomeScreen
+DynamicHomeScreen
     ↓
 Bottom Navigation
     ├── Home Tab
     │   ├── Player View
     │   └── Team View
-    ├── Record Tab (placeholder)
+    │       └── Schedule Tab → ScoringFlowScreen (modal)
     ├── Recruiter Tab
     └── Profile Tab
 ```
+
+**Note:** Scoring is accessed via a full-screen modal from the Schedule tab, not as a bottom navigation tab.
 
 ### Team Management Flow
 
@@ -855,7 +857,13 @@ testWidgets('Complete team creation flow', (tester) async {
 
 **File:** `lib/features/scoring/screens/scoring_screen.dart`
 
-**Purpose:** Fast at-bat entry with interactive field diagram for hit location selection
+**Purpose:** Fast at-bat entry with interactive field diagram for hit location selection. Supports both creating new at-bats and editing existing ones.
+
+**Props:**
+- `gameId` (required) - Game ID to record at-bats for
+- `teamId` (required) - Team ID for roster lookup
+- `editingAtBatId` (optional) - If provided, loads at-bat data for editing
+- `returnToListOnSubmit` (optional, default: false) - If true and editing, navigates back to AtBatsListScreen after submit
 
 **Widget Tree Structure:**
 ```
@@ -908,7 +916,9 @@ ScoringScreen
 
 **Navigation Patterns:**
 - Back → Previous screen (game schedule)
-- Submit → Auto-advance to next batter in lineup
+- "View At-Bats" button → AtBatsListScreen (if at-bats exist)
+- Submit (new at-bat) → Auto-advance to next batter in lineup
+- Submit (edit mode) → Returns to AtBatsListScreen if `returnToListOnSubmit` is true
 - Long press field → Clear hit location and reset to initial state
 
 **Code Example:**
@@ -952,6 +962,82 @@ class _ScoringScreenState extends ConsumerState<ScoringScreen> {
     );
     _advanceToNextBatter(result);
     _resetState();
+  }
+}
+```
+
+### AtBatsListScreen
+
+**File:** `lib/features/scoring/screens/atbats_list_screen.dart`
+
+**Purpose:** Lists all recorded at-bats for a game, grouped by inning in collapsible sections. Each at-bat can be edited.
+
+**Props:**
+- `gameId` (required) - Game ID to display at-bats for
+- `teamId` (required) - Team ID for roster lookup
+
+**Widget Tree Structure:**
+```
+AtBatsListScreen
+├── Scaffold
+│   ├── AppBar (title: "At-Bats")
+│   └── Body
+│       └── Switch (atBatsAsync)
+│           ├── data: (atBats)
+│           │   ├── if empty → EmptyState (icon + message)
+│           │   └── else → ListView
+│           │       └── _InningSection (one per inning)
+│           │           └── ExpansionTile
+│           │               ├── title: "Inning X" + count badge
+│           │               └── children: _AtBatListItem[]
+│           │                   ├── Player name + number
+│           │                   ├── Result, outs, RBIs
+│           │                   └── Edit IconButton
+│           ├── loading → CircularProgressIndicator
+│           └── error → ErrorState (icon + message)
+```
+
+**State Dependencies:**
+- `atBatsProvider(gameId)` - List of at-bats for the game
+- `rosterProvider(teamId)` - Player roster for name/number lookup
+- `gameStateProvider(GameStateParams)` - Current game state (for default expanded inning)
+
+**Features:**
+- Groups at-bats by inning in collapsible `ExpansionTile` sections
+- Default expands the current inning's section
+- Each at-bat item shows:
+  - Player name and number
+  - At-bat result (K, BB, 1B, etc.)
+  - Outs (if any)
+  - RBIs (if any)
+  - Edit button (navigates to ScoringScreen in edit mode)
+- Empty state shows helpful message when no at-bats recorded
+- Auto-refreshes when returning from edit screen
+
+**Navigation Patterns:**
+- ScoringScreen → AtBatsListScreen (via "View At-Bats" button)
+- AtBatsListScreen → ScoringScreen (edit mode, via Edit button on at-bat item)
+
+**Code Example:**
+```dart
+class AtBatsListScreen extends ConsumerWidget {
+  final String gameId;
+  final String teamId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final atBatsAsync = ref.watch(atBatsProvider(gameId));
+    
+    return Scaffold(
+      appBar: AppBar(title: const Text('At-Bats')),
+      body: atBatsAsync.when(
+        data: (atBats) {
+          // Group by inning, render ExpansionTile sections
+        },
+        loading: () => const CircularProgressIndicator(),
+        error: (e, _) => ErrorWidget(e),
+      ),
+    );
   }
 }
 ```

@@ -16,7 +16,6 @@ class ActionArea extends StatelessWidget {
   final void Function(String result) onResultSelect;
   final void Function(String type) onHitTypeTap;
   final void Function(int base) onFinalBaseTap;
-  final VoidCallback onSubmit;
 
   const ActionArea({
     super.key,
@@ -27,14 +26,13 @@ class ActionArea extends StatelessWidget {
     required this.onResultSelect,
     required this.onHitTypeTap,
     required this.onFinalBaseTap,
-    required this.onSubmit,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 200,
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 2, bottom: 16),
+      height: 180,
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         border: Border(
@@ -50,11 +48,10 @@ class ActionArea extends StatelessWidget {
 
   /// Initial state: Non-play buttons
   Widget _buildInitialState() {
-    final bool isValid = selectedResult != null;
-    
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Primary action buttons (circular)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -78,37 +75,12 @@ class ActionArea extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        OutlinedButton(
-          onPressed: isValid ? onSubmit : null,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: isValid ? AppColors.accent : Colors.transparent,
-            foregroundColor: isValid ? Colors.white : Colors.grey.shade600,
-            side: BorderSide(
-              color: isValid ? AppColors.accent : Colors.grey.shade600,
-              width: 2,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Text(
-            'Submit At-Bat',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
       ],
     );
   }
 
   /// Outcome state: Hit outcome and optional details
   Widget _buildOutcomeState() {
-    final bool isValid = selectedResult != null;
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -174,76 +146,7 @@ class ActionArea extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        Center(
-          child: OutlinedButton(
-            onPressed: isValid ? onSubmit : null,
-            style: OutlinedButton.styleFrom(
-              backgroundColor: isValid ? AppColors.accent : Colors.transparent,
-              foregroundColor: isValid ? Colors.white : Colors.grey.shade600,
-              side: BorderSide(
-                color: isValid ? AppColors.accent : Colors.grey.shade600,
-                width: 2,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Submit At-Bat',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
       ],
-    );
-  }
-}
-
-/// Action Button Widget
-class _ActionButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onPressed;
-  final bool isSelected;
-  final bool isCompact;
-
-  const _ActionButton({
-    required this.label,
-    required this.onPressed,
-    required this.isSelected,
-    this.isCompact = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? AppColors.accent : Colors.grey.shade600,
-        foregroundColor: Colors.white,
-        padding: EdgeInsets.symmetric(
-          vertical: isCompact ? 12 : 16,
-          horizontal: 8,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        elevation: 2,
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: isCompact ? 12 : 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -291,7 +194,7 @@ class _ToggleChip extends StatelessWidget {
   }
 }
 
-/// Circular Action Button Widget (with subtitle)
+/// Circular Action Button Widget (with subtitle) - same size as outcome buttons
 class _CircularActionButton extends StatelessWidget {
   final String label;
   final String subtitle;
@@ -311,8 +214,8 @@ class _CircularActionButton extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 70,
-          height: 70,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: isSelected ? AppColors.accent : Colors.grey.shade600,
             shape: BoxShape.circle,
@@ -334,7 +237,7 @@ class _CircularActionButton extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

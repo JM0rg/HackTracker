@@ -303,6 +303,53 @@ class PlayerNotifier extends FamilyAsyncNotifier<Player?, String> {
 
 ---
 
+## Scoring Flow: Single Source of Truth
+
+### Game State Derivation
+
+The scoring system implements a single source of truth pattern where all game state (inning, outs, current batter) is derived from the list of recorded AtBats. This ensures data consistency and prevents race conditions.
+
+**Key Components:**
+
+1. **GameStateProvider** (`app/lib/features/scoring/state/game_state_provider.dart`)
+   - Derives game state from AtBats list and lineup
+   - Automatically recalculates when AtBats change
+   - Stays alive for 5 minutes after last listener for instant return
+
+2. **InGameCalculator** (`app/lib/features/scoring/state/in_game_calculator.dart`)
+   - Pure function that calculates state from AtBats
+   - Processes at-bats chronologically to determine inning, outs, and batter position
+
+3. **AtBatsListScreen** (`app/lib/features/scoring/screens/atbats_list_screen.dart`)
+   - Lists all at-bats grouped by inning in collapsible sections
+   - Each at-bat has an Edit button to modify it
+   - Navigates to ScoringScreen in edit mode
+
+4. **ScoringScreen Edit Mode** (`app/lib/features/scoring/screens/scoring_screen.dart`)
+   - Accepts `editingAtBatId` and `returnToListOnSubmit` parameters
+   - When editing, preloads UI with at-bat data
+   - On submit: if editing, navigates back to list; if creating, stays on screen and advances to next batter
+
+**Navigation Flow:**
+
+```
+ScoringScreen (new at-bat)
+  → User taps "View At-Bats"
+  → AtBatsListScreen
+    → User taps Edit on an at-bat
+    → ScoringScreen (edit mode, returnToListOnSubmit=true)
+      → User edits and submits
+      → Returns to AtBatsListScreen (auto-refreshed)
+```
+
+**Benefits:**
+- No database fields for inning/outs (single source of truth)
+- State persists across navigation (provider stays alive)
+- Consistent state after app restarts (recalculated from AtBats)
+- Optimistic updates with automatic rollback on error
+
+---
+
 ## Optimistic Mutation Implementation
 
 ### Race-Condition-Safe Pattern
